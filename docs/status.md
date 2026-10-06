@@ -99,3 +99,22 @@ restored terminal and exited 0. Verified that controls embedded in a text chunk 
 test added. This automated PTY check is not a physical Korean IME or herdr test.
 Physical Windows IME/herdr: MANUAL_NOT_RUN. macOS terminal/live: MANUAL_NOT_RUN / LIVE_NOT_RUN.
 M5 upload receipt: b011e5d7bb4b6251033fa7a57a23a6c5ac056ae1.
+
+## M7 (distribution implemented; cross-platform artifact evidence pending)
+
+Allowlisted npm tarball, separate consumer shrinkwrap staging, unchanged source lock,
+archive secret/path checks, checksums, install/reinstall smoke and Windows/macOS
+instructions implemented. CI builds one Windows artifact and installs those identical
+bytes on both platforms without source checkout. No npm/GitHub release or tag published.
+
+Windows local: npm ci --ignore-scripts, typecheck, 20 offline tests, build,
+native:smoke, release:prepare and package:check exit 0. Initial clean-prefix install,
+native initialization, installed .cmd and same-version reinstall preserved settings.
+Archive bin mode is 0644 on Windows npm 11.14.1; npm's bin-links sets installed
+executable permissions. macOS direct shebang execution remains a required CI check.
+Prior package inspection deliberately failed on archive mode; no false pass recorded.
+
+Credentials protection: HERA_HOME inside a Git repository is now rejected before
+authentication. No real credential content is included in evidence or packages.
+M6 verified upload: 74b2f8ba6a33f1accc35cd97b2d06c17b55b6e81;
+CI 37422688140 passed Windows/macOS offline jobs. Live model selection/login still pending.
