@@ -12,6 +12,7 @@ import {saveMetadata,type Metadata} from '../metadata.js';
 import {acquireWorkspace} from './workspace-lock.js';
 import {baseline,PhasePolicy,validateProposalPath} from './phase-policy.js';
 import {proposalSchema,reviewProposal,matchesTestCommand,type ApplyReview} from './apply-review.js';
+import {goCredentialStatus} from '../providers/go-credentials.js';
 const completed=z.object({threadId:z.string(),turn:z.object({id:z.string(),status:z.enum(['completed','interrupted','failed','inProgress']),error:z.unknown().optional()})});
 export class Controller extends EventEmitter {
   readonly phase=new PhasePolicy();private lock:Awaited<ReturnType<typeof acquireWorkspace>>|null=null;private baselineHash='';private closeResult:Promise<boolean>|null=null;private commands=new Set<string>();
@@ -23,7 +24,8 @@ export class Controller extends EventEmitter {
   static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){requireMode(config,singleAgent);const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;try{client=await CodexClient.connect(home,cwd,startupArgs(config));const controller=new Controller(client,home,cwd,config);controller.lock=lock;await controller.start(previous);return controller;}catch(e){if(!client||await client.close())await lock.release();throw e;}}
   get busy(){return this.active||this.applying;}
   private async start(previous?:Metadata){
-    const account=await this.client.account();if(!account.ready)throw new HeraError('BLOCKED_NO_CREDENTIALS','Use hera auth login openai in the isolated Hera home.',3);
+    const account=await this.client.account();if(!account.ready)throw new HeraError('PROVIDER_SETUP_REQUIRED','OpenAI login is required: /providers or hera auth login openai.',3);
+    if(!(await goCredentialStatus(this.home)).credentialStored)throw new HeraError('PROVIDER_SETUP_REQUIRED','Save the Go key in the OS store first: /providers or hera auth login go.',3);
     await this.verifyRuntime();
     validateModelChoices(this.config,await this.client.models());
     const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:nativeSettings(this.config)};

@@ -1,7 +1,7 @@
 import React,{useState,useRef} from 'react';
 import {Text,useInput,usePaste} from 'ink';
 import {safeText} from '../errors.js';
-const isSettingsCommand=(value:string)=>/^[\\/](?:(?:model|effort)(?: (?:main|worker))?|workers)$/.test(value.trim());
+const isSettingsCommand=(value:string)=>/^[\\/](?:(?:model|effort)(?: (?:main|worker))?|workers|providers)$/.test(value.trim());
 export const graphemes=(value:string)=>Array.from(new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(value),s=>s.segment);
 export function editInput(value:string,cursor:number,operation:'insert'|'backspace'|'delete',text=''){
   const parts=graphemes(value);const index=Math.max(0,Math.min(cursor,parts.length));

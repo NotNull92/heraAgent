@@ -26,6 +26,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 node bin/hera.mjs doctor --json
 node bin/hera.mjs init --list-models
 node bin/hera.mjs auth login openai
+node bin/hera.mjs auth login go
 # Choose exact returned IDs; no model is silently selected.
 node bin/hera.mjs init --model <id> --effort high --worker-model <id> --worker-effort max
 # Windows only: official sandbox setup in the isolated Hera profile.
@@ -37,6 +38,14 @@ Enter inserts a line, Ctrl+S sends, Escape clears, Ctrl+C requests interruption.
 Use `/help` for commands. `run --single-agent --prompt-file <file>` supports non-TTY
 and multiline input. Paste never executes a slash action. A Windows sandbox notConfigured result
 requires official setup; unrestricted fallback is unavailable.
+
+On entry, Hera checks both OpenAI login and a stored OpenCode Go key. Missing setup
+opens the provider menu before agent work. Use `/providers` or `\providers` at any
+time to sign in again or replace the Go key. Only OpenAI and OpenCode Go are supported.
+Go key input is masked, is not added to the conversation, and is saved in Windows
+Credential Manager or macOS Keychain. New terminals load it automatically for the
+same user and HERA_HOME. Saving a key does not verify provider access or enable the
+still-gated external worker mode. No inference is performed during setup/status.
 
 After read-only analysis, `/apply` prepares a proposal without writing. Page through
 the complete before/after text, test commands and risks with Down/Enter; Up goes back.
@@ -78,8 +87,12 @@ composer Enter still inserts a newline; bare settings commands open menus instea
 These settings do not enable gated workers.
 
 Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
-copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses only an explicitly
-supplied HERA_OPENCODE_GO_API_KEY and the OpenCode Go subscription route; `doctor external`
+copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses its OS-stored
+key by default. An explicitly supplied HERA_OPENCODE_GO_API_KEY overrides it for that
+process; `hera auth login go --from-env` imports that value into the OS store.
+`hera auth status go` prints presence/source only; `hera auth logout go` removes only
+the saved Hera Go entry (it does not remove an environment override). All Go requests
+use the OpenCode Go subscription route; `doctor external`
 does no paid work, while `doctor external --live` explicitly permits one bounded probe.
 
 If another installed tool provides `hera`, use explicit local paths or an isolated

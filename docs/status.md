@@ -1,5 +1,34 @@
 # Implementation status
 
+## Provider setup and OS credential storage (2026-10-06)
+
+User-requested scope extension: store Go credentials persistently in the OS credential
+store and require initial OpenAI/Go setup. Windows uses CredReadW/CredWriteW/CredDeleteW;
+macOS uses the native security utility and login Keychain. Secret material is passed
+through pipes, never command arguments, project files or conversation text. Storage is
+scoped to the canonical Hera home. No plaintext fallback, global Codex change, new
+dependency or provider billing call is introduced.
+
+`hera auth login go` accepts masked input; `--from-env` explicitly imports an existing
+process key. `auth status go` reports presence/source, and `auth logout go` removes
+only that saved entry. `/providers` and `\providers` offer exactly OpenAI and OpenCode
+Go; startup opens this menu until both credentials are present in their OS-backed
+profiles. Noninteractive model sessions also require setup. Credentials being present
+is not a claim of valid entitlement or successful Go worker integration.
+
+Native Windows checks: OS-store save/read, lookup from a fresh Hera process,
+replacement, deletion and absence of plaintext files all passed (exit 0). The actual
+TTY showed the existing OpenAI login and missing Go key, masked test typing, canceled
+without saving, returned to setup and exited cleanly. The real Go key has not been
+entered by the user yet; the original OpenAI credential was preserved. Offline tests
+passed 40/40, including required setup, both command prefixes and masked paste handling.
+Windows/macOS CI now includes native credential persistence checks and exact-package
+reinstallation checks. Results for this source change remain to be observed. No local
+Mac or live Go test was performed.
+
+Native API references: https://learn.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credwritew
+and https://github.com/apple-oss-distributions/Security/blob/main/SecurityTool/macOS/security.1.
+
 ## Single-agent application checkpoint (2026-10-06)
 
 `/apply` now builds a native structured proposal, validates text/path/secret boundaries,

@@ -13,16 +13,36 @@ import {saveConfig,parseEffort,configSchema,projectSchema} from '../config.js';
 import {listMetadata} from '../metadata.js';
 import {safeText,HeraError,errorView} from '../errors.js';
 import {capabilityReport} from '../codex/capabilities.js';
+import {providerStatus,loginOpenAI} from '../providers/accounts.js';
+import {saveGoCredential} from '../providers/go-credentials.js';
 const exec=promisify(execFile);
 type Role='main'|'worker';
 export type SelectionMenu={title:string;options:{value:string;label:string}[];current:string|null;choose:(value:string)=>Promise<void>};
 export class InteractiveSession extends EventEmitter {
   controller:Controller|null=null;busy=false;transcript='';status='Ready';approval='';
   selection:SelectionMenu|null=null;
+  providerSetupRequired=false;providerKeyInput=false;providerLoginText='';private providerAbort:AbortController|null=null;
   constructor(readonly home:string,readonly cwd:string,readonly config:Config,readonly singleAgent:boolean){super();}
   add(text:string){this.transcript=(this.transcript+safeText(text)).slice(-128*1024);this.emit('change');}
   private async models(){const client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config));try{return await client.models();}finally{await client.close();}}
-  cancelSelection(){if(this.busy)return;this.selection=null;this.emit('change');}
+  cancelSelection(){if(this.busy)return;if(this.providerSetupRequired){this.add('\n먼저 OpenAI와 OpenCode Go를 설정하세요. 종료하려면 Ctrl+Q를 누르세요.\n');return;}this.selection=null;this.emit('change');}
+  async initializeProviders(){if(this.busy)return;this.providerSetupRequired=true;this.busy=true;this.status='Checking providers';this.emit('change');try{await this.openProviders(true);this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);this.providerMenu(null,null);}finally{this.busy=false;this.emit('change');}}
+  private async openProviders(startup=false){const status=await providerStatus(this.home,this.cwd,this.config);this.providerSetupRequired=!status.openai.ready||!status.go.credentialStored;if(startup&&!this.providerSetupRequired){this.selection=null;return;}this.providerMenu(status.openai.ready,status.go.credentialStored);}
+  private providerMenu(openai:boolean|null,go:boolean|null){
+    const ko=this.config.language==='ko';this.approval=this.providerSetupRequired?(ko?'두 제공자 설정을 완료해 주세요. Ctrl+Q: 종료':'Complete both providers to continue. Ctrl+Q: quit'):'';this.selection={title:ko?'제공자 설정 · OpenAI / OpenCode Go':'Providers · OpenAI / OpenCode Go',current:null,
+      options:[{value:'openai',label:`OpenAI · ${openai===null?(ko?'확인 실패 · 다시 로그인':'Status unknown · sign in'):openai?(ko?'로그인됨 · 다시 로그인':'Signed in · sign in again'):(ko?'OAuth 로그인 필요':'OAuth login required')}`},{value:'go',label:`OpenCode Go · ${go===null?(ko?'확인 실패 · 키 설정':'Status unknown · configure key'):go?(ko?'키 저장됨 · 변경':'Key stored · replace'):(ko?'API 키 저장 필요':'API key required')}`},{value:'refresh',label:ko?'상태 새로고침':'Refresh status'},...(openai&&go?[{value:'done',label:ko?'설정 완료 · Hera로 돌아가기':'Done · return to Hera'}]:[]),{value:'quit',label:ko?'종료':'Quit'}],choose:async value=>{
+        if(value==='quit'){await this.close();this.emit('quit');return;}
+        if(value==='done'){await this.openProviders(true);return;}
+        if(value==='refresh'){await this.openProviders();return;}
+        await this.newSession();
+        if(value==='go'){this.providerKeyInput=true;return;}
+        this.providerAbort=new AbortController();this.providerLoginText=ko?'브라우저에서 아래 주소를 열어 OpenAI에 로그인하세요.':'Open the following address in your browser to sign in to OpenAI.';
+        try{await loginOpenAI(this.home,this.cwd,this.config,text=>{this.providerLoginText+='\n'+text;this.emit('change');},false,this.providerAbort.signal);}
+        finally{this.providerAbort=null;this.providerLoginText='';await this.openProviders();}
+      }};
+  }
+  cancelProviderKey(){if(this.busy)return;this.providerKeyInput=false;void this.initializeProviders();}
+  async saveProviderKey(key:string){if(this.busy)return;this.providerKeyInput=false;this.busy=true;this.status='Saving credential';this.emit('change');try{await saveGoCredential(this.home,key);this.add('\nOpenCode Go 키를 OS 자격 증명 저장소에 저장했습니다.\n');await this.openProviders();this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);this.providerKeyInput=true;}finally{this.busy=false;this.emit('change');}}
   cancelApply(){if(this.busy)return;this.controller?.cancelApply();this.approval='';this.emit('change');}
   async approveApply(){const review=this.controller?.review;if(this.busy||!review)return;this.busy=true;this.status='Applying';this.emit('change');try{const results=await this.controller!.applyApproved(review.id);this.add('\n'+JSON.stringify(results)+'\n');this.status=this.controller!.phase.phase;}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.approval='';this.emit('change');}}
   async selectOption(value:string){
@@ -49,10 +69,11 @@ export class InteractiveSession extends EventEmitter {
     const ko=this.config.language==='ko';const current=role==='main'?this.config.main.reasoningEffort:this.config.workers.reasoningEffort;
     this.selection={title:`${role==='main'?(ko?'메인':'Main'):(ko?'워커':'Worker')} · ${model} · effort`,current:current??'default',options:[{value:'default',label:ko?'기본값 (모델 기본 설정)':'Default (model setting)'},...selected.supportedReasoningEfforts.map(e=>({value:e.reasoningEffort,label:e.reasoningEffort}))],choose:async value=>this.saveModelChoice(role,model,parseEffort(value),await this.models())};
   }
-  async connect(id?:string){if(this.controller)return;const previous=id?(await listMetadata(this.home,this.cwd)).find(s=>s.heraSessionId===id):undefined;if(id&&!previous)throw new HeraError('SESSION_NOT_FOUND','No matching workspace session.',2);this.controller=await Controller.open(this.home,this.cwd,this.config,this.singleAgent,previous);this.controller.on('event',event=>{if(event.method==='item/agentMessage/delta'){const p=z.object({delta:z.string()}).safeParse(event.params);if(p.success)this.add(p.data.delta);}else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);}else if(event.method==='item/started'){const p=z.object({item:z.object({type:z.string()})}).safeParse(event.params);if(p.success&&['collabAgentToolCall','subAgentActivity'].includes(p.data.item.type)){this.add('\nUnexpected worker activity: safety gate invalidated.\n');void this.controller?.close();}}});this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));}
+  async connect(id?:string){const ready=await providerStatus(this.home,this.cwd,this.config);this.providerSetupRequired=!ready.openai.ready||!ready.go.credentialStored;if(this.providerSetupRequired){this.providerMenu(ready.openai.ready,ready.go.credentialStored);throw new HeraError('PROVIDER_SETUP_REQUIRED','먼저 /providers에서 OpenAI 로그인과 Go 키 저장을 완료하세요.',3);}if(this.controller)return;const previous=id?(await listMetadata(this.home,this.cwd)).find(s=>s.heraSessionId===id):undefined;if(id&&!previous)throw new HeraError('SESSION_NOT_FOUND','No matching workspace session.',2);this.controller=await Controller.open(this.home,this.cwd,this.config,this.singleAgent,previous);this.controller.on('event',event=>{if(event.method==='item/agentMessage/delta'){const p=z.object({delta:z.string()}).safeParse(event.params);if(p.success)this.add(p.data.delta);}else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);}else if(event.method==='item/started'){const p=z.object({item:z.object({type:z.string()})}).safeParse(event.params);if(p.success&&['collabAgentToolCall','subAgentActivity'].includes(p.data.item.type)){this.add('\nUnexpected worker activity: safety gate invalidated.\n');void this.controller?.close();}}});this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));}
   async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text))await this.command('/'+text.trim().slice(1));else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
-    case '/help':this.add('\n/help /mode [gpt_only|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /apply /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter inserts a line; Ctrl+S sends. Escape clears input. Ctrl+C requests turn interruption.\n');break;
+    case '/providers':if(args.length)throw new HeraError('INVALID_COMMAND','/providers에서 선택하세요. 키를 명령 인수에 넣지 마세요.',2);await this.openProviders();break;
+    case '/help':this.add('\n/providers /help /mode [gpt_only|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /apply /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter inserts a line; Ctrl+S sends. Escape clears input. Ctrl+C requests turn interruption.\n');break;
     case '/mode':if(!args[0]){this.add(`\nMode: ${this.config.mode}. external_workers: blocked G10-G15.\n`);break;}if(args[0]!=='gpt_only')throw new HeraError('EXTERNAL_MODE_BLOCKED','external_workers is unavailable; no provider fallback.',4);await this.newSession();this.config.mode='gpt_only';await saveConfig(this.home,this.config);this.add('\nNew GPT-only session selected.\n');break;
     case '/model':case '/effort':{
       if(!args.length){await this.openSettings(command==='/model'?'model':'effort');break;}
@@ -77,7 +98,7 @@ export class InteractiveSession extends EventEmitter {
     case '/quit':await this.close();this.emit('quit');break;
     default:throw new HeraError('UNKNOWN_COMMAND','Unknown slash command. Use /help.',2);
   }}
-  async interrupt(){if(this.controller?.busy){await this.controller.interrupt();this.add('\nInterruption requested; completion unconfirmed.\n');}else this.add('\nNo model turn is active. Use /quit to exit.\n');}
+  async interrupt(){if(this.providerAbort){this.providerAbort.abort();return;}if(this.controller?.busy){await this.controller.interrupt();this.add('\nInterruption requested; completion unconfirmed.\n');}else this.add('\nNo model turn is active. Use /quit to exit.\n');}
   private async newSession(){if(this.controller&&!await this.controller.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Cannot switch sessions until prior execution is reconciled.',5,false);this.controller=null;}
-  async close(){if(this.controller&&!await this.controller.close())process.exitCode=5;}
+  async close(){this.providerAbort?.abort();this.providerKeyInput=false;if(this.controller&&!await this.controller.close())process.exitCode=5;}
 }

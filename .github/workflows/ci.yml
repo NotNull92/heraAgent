@@ -39,6 +39,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
           npm run build
           if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+          node scripts/credentials-smoke.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Native credential store smoke failed' }
           npm run native:smoke
           if ($LASTEXITCODE -ne 0) { throw 'Native initialization failed' }
       - name: Build the single Windows artifact
