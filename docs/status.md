@@ -26,6 +26,14 @@ Windows/macOS CI now includes native credential persistence checks and exact-pac
 reinstallation checks. Results for this source change remain to be observed. No local
 Mac or live Go test was performed.
 
+Initial provider CI run 37443536313 passed macOS native Keychain checks and all
+40 Windows offline tests, but the Windows credential helper exceeded its 15-second
+limit. The OS helper now has a bounded 60-second timeout, and the smoke records
+initial read duration without credential contents. The follow-up CI result must
+be checked independently; the failed initial run is not counted as a pass.
+An additional Windows TTY check passed hidden CLI input, fresh-process lookup and
+cleanup using a separate generated test profile.
+
 Native API references: https://learn.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credwritew
 and https://github.com/apple-oss-distributions/Security/blob/main/SecurityTool/macOS/security.1.
 

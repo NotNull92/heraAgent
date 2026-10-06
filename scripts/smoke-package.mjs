@@ -11,7 +11,7 @@ const root=await mkdtemp(join(tmpdir(),'hera package 한글 '));const prefix=joi
 npm(['install','--global','--prefix',prefix,'--ignore-scripts',tgz],root);
 const packageRoot=process.platform==='win32'?join(prefix,'node_modules/hera-agent'):join(prefix,'lib/node_modules/hera-agent');const bin=join(packageRoot,'bin/hera.mjs');
 const env={...process.env,HERA_HOME:home,NO_COLOR:'1'};for(const key of Object.keys(env))if(/TOKEN|SECRET|PASSWORD|API_KEY|^CODEX_HOME$|^GH_|^GITHUB_/i.test(key))delete env[key];
-function run(args,expected=0){const result=spawnSync(process.execPath,[bin,...args],{cwd:root,env,encoding:'utf8',windowsHide:true,timeout:30000,maxBuffer:4*1024*1024});if(result.status!==expected)throw new Error(`Installed command ${args[0]??'TUI'} exit ${result.status}, expected ${expected}: ${result.stderr}`);return result.stdout;}
+function run(args,expected=0){const result=spawnSync(process.execPath,[bin,...args],{cwd:root,env,encoding:'utf8',windowsHide:true,timeout:150000,maxBuffer:4*1024*1024});if(result.status!==expected)throw new Error(`Installed command ${args[0]??'TUI'} exit ${result.status}, expected ${expected}: ${result.stderr}`);return result.stdout;}
 const version=run(['--version']);if(!version.includes('0.1.0-alpha.1'))throw new Error('Wrong installed version');run(['init','--language','en']);const before=await readFile(join(home,'config.json'),'utf8');const doctor=JSON.parse(run(['doctor','--json']));if(doctor.native!=='initialized'||doctor.account.ready!==false)throw new Error('Installed native smoke failed');run([],2);
 try{
   env.HERA_OPENCODE_GO_API_KEY='fixture-'+randomUUID();run(['auth','login','go','--from-env']);delete env.HERA_OPENCODE_GO_API_KEY;

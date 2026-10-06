@@ -12,7 +12,7 @@ export function validateGoKey(key:string){if(!/^[\x21-\x7e]{1,2048}$/.test(key))
 async function target(home:string){const canonical=await realpath(home);await rejectRepositoryHome(canonical);return 'hera-agent/opencode-go/'+createHash('sha256').update(process.platform==='win32'?canonical.toLowerCase():canonical).digest('hex');}
 function run(home:string,file:string,args:string[],input=''):Promise<{code:number;stdout:string}>{
   return new Promise((resolve,reject)=>{
-    const child=execFile(file,args,{cwd:home,env:childEnvironment(home,home),encoding:'utf8',windowsHide:true,timeout:15000,maxBuffer:16384},(error,stdout)=>{
+    const child=execFile(file,args,{cwd:home,env:childEnvironment(home,home),encoding:'utf8',windowsHide:true,timeout:60000,maxBuffer:16384},(error,stdout)=>{
       if(error&&(typeof error.code!=='number'||error.killed)){reject(new HeraError('CREDENTIAL_STORE_UNAVAILABLE','OS credential storage is unavailable or timed out; no plaintext fallback.',3));return;}
       resolve({code:error?.code as number??0,stdout});
     });
