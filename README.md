@@ -5,8 +5,10 @@ Repository: `heraAgent`. Package: `hera-agent`. Command: `hera`.
 
 Development prerelease. Native protocol initialization, catalog discovery, official
 isolated login, read-only sessions, resume, Korean/English Ink UI and offline checks
-are implemented. **Live GPT collaboration, apply and Go workers are not verified and
-remain gated.** A catalog entry is not proof of model entitlement. No provider fallback.
+are implemented. Single-agent `/apply` now reviews changes and tests before a native
+workspace-write transition; its Windows fixture passed. **Product GPT collaboration
+and Go workers remain gated.** A catalog entry is not proof of model entitlement.
+No provider fallback. macOS live/manual checks have not been performed.
 
 See [status](docs/status.md), [compatibility](docs/compatibility.md) and the full
 [specification](docs/implementation-spec.md). Windows x64 and macOS Apple Silicon
@@ -33,9 +35,21 @@ node bin/hera.mjs --single-agent
 
 Enter inserts a line, Ctrl+S sends, Escape clears, Ctrl+C requests interruption.
 Use `/help` for commands. `run --single-agent --prompt-file <file>` supports non-TTY
-and multiline input. Paste never executes a slash action. `/apply` stays blocked
-until native write/spawn negative tests pass. A Windows sandbox notConfigured result
+and multiline input. Paste never executes a slash action. A Windows sandbox notConfigured result
 requires official setup; unrestricted fallback is unavailable.
+
+After read-only analysis, `/apply` prepares a proposal without writing. Page through
+the complete before/after text, test commands and risks with Down/Enter; Up goes back.
+Only `a` on the final page approves workspace writes and the displayed tests. Escape
+cancels. This grants workspace-level native permissions, not a per-file OS lock.
+All worker paths, external tools and network remain disabled. Hera rechecks the
+baseline, resumes the same thread in a fresh runtime, compares applied contents and
+checks for unlisted file changes before running the tests. Tests may create build
+artifacts inside the approved workspace. Unsupported command-display formats produce
+an unknown test result rather than a pass. Use `/resume <ID>` to continue read-only
+after completion. Failed or interrupted writes are never automatically replayed.
+The initial review supports bounded UTF-8 replacements/new files; binary changes,
+deletions, symlink targets and credential/configuration paths require separate work.
 
 Inside the TUI, type `/model`, `/effort` or `/workers` and press Enter to open a
 selection menu. Use Up/Down and Enter to choose, or Escape to cancel without saving.

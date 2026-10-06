@@ -10,9 +10,11 @@ export function validateModelChoices(config:Config,models:ModelView[]){
     if(effort!==null&&!selected.supportedReasoningEfforts.some(e=>e.reasoningEffort===effort))throw new HeraError('UNSUPPORTED_EFFORT',`Selected ${role} model does not advertise effort ${effort}.`,2);
   }
 }
-export function nativeSettings(config:Config):Record<string,JsonValue> {
+export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only'):Record<string,JsonValue> {
   return {
-    model_provider:'openai',sandbox_mode:'read-only',approval_policy:'never',
+    model_provider:'openai',sandbox_mode:mode,approval_policy:'never',
+    'sandbox_workspace_write.exclude_tmpdir_env_var':true,'sandbox_workspace_write.exclude_slash_tmp':true,
+    'sandbox_workspace_write.network_access':false,'sandbox_workspace_write.writable_roots':[],
     'agents.enabled':false,'features.multi_agent':false,'features.multi_agent_v2':false,
     'agents.max_concurrent_threads_per_session':config.workers.maxConcurrent,
     ...(config.workers.gptModel?{'agents.default_subagent_model':config.workers.gptModel}:{}),
@@ -30,7 +32,7 @@ export function nativeSettings(config:Config):Record<string,JsonValue> {
     'analytics.enabled':false,check_for_update_on_startup:false
   };
 }
-export function startupArgs(config:Config){return Object.entries(nativeSettings(config)).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]);}
+export function startupArgs(config:Config,mode:'read-only'|'workspace-write'='read-only'){return Object.entries(nativeSettings(config,mode)).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]);}
 export function requireMode(config:Config,singleAgent:boolean){
   if(config.mode==='external_workers')throw new HeraError('EXTERNAL_MODE_BLOCKED','Go native routing and collaboration gates G10-G15 have not passed; no fallback.',4);
   if(!singleAgent)throw new HeraError('COLLABORATION_UNVERIFIED','G02-G04 are unverified. Explicitly select --single-agent for a read-only session.',4);

@@ -1,5 +1,47 @@
 # Implementation status
 
+## Single-agent application checkpoint (2026-10-06)
+
+`/apply` now builds a native structured proposal, validates text/path/secret boundaries,
+and displays all before/after contents, test commands and risks in a paginated review.
+Only an explicit approval on the final page grants workspace-write. Escape cancels;
+Enter and paste cannot approve. The approved baseline and proposal hash are rechecked.
+Hera closes its old server and resumes the same thread with worker paths disabled,
+network disabled, no additional writable roots, and no shared-temp write allowance.
+It checks exact file contents and unlisted-file changes before test execution, records
+native command exit codes, and never retries uncertain writes. After completion,
+continue via an explicit read-only resume. This is a workspace sandbox, not a per-file
+OS lock. Binary/deletion/credential-path proposals remain unsupported.
+
+Actual native Windows result: `node scripts/live-product-apply.mjs --live` exited 0.
+Four main-model turns inspected a disposable fixture, prepared the review without
+writing, rejected a stale approval ID, applied the exact approved sum correction,
+and ran `node check.cjs` with native exit 0 on the same thread. Worker activity was
+not permitted. The first attempt did execute the test successfully but the verifier
+did not recognize the native shell display wrapper; it correctly withheld a pass.
+The second attempt stopped without changing the file because the model selected
+.NET file APIs unavailable under PowerShell ConstrainedLanguage. Native-tool guidance
+was corrected and the fresh third fixture passed. No uncertain operation was replayed.
+
+Offline tests cover review paging, paste/Enter rejection, unsafe paths/aliases/binary
+content, baseline edits, stale approval, wrong resume sandbox, and native test-command
+matching. Final local typecheck/build and 37 offline tests passed. One concurrent
+native-resume/offline run hit four test timeouts and an unconfirmed immediate server
+shutdown; the lock was retained. A separate offline rerun passed 37/37. A subsequent
+no-inference native write-profile check confirmed approval=never, no extra writable
+roots and graceful shutdown (exit 0). The retained disposable-fixture lock was not
+silently cleared. Full worker phase transitions are still blocked: arbitrary saved child trees,
+fork/role model overrides and remaining negative cases need integration and verification.
+The existing worker probes are partial evidence, not blanket G02-G04/G14 acceptance.
+
+Prior checkpoint `cef98ba6e35c2986bd4bb17ed46bfeca561416aa` was verified on private remote
+main. CI run `37436407759` passed all four Windows/macOS offline and exact-package
+installation jobs. This application checkpoint requires its own CI result.
+Go live tests remain deferred by the user. Official Go documentation checked again:
+console login obtains an API key; no external-client OAuth flow is documented at
+https://opencode.ai/docs/go/#how-it-works. Credentials remain outside source and artifacts.
+Physical Windows IME/herdr and macOS manual/live checks remain NOT_RUN.
+
 ## Current checkpoint (2026-10-06, native Windows live follow-up)
 
 Historical sections below preserve the evidence at each earlier milestone.

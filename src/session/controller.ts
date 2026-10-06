@@ -1,6 +1,8 @@
 import {EventEmitter} from 'node:events';
 import {randomUUID,createHash} from 'node:crypto';
 import {z} from 'zod';
+import {readFile} from 'node:fs/promises';
+import type {JsonValue} from '../codex/generated/serde_json/JsonValue.js';
 import type {Config} from '../config.js';
 import {CodexClient} from '../codex/client.js';
 import {nativeSettings,startupArgs,requireMode,validateModelChoices} from '../codex/config-compiler.js';
@@ -8,31 +10,39 @@ import type {RpcEvent,RpcRequest} from '../codex/transport.js';
 import {HeraError,safeText} from '../errors.js';
 import {saveMetadata,type Metadata} from '../metadata.js';
 import {acquireWorkspace} from './workspace-lock.js';
-import {baseline,PhasePolicy} from './phase-policy.js';
+import {baseline,PhasePolicy,validateProposalPath} from './phase-policy.js';
+import {proposalSchema,reviewProposal,matchesTestCommand,type ApplyReview} from './apply-review.js';
 const completed=z.object({threadId:z.string(),turn:z.object({id:z.string(),status:z.enum(['completed','interrupted','failed','inProgress']),error:z.unknown().optional()})});
 export class Controller extends EventEmitter {
   readonly phase=new PhasePolicy();private lock:Awaited<ReturnType<typeof acquireWorkspace>>|null=null;private baselineHash='';private closeResult:Promise<boolean>|null=null;private commands=new Set<string>();
   metadata:Metadata|null=null;model='';provider='';private active=false;private early=new Map<string,z.infer<typeof completed>>();private waiter:((e:z.infer<typeof completed>)=>void)|null=null;private failure:((e:Error)=>void)|null=null;private fault:HeraError|null=null;private turnId:string|null=null;
-  constructor(readonly client:CodexClient,readonly home:string,readonly cwd:string,readonly config:Config){super();client.on('event',(e:RpcEvent)=>this.event(e));client.on('request',(r:RpcRequest)=>this.deny(r));client.on('fault',(e:HeraError)=>{this.fault=e;this.failure?.(e);this.emit('fault',e);});}
+  review:ApplyReview|null=null;
+  private applying=false;private applyCanceled=false;
+  constructor(public client:CodexClient,readonly home:string,readonly cwd:string,readonly config:Config){super();this.bindClient();}
+  private bindClient(){this.client.on('event',(e:RpcEvent)=>this.event(e));this.client.on('request',(r:RpcRequest)=>this.deny(r));this.client.on('fault',(e:HeraError)=>{this.fault=e;this.failure?.(e);this.emit('fault',e);});}
   static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){requireMode(config,singleAgent);const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;try{client=await CodexClient.connect(home,cwd,startupArgs(config));const controller=new Controller(client,home,cwd,config);controller.lock=lock;await controller.start(previous);return controller;}catch(e){if(!client||await client.close())await lock.release();throw e;}}
-  get busy(){return this.active;}
+  get busy(){return this.active||this.applying;}
   private async start(previous?:Metadata){
     const account=await this.client.account();if(!account.ready)throw new HeraError('BLOCKED_NO_CREDENTIALS','Use hera auth login openai in the isolated Hera home.',3);
+    await this.verifyRuntime();
+    validateModelChoices(this.config,await this.client.models());
+    const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:nativeSettings(this.config)};
+    if(previous&&previous.workspaceRealPath!==this.cwd)throw new HeraError('WORKSPACE_MISMATCH','Session belongs to a different workspace.',2);
+    if(previous)await this.assertThreadIdle(previous.codexThreadId);
+    const started=previous?await this.client.resume({...params,threadId:previous.codexThreadId}):await this.client.start(params);
+    if(started.model!==this.config.main.model||started.modelProvider!=='openai'||started.sandbox.type!=='readOnly'||started.sandbox.networkAccess!==false||started.approvalPolicy!=='never')throw new HeraError('ROUTING_OR_POLICY_DRIFT','Effective model/provider/sandbox differs from the requested safe session.',4);
+    this.model=started.model;this.provider=started.modelProvider;this.baselineHash=await baseline(this.cwd);this.phase.analyze();
+    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:'gpt_only',workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
+  }
+  private async verifyRuntime(){
     const effective=z.object({config:z.record(z.string(),z.unknown())}).parse(await this.client.rpc.request('config/read',{cwd:this.cwd,includeLayers:true})).config;
     const get=(key:string):unknown=>key.split('.').reduce<unknown>((value,part)=>value&&typeof value==='object'&&part in value?Reflect.get(value,part):undefined,effective);
     for(const key of ['agents.enabled','features.multi_agent','features.multi_agent_v2','features.apps','features.plugins','features.hooks','features.browser_use','features.computer_use','features.request_permissions_tool'])if(get(key)!==false)throw new HeraError('POLICY_NOT_ENFORCED',`Effective ${key} must be false.`,4);
     for(const key of ['mcp_servers','hooks']){const value=get(key);if(value&&typeof value==='object'&&Object.keys(value).length)throw new HeraError('EXTERNAL_TOOLS_BLOCKED',`Configured ${key} requires a separately verified read-only profile.`,4);}
     if(get('notify')||get('shell_environment_policy.inherit')!=='core')throw new HeraError('UNSAFE_RUNTIME_CONFIG','Startup hooks or shell policy differ from the safe profile.',4);
     if(process.platform==='win32'){const readiness=await this.client.windowsSandboxReadiness();if(readiness.status!=='ready')throw new HeraError('WINDOWS_SANDBOX_NOT_READY','Run hera sandbox setup in the isolated Hera profile; no unrestricted fallback.',4);}
-    validateModelChoices(this.config,await this.client.models());
-    const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:nativeSettings(this.config)};
-    if(previous&&previous.workspaceRealPath!==this.cwd)throw new HeraError('WORKSPACE_MISMATCH','Session belongs to a different workspace.',2);
-    if(previous)await this.client.read(previous.codexThreadId);
-    const started=previous?await this.client.resume({...params,threadId:previous.codexThreadId}):await this.client.start(params);
-    if(started.model!==this.config.main.model||started.modelProvider!=='openai'||started.sandbox.type!=='readOnly')throw new HeraError('ROUTING_OR_POLICY_DRIFT','Effective model/provider/sandbox differs from the requested safe session.',4);
-    this.model=started.model;this.provider=started.modelProvider;this.baselineHash=await baseline(this.cwd);this.phase.analyze();
-    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:'gpt_only',workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
   }
+  private async assertThreadIdle(id:string){const thread=await this.client.read(id);const turns=z.array(z.object({status:z.string(),items:z.array(z.object({type:z.string()}).passthrough())})).parse(thread.turns??[]);if(turns.some(t=>t.status==='inProgress')||thread.status.type==='active')throw new HeraError('NOT_QUIESCENT','Native thread is still active.',4);if(turns.some(t=>t.items.some(i=>['subAgentActivity','collabAgentToolCall'].includes(i.type))))throw new HeraError('COLLABORATION_UNVERIFIED','Worker histories require child reconciliation before product resume/apply.',4);return thread;}
   private event(event:RpcEvent){
     if(event.method==='item/started'||event.method==='item/completed'){
       const item=z.object({item:z.object({id:z.string(),type:z.string()})}).safeParse(event.params);
@@ -42,17 +52,24 @@ export class Controller extends EventEmitter {
     this.emit('event',event);
   }
   private deny(request:RpcRequest){
-    this.emit('approval',{...request,decision:'denied: read-only session'});
+    this.emit('approval',{...request,decision:'denied: permission expansion is unavailable'});
     if(request.method==='item/commandExecution/requestApproval'||request.method==='item/fileChange/requestApproval'){this.client.rpc.respond(request.id,{decision:'decline'});return;}
     this.client.rpc.fail(new HeraError('UNSUPPORTED_SERVER_REQUEST',`Unsupported interactive request ${safeText(request.method)}; disconnected without granting it.`,4,false));void this.client.close();
   }
-  private async persist(){if(this.metadata){this.metadata.updatedAt=new Date().toISOString();await saveMetadata(this.home,this.metadata);}}
-  async run(prompt:string){
+  private async persist(){if(this.metadata){this.metadata.phase=this.phase.phase;this.metadata.updatedAt=new Date().toISOString();await saveMetadata(this.home,this.metadata);}}
+  async run(prompt:string,outputSchema?:JsonValue){
+    if(this.applying)throw new HeraError('TURN_ACTIVE','Application or verification is active.',5);
+    return this.execute(prompt,outputSchema);
+  }
+  private async execute(prompt:string,outputSchema?:JsonValue){
+    if(this.closeResult||this.applyCanceled)throw new HeraError('INTERRUPTED','Session shutdown or application cancellation requested.',130);
     if(this.active||!this.metadata)throw new HeraError('TURN_ACTIVE','Wait for the current turn.',5);
     if(!prompt.trim()||Buffer.byteLength(prompt)>1024*1024)throw new HeraError('INVALID_PROMPT','Prompt must be nonempty and at most 1 MiB.',2);
     if(this.fault)throw this.fault;
+    if(this.phase.phase==='READY_TO_APPLY')this.cancelApply();
+    if(['COMPLETE','NEEDS_FIX'].includes(this.phase.phase))throw new HeraError('RESUME_REQUIRED','Resume this session read-only before another task.',4);
     this.active=true;this.metadata.status='running';
-    try{await this.persist();const turn=await this.client.turn({threadId:this.metadata.codexThreadId,input:[{type:'text',text:prompt,text_elements:[]}],effort:this.config.main.reasoningEffort});this.turnId=turn.id;this.metadata.lastKnownTurnId=turn.id;await this.persist();
+    try{await this.persist();const turn=await this.client.turn({threadId:this.metadata.codexThreadId,input:[{type:'text',text:prompt,text_elements:[]}],effort:this.config.main.reasoningEffort,...(outputSchema?{outputSchema}:{})});this.turnId=turn.id;this.metadata.lastKnownTurnId=turn.id;await this.persist();
       const done=await new Promise<z.infer<typeof completed>>((resolve,reject)=>{this.waiter=resolve;this.failure=reject;if(this.fault){reject(this.fault);return;}const early=this.early.get(turn.id);if(early){this.early.delete(turn.id);resolve(early);}});
       this.metadata.status=done.turn.status==='completed'?'complete':done.turn.status==='interrupted'?'interrupted':'unknown_outcome';await this.persist();
       if(done.turn.status==='interrupted')await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
@@ -66,14 +83,62 @@ export class Controller extends EventEmitter {
         }
       }
       if(this.commands.size||this.client.rpc.requestsPending)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native turn ended while commands or approval requests remain unresolved.',5,false);
-      if(await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during read-only analysis; do not apply proposals.',4,false);
+      if(this.phase.phase==='ANALYZE_READ_ONLY'&&await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during read-only analysis; do not apply proposals.',4,false);
       if(done.turn.status!=='completed')throw new HeraError(done.turn.status==='interrupted'?'INTERRUPTED':'TURN_FAILED','Native turn did not complete successfully.',done.turn.status==='interrupted'?130:5,done.turn.status==='interrupted');
       return {sessionId:this.metadata.heraSessionId,threadId:this.metadata.codexThreadId,turnId:turn.id,status:'completed',model:this.model,provider:this.provider};
     }catch(e){if(this.metadata.status==='running'||e instanceof HeraError&&!e.outcomeKnown)this.metadata.status='unknown_outcome';await this.persist();throw e;}
     finally{this.waiter=null;this.failure=null;this.active=false;this.turnId=null;}
   }
-  async interrupt(){if(this.turnId&&this.metadata){await this.client.interrupt(this.metadata.codexThreadId,this.turnId);this.emit('notice','Interrupt requested; waiting for native completion.');}else if(this.active)throw new HeraError('INTERRUPTED_UNCONFIRMED','Turn acknowledgment is pending; do not replay.',5,false);}
-  async requestApply(){if(this.active)throw new HeraError('TURN_ACTIVE','Wait for the active turn before reviewing application.',4);this.phase.quiesce({workers:0,commands:this.commands.size,approvals:this.client.rpc.requestsPending,turnActive:this.active,baselineMatches:await baseline(this.cwd)===this.baselineHash});this.phase.apply(false,{readOnly:false,spawnDisabled:false,resumePolicy:false});}
+  async interrupt(){if(this.applying)this.applyCanceled=true;if(this.turnId&&this.metadata){await this.client.interrupt(this.metadata.codexThreadId,this.turnId);this.emit('notice','Interrupt requested; waiting for native completion.');}else if(this.active)throw new HeraError('INTERRUPTED_UNCONFIRMED','Turn acknowledgment is pending; do not replay.',5,false);}
+  cancelApply(){this.review=null;this.phase.cancelReview();}
+  async requestApply(){
+    if(this.active||!this.metadata||this.phase.phase!=='ANALYZE_READ_ONLY')throw new HeraError('APPLY_GATE_BLOCKED','Finish read-only analysis before requesting a review.',4);
+    await this.assertThreadIdle(this.metadata.codexThreadId);
+    const result=await this.run('Prepare the concrete change proposal from our analysis for user review. Return complete UTF-8 replacement contents for each file, exact test commands for this operating system, and risks. No deletions, binaries, secrets or permission changes. Do not write or execute tests. If no supported proposal exists, explain the blocker instead of inventing a change.',z.toJSONSchema(proposalSchema) as JsonValue);
+    const history=await this.client.read(result.threadId);const turn=z.array(z.object({id:z.string(),items:z.array(z.unknown())})).parse(history.turns).find(t=>t.id===result.turnId);
+    const messages=(turn?.items??[]).map(i=>z.object({type:z.literal('agentMessage'),text:z.string(),phase:z.string().nullable().optional()}).safeParse(i)).filter(p=>p.success).map(p=>p.data!);
+    const final=messages.findLast(m=>m.phase==='final_answer')??messages.at(-1);if(!final)throw new HeraError('MISSING_PROPOSAL','No native final proposal was recorded.',4);
+    const review=await reviewProposal(this.cwd,JSON.parse(final.text),this.baselineHash);
+    await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
+    this.phase.quiesce({workers:0,commands:this.commands.size,approvals:this.client.rpc.requestsPending,turnActive:this.active,baselineMatches:await baseline(this.cwd)===this.baselineHash});
+    this.review=review;await this.persist();return review;
+  }
+  async applyApproved(id:string){
+    const review=this.review;if(!review||review.id!==id||this.busy||this.closeResult||!this.metadata||this.phase.phase!=='READY_TO_APPLY')throw new HeraError('STALE_APPROVAL','No matching current review.',4);
+    this.applying=true;
+    try{
+    if(await baseline(this.cwd)!==review.baseline){this.cancelApply();throw new HeraError('BASELINE_CHANGED','Workspace changed after review; generate a new proposal.',4);}
+    if((await reviewProposal(this.cwd,review.proposal,review.baseline)).id!==id)throw new HeraError('STALE_APPROVAL','Proposal changed after review.',4);
+    await this.assertThreadIdle(this.metadata.codexThreadId);await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
+    this.review=null;this.metadata.status='running';await this.persist();
+    try{
+      const paths=new Set(await Promise.all(review.proposal.changes.map(async c=>(await validateProposalPath(this.cwd,c.path)).toLowerCase())));const otherFiles=await baseline(this.cwd,paths);
+      if(!await this.client.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Old native runtime did not close cleanly.',5,false);
+      this.client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config,'workspace-write'));
+      if(this.closeResult||this.applyCanceled){await this.client.close();throw new HeraError('INTERRUPTED','Application canceled during policy transition.',130);}
+      this.bindClient();await this.verifyRuntime();
+      const resumed=await this.client.resume({threadId:this.metadata.codexThreadId,model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,sandbox:'workspace-write',approvalPolicy:'never',config:nativeSettings(this.config,'workspace-write')});
+      const sandbox=z.object({type:z.literal('workspaceWrite'),networkAccess:z.literal(false),excludeTmpdirEnvVar:z.literal(true),excludeSlashTmp:z.literal(true),writableRoots:z.array(z.string()).max(0)}).safeParse(resumed.sandbox);
+      if(!sandbox.success||resumed.model!==this.model||resumed.modelProvider!=='openai'||resumed.approvalPolicy!=='never')throw new HeraError('POLICY_NOT_ENFORCED','Apply resume did not preserve the approved model and workspace sandbox.',4);
+      if(await baseline(this.cwd)!==review.baseline)throw new HeraError('BASELINE_CHANGED','Workspace changed during native policy transition.',4);
+      this.phase.apply(true,{readOnly:true,spawnDisabled:true,resumePolicy:true});
+      await this.execute('The user approved these exact text replacements. Apply ONLY the listed file contents through native tools. Do not run tests yet, spawn workers, delete files, expand permissions, or change any other files. Stop on any mismatch. Windows sandbox PowerShell uses ConstrainedLanguage: prefer native apply_patch or Get-Content/Set-Content cmdlets; static .NET file methods are unavailable. Preserve the exact reviewed encoding and line endings.\n'+JSON.stringify(review.proposal.changes));
+      for(const change of review.proposal.changes){const actual=await readFile(await validateProposalPath(this.cwd,change.path),'utf8');if(actual!==change.content)throw new HeraError('APPLY_MISMATCH','Applied file content differs from the reviewed proposal; no automatic retry.',4);}
+      if(await baseline(this.cwd,paths)!==otherFiles)throw new HeraError('APPLY_SCOPE_CHANGED','Unlisted files changed during apply; preserve changes for review.',4);
+      this.phase.verify();await this.persist();const results:{command:string;exitCode:number|null}[]=[];
+      for(const test of review.proposal.tests){
+        const run=await this.execute(`Run this one approved test command exactly, without wrappers, extra commands or file edits. Report its actual result; do not fix failures.\n${test.command}`);
+        const history=await this.client.read(run.threadId);const turn=z.array(z.object({id:z.string(),items:z.array(z.unknown())})).parse(history.turns).find(t=>t.id===run.turnId);
+        const commands=(turn?.items??[]).map(i=>z.object({type:z.literal('commandExecution'),command:z.string(),exitCode:z.number().nullable()}).safeParse(i)).filter(p=>p.success).map(p=>p.data!);
+        const actual=commands.find(c=>matchesTestCommand(c.command,test.command));results.push({command:test.command,exitCode:commands.some(c=>c.exitCode!==0)?null:actual?.exitCode??null});
+        this.emit('notice',JSON.stringify({approvedTest:test.command,observedCommands:commands}));
+        if(!actual||actual.exitCode!==0||commands.some(c=>c.exitCode!==0))break;
+      }
+      await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
+      this.phase.complete(results.length===review.proposal.tests.length&&results.every(r=>r.exitCode===0)?0:null);this.metadata.status='complete';await this.persist();return results;
+    }catch(e){this.phase.phase='NEEDS_FIX';this.metadata.status='unknown_outcome';await this.persist();throw e;}
+    }finally{this.applying=false;}
+  }
   close():Promise<boolean>{if(!this.closeResult)this.closeResult=this.shutdown();return this.closeResult;}
-  private async shutdown(){const uncertain=this.active||this.commands.size>0||this.fault!==null||this.metadata?.status==='unknown_outcome';if(this.active){try{await this.interrupt();}catch{}if(this.metadata)this.metadata.status='unknown_outcome';}const graceful=await this.client.close();await this.persist();if(graceful&&!uncertain)await this.lock?.release();return graceful&&!uncertain;}
+  private async shutdown(){const uncertain=this.busy||this.commands.size>0||this.fault!==null||this.metadata?.status==='unknown_outcome';if(this.busy){try{await this.interrupt();}catch{}if(this.metadata)this.metadata.status='unknown_outcome';}const graceful=await this.client.close();await this.persist();if(graceful&&!uncertain)await this.lock?.release();return graceful&&!uncertain;}
 }
