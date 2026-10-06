@@ -134,3 +134,12 @@ controller (including headless), tracks unfinished commands, retains unknown out
 preserves repeated shutdown results and cleans up interrupted official login.
 An opt-in bounded two-turn read-only/resume fixture is available via test:live -- --live;
 it has not run against a model. It does not claim worker/apply or external acceptance.
+
+Final local regression pass: native Windows `npm ci`, typecheck, build, native:smoke
+exit 0; latest offline suite 25 tests exit 0. Source/history scanner passes. Production
+npm audit: zero findings; 52 production/platform lock entries have integrity and
+MIT, Apache-2.0, ISC or (MIT OR CC0-1.0) licenses. No license grant for Hera.
+Additional tests cover fake-GitHub wrong-origin rejection, enclosing-repository refusal,
+tracked auth-file detection, shared-controller worker drift, repeated uncertain shutdown
+and preserving an unrelated test-owned process. These are offline tests, not live gates.
+Ctrl+Q is an explicit TUI exit/owned cleanup action, distinct from Ctrl+C interruption.

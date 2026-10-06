@@ -8,6 +8,7 @@ permissions:
   contents: read
 jobs:
   offline:
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +65,7 @@ jobs:
             scripts/smoke-package.mjs
             scripts/package-utils.mjs
   installed-package:
+    timeout-minutes: 15
     needs: offline
     strategy:
       fail-fast: false
