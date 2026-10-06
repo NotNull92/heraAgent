@@ -65,3 +65,15 @@ Doctor on the actual Hera profile reported accountReady=false. Model catalog is 
 entitlement. Live worker messages, concurrency and resume: BLOCKED_NO_CREDENTIALS.
 This does not satisfy M3 live acceptance. M2 upload receipt:
 c589315aae192e374596098d07dcb62c91eca36b.
+
+## M4 (safety implementation; live negative gates blocked)
+
+Atomic canonical-workspace ownership locks, conservative stale-lock handling, baseline
+hashing, traversal/junction proposal validation, task contracts and fail-closed phase
+transitions added. No apply route is enabled without observed native gate evidence.
+Effective native multi-agent V1/V2 settings, external-tool configuration and Windows
+sandbox readiness are checked before a model turn. Schema content hash is checked.
+Interrupted/unknown outcomes retain workspace ownership for explicit recovery.
+M3 verified upload: e842bdd21805a8b76253c74b2daf49e6c52afe19.
+Windows typecheck, 11 offline tests, build and native smoke exit 0. Unit safety
+passes are not live T15-T18 evidence. Live negative gates remain BLOCKED_NO_CREDENTIALS.

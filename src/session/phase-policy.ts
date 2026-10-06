@@ -1,0 +1,23 @@
+import {createHash} from 'node:crypto';
+import {readdir,readFile,lstat,realpath} from 'node:fs/promises';
+import {join,relative,isAbsolute,resolve} from 'node:path';
+import {z} from 'zod';
+import {HeraError} from '../errors.js';
+export type Phase='IDLE'|'ANALYZE_READ_ONLY'|'QUIESCING'|'READY_TO_APPLY'|'APPLY_SINGLE_WRITER'|'VERIFY_SINGLE_WRITER'|'COMPLETE'|'NEEDS_FIX';
+export class PhasePolicy {
+  phase:Phase='IDLE';
+  analyze(){if(!['IDLE','COMPLETE','NEEDS_FIX'].includes(this.phase))throw new HeraError('PHASE_BUSY','Current phase is not quiescent.',4);this.phase='ANALYZE_READ_ONLY';}
+  quiesce(state:{workers:number;commands:number;approvals:number;turnActive:boolean;baselineMatches:boolean}){if(this.phase!=='ANALYZE_READ_ONLY')throw new HeraError('INVALID_PHASE','Analysis must precede apply.',4);this.phase='QUIESCING';if(state.workers||state.commands||state.approvals||state.turnActive||!state.baselineMatches){this.phase='NEEDS_FIX';throw new HeraError('NOT_QUIESCENT','Workers, commands, approvals or baseline prevent applying.',4);}this.phase='READY_TO_APPLY';}
+  apply(approved:boolean,gates:{readOnly:boolean;spawnDisabled:boolean;resumePolicy:boolean}){if(this.phase!=='READY_TO_APPLY'||!approved||!gates.readOnly||!gates.spawnDisabled||!gates.resumePolicy)throw new HeraError('APPLY_GATE_BLOCKED','Apply requires approval and verified G02/G03/G14 enforcement.',4);this.phase='APPLY_SINGLE_WRITER';}
+  verify(){if(this.phase!=='APPLY_SINGLE_WRITER')throw new HeraError('INVALID_PHASE','Only the main writer may verify.',4);this.phase='VERIFY_SINGLE_WRITER';}
+  complete(exitCode:number|null){if(this.phase!=='VERIFY_SINGLE_WRITER')throw new HeraError('INVALID_PHASE','Actual verification must precede completion.',4);this.phase=exitCode===0?'COMPLETE':'NEEDS_FIX';}
+}
+export async function baseline(cwd:string):Promise<string>{
+  const hash=createHash('sha256');let bytes=0;let count=0;
+  // ponytail: bounded whole-workspace scan; use scoped native file references for large workspaces.
+  async function walk(dir:string){for(const entry of (await readdir(dir,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){if(['.git','node_modules','.hera'].includes(entry.name))continue;const file=join(dir,entry.name);const stat=await lstat(file);hash.update(relative(cwd,file));if(stat.isSymbolicLink()){hash.update('symlink');continue;}if(stat.isDirectory())await walk(file);else if(stat.isFile()){bytes+=stat.size;if(++count>10000||bytes>128*1024*1024)throw new HeraError('BASELINE_LIMIT','Workspace baseline exceeds 10,000 files / 128 MiB; select a smaller workspace.',4);hash.update(await readFile(file));}}}await walk(cwd);return hash.digest('hex');
+}
+export async function validateProposalPath(cwd:string,proposed:string){if(isAbsolute(proposed)||proposed.split(/[\\/]/).some(p=>p==='..'||p==='.git'||p==='.codex'||p==='.hera')||proposed.includes(':'))throw new HeraError('UNSAFE_PATCH_PATH','Proposal path escapes approved scope.',4);const root=await realpath(cwd);const target=resolve(root,proposed);let part=root;for(const name of relative(root,target).split(/[\\/]/)){part=join(part,name);try{const info=await lstat(part);if(info.isSymbolicLink())throw new HeraError('UNSAFE_PATCH_PATH','Symlink/junction proposals require explicit review.',4);}catch(e){if(!(e&&typeof e==='object'&&'code'in e&&e.code==='ENOENT'))throw e;}}return target;}
+export const assignmentSchema=z.strictObject({taskId:z.string(),contractVersion:z.number().int().positive(),contractHash:z.string(),goal:z.string(),scope:z.array(z.string()),sharedInterfaces:z.array(z.string()),forbiddenChanges:z.array(z.string()),baseline:z.strictObject({gitHead:z.string().nullable(),relevantFilesHash:z.string()}),output:z.enum(['analysis','patch_proposal','review']),completionCriteria:z.array(z.string())});
+export const resultSchema=z.strictObject({taskId:z.string(),contractHash:z.string(),outcome:z.enum(['ready','blocked','needs_coordination']),summary:z.string(),filesReferenced:z.array(z.string()),proposedChanges:z.array(z.string()),interfaceChangeRequests:z.array(z.string()),proposedTests:z.array(z.string()),testsActuallyRun:z.array(z.strictObject({command:z.string(),exitCode:z.number().int().nullable()})),unresolvedRisks:z.array(z.string()),patchItemRef:z.string().optional()});
+export function validateResult(assignment:unknown,result:unknown){const a=assignmentSchema.parse(assignment),r=resultSchema.parse(result);if(a.taskId!==r.taskId||a.contractHash!==r.contractHash)throw new HeraError('SUPERSEDED_CONTRACT','Worker result does not match the current task contract.',4);return {...r,testsActuallyRun:[],unverifiedWorkerTestClaims:r.testsActuallyRun};}
