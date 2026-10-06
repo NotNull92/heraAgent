@@ -8,6 +8,8 @@ import {CodexClient} from './codex/client.js';
 import {startupArgs} from './codex/config-compiler.js';
 import {Controller} from './session/controller.js';
 import {listMetadata} from './metadata.js';
+import {capabilityReport} from './codex/capabilities.js';
+import {probeGo} from './providers/opencode-go.js';
 export const VERSION='0.1.0-alpha.1';
 export async function main(argv=process.argv) {
   const program=new Command().name('hera').description('Hera local coding agent').version(`${VERSION} (Codex 0.160.1)`).option('--cwd <path>','workspace',process.cwd()).exitOverride();
@@ -18,7 +20,7 @@ export async function main(argv=process.argv) {
     if(opts.language){if(opts.language!=='en'&&opts.language!=='ko')throw new HeraError('INVALID_LANGUAGE','Use en or ko.',2);config.language=opts.language;}
     await saveConfig(home,config);if(!opts.listModels)console.log('Configuration saved. Official isolated OpenAI login is required. Catalog discovery does not verify paid model access.');
   });
-  program.command('doctor').option('--json').action(async()=>{const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({hera:VERSION,node:process.version,platform:process.platform,arch:process.arch,codex:'0.160.1',externalMode:'blocked',native:'initialized',account:await client.account(),catalogCount:(await client.models()).length,collaboration:'G02-G04 not_run',apply:'G14 not_run'},null,2));}finally{await client.close();}});
+  program.command('doctor [target]').option('--json').option('--live','one Go coding probe, at most 64 output tokens; native mode remains blocked').action(async(target:string|undefined,opts:{live?:boolean})=>{const {home,cwd,config}=await context();if(target&&target!=='external')throw new HeraError('INVALID_TARGET','Use doctor or doctor external.',2);if(target==='external'){if(opts.live){console.error('Explicit live scope: Go deepseek-v4.1-flash, one request, 20 seconds, at most 64 output tokens. Provider balance overflow may apply.');console.log(JSON.stringify(await probeGo(process.env.HERA_OPENCODE_GO_API_KEY),null,2));}else console.log(JSON.stringify({...await capabilityReport(config),credentialReady:!!process.env.HERA_OPENCODE_GO_API_KEY},null,2));return;}if(opts.live)throw new HeraError('INVALID_TARGET','--live requires external.',2);const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({hera:VERSION,node:process.version,platform:process.platform,arch:process.arch,codex:'0.160.1',externalMode:'blocked',native:'initialized',account:await client.account(),catalogCount:(await client.models()).length,collaboration:'G02-G04 not_run',apply:'G14 not_run',windowsSandbox:process.platform==='win32'?await client.rpc.request('windowsSandbox/readiness',undefined):'not_applicable'},null,2));}finally{await client.close();}});
   program.command('config').command('show').action(async()=>console.log(JSON.stringify(await loadConfig(await heraHome(),await realpath(program.opts<{cwd:string}>().cwd)),null,2)));
   const auth=program.command('auth');
   auth.command('status').action(async()=>{const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({openai:await client.account(),goKeyPresent:!!process.env.HERA_OPENCODE_GO_API_KEY}));}finally{await client.close();}});

@@ -77,3 +77,14 @@ Interrupted/unknown outcomes retain workspace ownership for explicit recovery.
 M3 verified upload: e842bdd21805a8b76253c74b2daf49e6c52afe19.
 Windows typecheck, 11 offline tests, build and native smoke exit 0. Unit safety
 passes are not live T15-T18 evidence. Live negative gates remain BLOCKED_NO_CREDENTIALS.
+
+## M5 (blocked; diagnostic/probe implemented)
+
+Fixed Go subscription endpoint, identifying session headers, bounded explicit probe,
+distinct provider errors and no retries/fallback implemented. Native external mode
+remains blocked. Matching Codex schema supports only Responses; Go documents Chat
+Completions for the requested model. No speculative bridge or second harness added.
+See ADR-002. Go live verification: BLOCKED_NO_CREDENTIALS; mocks are not live results.
+M4 upload receipt: 141d39500858eabf1a92a58400859eb115f1461f.
+Windows native sandbox readiness returned notConfigured; an additional live execution
+blocker. Official sandbox setup is required; no elevation or unrestricted fallback used.
