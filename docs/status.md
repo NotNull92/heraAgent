@@ -88,3 +88,14 @@ See ADR-002. Go live verification: BLOCKED_NO_CREDENTIALS; mocks are not live re
 M4 upload receipt: 141d39500858eabf1a92a58400859eb115f1461f.
 Windows native sandbox readiness returned notConfigured; an additional live execution
 blocker. Official sandbox setup is required; no elevation or unrestricted fallback used.
+
+## M6 (TUI implemented; live/IME acceptance incomplete)
+
+React/Ink transcript, status, literal bracketed paste, grapheme editing, reliable multiline
+input, Ctrl+S submission, cancellation and slash commands implemented. Core actions stay
+outside React. Unsupported apply/external/worker operations show their specific gates.
+Windows PTY observation: TUI rendered Korean, /doctor drove the real App Server and /quit
+restored terminal and exited 0. Verified that controls embedded in a text chunk do not auto-submit; regression
+test added. This automated PTY check is not a physical Korean IME or herdr test.
+Physical Windows IME/herdr: MANUAL_NOT_RUN. macOS terminal/live: MANUAL_NOT_RUN / LIVE_NOT_RUN.
+M5 upload receipt: b011e5d7bb4b6251033fa7a57a23a6c5ac056ae1.
