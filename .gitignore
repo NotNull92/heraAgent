@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.artifacts/
+release-staging/
+*.tgz
+.env
+.env.*
+!.env.example
+.hera/
+.codex/
+*.log
+.DS_Store
+Thumbs.db
+*.pem
+*.key

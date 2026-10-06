@@ -1,0 +1,90 @@
+Implement Hera, an independent CLI/TUI coding agent, from this native Windows
+workspace using Codex. Perform development and hands-on/local testing on Windows.
+Windows AND macOS remain required product targets; this is not a Windows-only app.
+
+Use the installed PowerShell environment, verified Windows executable entry points,
+and explicit native exit-code checks. Do not require WSL, Bash, Git Bash, a local
+Mac, Homebrew, a remote development server, or a global execution-policy change.
+Record actual Windows, CPU, PowerShell, Node, terminal and Codex versions.
+
+Keep Windows/macOS CI and cross-platform source, package and installation support.
+Use macOS CI for available automated checks; mark macOS manual/live checks not run
+unless actually observed. Lack of local Mac hardware must not stop Windows work or
+remove the macOS target. Never claim Mac validation from a Windows or mocked pass.
+
+Read all applicable AGENTS.md files and docs/implementation-spec.md in full before
+editing. The specification is the standalone source of requirements; do not rely
+on earlier chat messages. Preserve existing files, Git history, user changes,
+credentials, and unrelated Codex processes.
+
+The Git repository and new local root must be named exactly heraAgent. The CLI
+command is hera. The lowercase npm package identifier is hera-agent; do not change
+the Git repository name to match it. Write engineering documentation, maintained
+code comments, and implementation notes in English. Keep the product's Korean
+input and localization requirements.
+
+First execute the Windows PowerShell repository bootstrap B0-B6 in Section 20,
+then M0-M7 in order. Work in this existing heraAgent root; do not create a nested
+heraAgent/heraAgent directory.
+Creating the local Git repository, making reviewed commits, creating a PRIVATE
+GitHub remote, and pushing this project's source are explicitly authorized.
+Resolve the active personal GitHub account with official authenticated tools;
+do not guess the owner from memory. The target is <verified-owner>/heraAgent.
+Before any push, inspect origin's fetch and push URLs, existing remote history,
+tracked files and secrets. Preserve unrelated repositories and changes.
+
+For a genuinely new remote, use the documented gh repo create workflow with
+--private, --source ., --remote origin, and --push after a reviewed initial commit
+exists. Reuse an existing intended remote only after verifying identity and
+history. Do not force-push, delete or rename remote repositories, change existing
+visibility, merge unrelated histories, or make the project public. Public
+visibility, license grants, npm publication and GitHub release publication need
+separate approval. Do not repeatedly ask for permission to perform the private
+creation/push already authorized here once its target and prerequisites are clear.
+
+Verify the actual remote URL, exact repository casing, branch/upstream, remote
+commit SHA and local HEAD after upload. Report actual CI status separately.
+If authentication, Git identity or destination conflicts block publication,
+record the precise blocker and continue implementation where possible. Never
+claim a repository, push, release or CI result exists without checking it.
+
+Use TypeScript, Node.js, React/Ink, and the local Codex App Server. Target native
+Windows and macOS installations running in herdr or a normal terminal. Reuse the
+existing Codex harness rather than reimplementing its agent loop, conversation
+storage, compaction, native tools, or supported worker controls. No Hera SQLite
+or duplicate conversation database. Keep the shipped runtime independent of
+GitHub CLI and remote repository creation.
+
+Implement gpt_only and external_workers as separate model modes. OpenCode Go is
+the required subscription API provider for DeepSeek V4.1 Flash, not a mandatory
+OpenCode coding harness. Do not replace it with direct DeepSeek, Command Code,
+another provider, or an implicit GPT fallback. Keep the main agent on the user's
+selected GPT model. Resolve real model IDs from supported account metadata;
+do not invent IDs from the labels Astra or Luna.
+
+In M0, resolve and pin real compatible versions, generate the installed Codex
+protocol schemas, and verify native settings instead of inventing fields. Use a
+project-local runtime; do not update the global Codex currently implementing this
+project. Treat external native-provider compatibility as unverified until task
+routing, tools, parent/child messages, limits, cancellation and resume all pass.
+If a protocol bridge is needed, keep it a narrowly scoped translator, not a
+second agent engine. If native integration cannot work, document the evidence,
+block that mode, and continue the GPT path and offline/distribution work.
+
+Separate read-only parallel analysis/code/patch proposals from main-only file
+application and testing. Enforce permissions and disable every worker-spawn
+path in the apply phase using verified native controls. A prompt, approval UI,
+or successful model call is not proof of safety or cooperation.
+
+Keep live-model tests opt-in and bounded. Record missing credentials as blocked;
+never substitute mocks for live success. Do not leak secrets into fixtures, logs,
+Git history, release packages or tool environments. Do not replay uncertain
+writing operations or silently switch billing routes.
+
+At each milestone, run applicable local checks on Windows, make coherent commits,
+push reviewed source to the verified remote, update status/evidence, and report
+actual tests and exit codes. Separate Windows local, Windows CI, macOS CI and
+unperformed macOS manual/live evidence. Deliver
+an installable .tgz, Windows/macOS CI, installation/update/rollback instructions,
+compatibility results, repository/upload verification and specific remaining
+blockers. Prepare release artifacts without publishing a release unless approved.
