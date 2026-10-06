@@ -1,6 +1,7 @@
 import React,{useState,useRef} from 'react';
 import {Text,useInput,usePaste} from 'ink';
 import {safeText} from '../errors.js';
+const isSettingsCommand=(value:string)=>/^[\\/](?:(?:model|effort)(?: (?:main|worker))?|workers)$/.test(value.trim());
 export const graphemes=(value:string)=>Array.from(new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(value),s=>s.segment);
 export function editInput(value:string,cursor:number,operation:'insert'|'backspace'|'delete',text=''){
   const parts=graphemes(value);const index=Math.max(0,Math.min(cursor,parts.length));
@@ -22,9 +23,9 @@ export function Composer({busy,send,cancel,quit,language}:{busy:boolean;send:(te
     if(key.leftArrow){setState(s=>({...s,cursor:Math.max(0,s.cursor-1)}));return;}
     if(key.rightArrow){setState(s=>({...s,cursor:Math.min(graphemes(s.value).length,s.cursor+1)}));return;}
     if(key.backspace||key.delete){setState(s=>editInput(s.value,s.cursor,key.backspace?'backspace':'delete'));return;}
-    if(key.return){insert('\n');return;}
+    if(key.return){const value=current.current.value;if(!busy&&!pasteRef.current&&isSettingsCommand(value)){send(value.trim());setState({value:'',cursor:0});return;}insert('\n');return;}
     if(input)insert(input);
   });
   const parts=graphemes(state.value);
-  return <Text>{language==='ko'?'입력':'Input'} &gt; {parts.slice(0,state.cursor).join('')}│{parts.slice(state.cursor).join('')}{'\n'}{language==='ko'?'Enter: 줄바꿈 · Ctrl+S: 전송 · Esc: 지우기 · Ctrl+C: 중단 요청 · Ctrl+Q: 종료':'Enter: newline · Ctrl+S: send · Esc: clear · Ctrl+C: interrupt · Ctrl+Q: exit'}{pasted?' [paste: literal text]':''}</Text>;
+  return <Text>{language==='ko'?'입력':'Input'} &gt; {parts.slice(0,state.cursor).join('')}│{parts.slice(state.cursor).join('')}{'\n'}{!pasted&&isSettingsCommand(state.value)?(language==='ko'?'Enter: 선택 메뉴 열기 · Esc: 지우기':'Enter: open selection menu · Esc: clear'):(language==='ko'?'Enter: 줄바꿈 · Ctrl+S: 전송 · Esc: 지우기 · Ctrl+C: 중단 요청 · Ctrl+Q: 종료':'Enter: newline · Ctrl+S: send · Esc: clear · Ctrl+C: interrupt · Ctrl+Q: exit')}{pasted?' [paste: literal text]':''}</Text>;
 }

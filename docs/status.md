@@ -208,3 +208,22 @@ worker spawning still disabled. Windows PTY accepted the backslash worker model 
 count commands and Ctrl+Q exited cleanly. No inference was performed for these checks.
 Windows sandbox setup and live safety gates remain outstanding. New CI results must
 be observed separately; the earlier passing artifact predates this settings change.
+
+## Interactive settings menus (2026-10-06)
+
+Bare /model and /effort now open role-aware keyboard selection menus; /workers opens
+a project-capped count menu. Up/Down selects, Enter confirms and Escape cancels.
+Model selection leads to that model's native-advertised effort options; no role
+setting is saved until the effort is confirmed. Catalog validation runs again at
+commit time. Effort storage accepts bounded identifiers; the native per-model
+catalog, rather than a global enum, decides which identifiers are supported.
+
+Windows local typecheck/build and 29 tests passed, including full Ink keyboard
+selection, unsupported ultra exclusion, canceled model switch preserving settings,
+stale catalog rejection, project count ceiling and pasted input remaining literal.
+Actual Windows PTY with the authenticated pinned runtime displayed Astra's ultra
+option, omitted ultra for Luna, saved Astra/high using Enter, canceled Luna's menu
+with Escape and exited with Ctrl+Q (exit 0). The user's Astra/high, Luna/max and
+worker limit 3 remain unchanged. No model inference or worker execution was claimed.
+Prior role-settings CI 37426852347 passed all four Windows/macOS jobs; this menu
+change requires its own CI result. Physical IME/macOS manual/live remain NOT_RUN.

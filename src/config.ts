@@ -3,7 +3,8 @@ import {join} from 'node:path';
 import {existsJson,atomicJson} from './paths.js';
 import {HeraError} from './errors.js';
 const model=z.string().min(1).max(200).nullable();
-export const effortSchema=z.enum(['none','minimal','low','medium','high','xhigh','max','ultra']).nullable();
+// Accepted levels come from the selected model's native catalog, not a global enum.
+export const effortSchema=z.string().min(1).max(64).regex(/^[a-z][a-z0-9_-]*$/).nullable();
 export function parseEffort(value:string){const parsed=effortSchema.safeParse(value==='default'?null:value);if(!parsed.success)throw new HeraError('UNSUPPORTED_EFFORT','Choose an advertised effort or default.',2);return parsed.data;}
 export const configSchema=z.strictObject({
   schemaVersion:z.literal(1),language:z.enum(['ko','en']),mode:z.enum(['gpt_only','external_workers']),backend:z.literal('codex_app_server'),

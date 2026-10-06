@@ -9,5 +9,5 @@ it('validates both role efforts against their own catalog and preserves older se
   const models=[{id:'m',model:'main-fixture',displayName:'Main',supportedReasoningEfforts:[{reasoningEffort:'ultra'}]},{id:'w',model:'worker-fixture',displayName:'Worker',supportedReasoningEfforts:[{reasoningEffort:'max'}]}];
   expect(()=>validateModelChoices(config,models)).not.toThrow();expect(nativeSettings(config).model_reasoning_effort).toBe('ultra');expect(nativeSettings(config)['agents.default_subagent_reasoning_effort']).toBe('max');
   config.workers.reasoningEffort='ultra';expect(()=>validateModelChoices(config,models)).toThrow('worker');config.workers.gptModel=null;expect(()=>validateModelChoices(config,models)).toThrow('Select the worker');
-  const {reasoningEffort,...oldWorkers}=defaults.workers;expect(configSchema.parse({...defaults,workers:oldWorkers}).workers.reasoningEffort).toBeNull();expect(parseEffort('default')).toBeNull();expect(()=>parseEffort('typo')).toThrow();
+  const {reasoningEffort,...oldWorkers}=defaults.workers;expect(configSchema.parse({...defaults,workers:oldWorkers}).workers.reasoningEffort).toBeNull();expect(parseEffort('default')).toBeNull();expect(()=>parseEffort('not a level')).toThrow();
 });

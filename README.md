@@ -35,7 +35,14 @@ and multiline input. Paste never executes a slash action. `/apply` stays blocked
 until native write/spawn negative tests pass. A Windows sandbox notConfigured result
 requires official setup; unrestricted fallback is unavailable.
 
-Inside the TUI, `/` and `\` command prefixes are equivalent:
+Inside the TUI, type `/model`, `/effort` or `/workers` and press Enter to open a
+selection menu. Use Up/Down and Enter to choose, or Escape to cancel without saving.
+`/model` asks for main/worker, then model, then that model's supported effort.
+`/effort` asks for main/worker and lists the current model's supported efforts only.
+Options come from the native model catalog: `ultra` appears only when advertised.
+Current selections are marked; final choices are revalidated before saving.
+
+`/` and `\` prefixes are equivalent. Explicit command arguments also remain supported:
 
 ```text
 \model main <catalog-id> high
@@ -45,12 +52,14 @@ Inside the TUI, `/` and `\` command prefixes are equivalent:
 \workers 3
 ```
 
-`\model` lists the catalog, supported efforts and current selections. `\workers`
-shows the configured limit (1-8), not an observed running count. Use `default` for
+`/workers` selects the configured limit (1-8, capped by the project), not an observed
+running count. Use `default` for
 effort to clear its override. Changes are validated against the selected model's
 catalog, saved outside the repository, and take effect in a new session. Active
 turns reject setting changes; an uncertain shutdown prevents switching sessions.
-Pasted commands remain literal text. These settings do not enable gated workers.
+Pasted commands remain literal text, including pasted Enter keys in menus. Normal
+composer Enter still inserts a newline; bare settings commands open menus instead.
+These settings do not enable gated workers.
 
 Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
 copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses only an explicitly
