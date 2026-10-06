@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  offline:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025
+            arch: x64
+          - os: macos-15
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Verify architecture and run offline checks
+        shell: pwsh
+        run: |
+          node -e "console.log(process.platform,process.arch,process.version); if(process.arch !== '${{ matrix.arch }}')process.exit(1)"
+          if ($LASTEXITCODE -ne 0) { throw 'Wrong runner architecture' }
+          npm ci
+          if ($LASTEXITCODE -ne 0) { throw 'Install failed' }
+          npm run typecheck
+          if ($LASTEXITCODE -ne 0) { throw 'Typecheck failed' }
+          npm test
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }

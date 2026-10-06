@@ -15,7 +15,7 @@ for (const [command, out] of [['generate-ts', 'src/codex/generated'], ['generate
 function files(dir) {return readdirSync(dir, {withFileTypes: true}).flatMap(e => e.isDirectory() ? files(join(dir,e.name)) : [join(dir,e.name)]).sort();}
 // Generated imports are extensionless; NodeNext requires explicit .js specifiers.
 for (const file of files('src/codex/generated')) {
-  if (file.endsWith('.ts')) writeFileSync(file, readFileSync(file,'utf8').replace(/from "(\.[^"]+?)(?<!\.js)"/g, 'from "$1.js"'));
+  if (file.endsWith('.ts')) writeFileSync(file, readFileSync(file,'utf8').replace(/from "(\.[^"]+?)(?<!\.js)"/g, 'from "$1.js"').replace('from "./v2.js"','from "./v2/index.js"'));
 }
 const hash = createHash('sha256');
 for (const file of files('assets/codex/schema')) hash.update(relative('assets/codex/schema',file).replaceAll('\\','/')).update('\0').update(readFileSync(file));

@@ -93,4 +93,4 @@ export type { WebSearchItem } from "./WebSearchItem.js";
 export type { WebSearchLocation } from "./WebSearchLocation.js";
 export type { WebSearchMode } from "./WebSearchMode.js";
 export type { WebSearchToolConfig } from "./WebSearchToolConfig.js";
-export * as v2 from "./v2.js";
+export * as v2 from "./v2/index.js";

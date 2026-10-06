@@ -8,6 +8,17 @@
   "os": ["darwin", "win32"],
   "bin": { "hera": "bin/hera.mjs" },
   "files": ["bin/", "dist/", "assets/", "README.md", "CHANGELOG.md", "SECURITY.md", "THIRD_PARTY_NOTICES.md", "npm-shrinkwrap.json"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "protocol:generate": "node scripts/generate-protocol.mjs",
+    "native:smoke": "node scripts/native-smoke.mjs",
+    "package:check": "node scripts/check-package.mjs",
+    "package:smoke": "node scripts/smoke-package.mjs",
+    "release:prepare": "node scripts/prepare-release.mjs",
+    "source:check": "node scripts/check-source.mjs"
+  },
   "dependencies": {
     "@openai/codex": "0.160.1",
     "commander": "15.0.0",

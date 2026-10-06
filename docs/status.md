@@ -32,3 +32,13 @@ node scripts/generate-protocol.mjs exit 0; native-discovery.mjs exit 0;
 native version/help/features inspection exit 0. Generated protocol and matching config
 schema recorded. Live GPT: BLOCKED_NO_CREDENTIALS in isolated home.
 Cross-provider and safety enforcement remain UNVERIFIED. See compatibility.md.
+
+## M1
+
+CLI/package/config foundation implemented with strict NodeNext and exact dependencies.
+Windows: typecheck, offline tests (3), build and local --version all exit 0.
+First typecheck found TS7 explicit types and generated directory-import requirements;
+fixed the generator and config merge, reran successfully. Markdown hard-break whitespace
+in the original handoff is preserved via .gitattributes.
+Windows/macOS CI added; remote CI results are pending, not assumed passed.
+M0 historical verified upload: 567ee2944d5d5fe56f5dd545fbed3eefef1ae7c2.
