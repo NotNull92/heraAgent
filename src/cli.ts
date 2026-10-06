@@ -25,6 +25,17 @@ export async function main(argv=process.argv) {
   });
   program.command('doctor [target]').option('--json').option('--live','one Go coding probe, at most 64 output tokens; native mode remains blocked').action(async(target:string|undefined,opts:{live?:boolean})=>{const {home,cwd,config}=await context();if(target&&target!=='external')throw new HeraError('INVALID_TARGET','Use doctor or doctor external.',2);if(target==='external'){if(opts.live){console.error('Explicit live scope: Go deepseek-v4.1-flash, one request, 20 seconds, at most 64 output tokens. Provider balance overflow may apply.');console.log(JSON.stringify(await probeGo(process.env.HERA_OPENCODE_GO_API_KEY),null,2));}else console.log(JSON.stringify({...await capabilityReport(config),credentialReady:!!process.env.HERA_OPENCODE_GO_API_KEY},null,2));return;}if(opts.live)throw new HeraError('INVALID_TARGET','--live requires external.',2);const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({hera:VERSION,node:process.version,platform:process.platform,arch:process.arch,codex:'0.160.1',externalMode:'blocked',native:'initialized',account:await client.account(),catalogCount:(await client.models()).length,collaboration:'G02-G04 not_run',apply:'G14 not_run',windowsSandbox:process.platform==='win32'?await client.rpc.request('windowsSandbox/readiness',undefined):'not_applicable'},null,2));}finally{await client.close();}});
   program.command('config').command('show').action(async()=>console.log(JSON.stringify(await loadConfig(await heraHome(),await realpath(program.opts<{cwd:string}>().cwd)),null,2)));
+  program.command('sandbox').command('setup').option('--mode <mode>','official Windows setup: unelevated or elevated','unelevated').action(async(opts:{mode:string})=>{
+    if(process.platform!=='win32')throw new HeraError('WINDOWS_ONLY','Windows sandbox setup is only needed on Windows.',2);
+    if(opts.mode!=='unelevated'&&opts.mode!=='elevated')throw new HeraError('INVALID_SANDBOX_MODE','Use unelevated or elevated.',2);
+    const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));
+    const abort=new AbortController();const cancel=()=>abort.abort();process.once('SIGINT',cancel);process.once('SIGTERM',cancel);
+    try{console.error(`공식 Windows 샌드박스 설정을 시작합니다 (${opts.mode}).`);await client.setupWindowsSandbox(opts.mode,cwd,abort.signal);}
+    finally{process.removeListener('SIGINT',cancel);process.removeListener('SIGTERM',cancel);await client.close();}
+    const check=await CodexClient.connect(home,cwd,startupArgs(config));
+    try{const readiness=await check.windowsSandboxReadiness();console.log(JSON.stringify({windowsSandbox:readiness}));if(readiness.status!=='ready')throw new HeraError('WINDOWS_SANDBOX_NOT_READY','Setup completed but the fresh runtime is not ready; inspect official sandbox configuration.',4);}
+    finally{await check.close();}
+  });
   const auth=program.command('auth');
   auth.command('status').action(async()=>{const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({openai:await client.account(),goKeyPresent:!!process.env.HERA_OPENCODE_GO_API_KEY}));}finally{await client.close();}});
   auth.command('login <provider>').option('--device').action(async(provider:string,opts:{device?:boolean})=>{

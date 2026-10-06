@@ -1,8 +1,8 @@
 # Windows installation, update and rollback
 
 Use native Node 24.x (tested patch 24.12.0) and npm. No WSL, Git Bash, elevated
-terminal or global execution-policy change is required. The development PC already
-has a different `hera` command; inspect `Get-Command hera,hera.cmd -All` first.
+terminal or global execution-policy change is required. If another installed tool
+provides `hera`, inspect `Get-Command hera,hera.cmd -All` first.
 
 Install the reviewed private tarball into a separate user-owned prefix:
 
@@ -29,8 +29,12 @@ the original Codex home and credentials are not copied. Never place HERA_HOME in
 a repository or send tokens to chat. Keyring failure is a blocker, not file fallback.
 
 `doctor --json` checks native startup, account and Windows sandbox readiness.
-If sandbox status is notConfigured, complete the pinned Codex's official Windows
-sandbox setup in the isolated Hera profile. Do not select unrestricted mode. Current
+If sandbox status is notConfigured, run `hera.cmd sandbox setup`. This calls the
+pinned Codex's official unelevated setup in the isolated Hera profile, waits for
+completion, and checks readiness in a fresh runtime. It does not request elevation.
+`--mode elevated` is an explicit operator choice when administrator setup is desired.
+A failure or timeout is not retried automatically; inspect `doctor --json` first.
+Do not select unrestricted mode. Current
 live safety tests are incomplete, so parallel collaboration and `/apply` stay blocked.
 `hera.cmd --single-agent` explicitly chooses the available read-only path.
 

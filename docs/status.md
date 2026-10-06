@@ -1,5 +1,59 @@
 # Implementation status
 
+## Current checkpoint (2026-10-06, native Windows live follow-up)
+
+Historical sections below preserve the evidence at each earlier milestone.
+OpenAI login is ready; main is gpt-6-astra/high and worker is gpt-6-luna/max.
+The saved worker limit is still 3. Official unelevated Windows sandbox setup now
+reports ready in a fresh Hera runtime. Credentials remain outside Git.
+
+Observed Windows checks:
+
+- `hera sandbox setup`: exit 0, fresh readiness=ready, no elevation requested.
+- Typecheck, build, 32 offline tests and isolated unauthenticated native smoke pass.
+- Strengthened live read/resume test: a real native command reads an unpredictable
+  fixture marker and the resumed conversation recalls it and the corrected code.
+- Native read-only command tests allow reading and deny both overwriting and creating
+  fixture files. These are actual sandbox executions, not model assertions.
+- Live main interruption starts a real sleep command, interrupts its turn, cleans
+  that thread's native background terminals, verifies an empty inventory, and exits 0.
+- Native worker probe verifies Luna/max from thread metadata, an actual read/write
+  denial, a second spawn rejected with the fixture limit of 1, follow-up and return
+  messaging. The saved user limit is not changed. V2 uses subAgentActivity for several
+  operations; the pinned native fixture rollout supplies the failed spawn result.
+  The test only reads that owned rollout and does not duplicate native persistence.
+- Worker recovery reopens the same root and child, starts a new bounded sleep probe,
+  interrupts the active worker command and verifies empty native terminal inventory.
+- Main-only apply probe resumes the same root with every worker flag disabled,
+  denies a write to a disposable sibling directory, fixes a fixture sum function,
+  and observes its real test command exit 0. No worker activity occurred in that turn.
+
+Corrections discovered by live testing:
+
+- The initial live smoke reported turn completion even though file reading failed.
+  Its first result is NOT file-read evidence. The selected models advertise
+  code_mode_only; disabling the native code-mode host removed usable tools. Hera now
+  enables the native host and checks actual tool output and unpredictable file content.
+- Native turn interruption can precede command cleanup/completion notifications.
+  Hera now uses the pinned experimental backgroundTerminals clean/list APIs, waits
+  up to two seconds for the empty inventory, and reconciles terminal command records.
+  An acknowledgment alone never promotes an unknown outcome to success.
+- Initial worker-probe assertions expected V1-style spawn events and failed despite
+  real V2 child execution. The corrected verifier passed against the same saved
+  fixture without repeating inference. Initial worker-recovery checks also failed
+  before bounded cleanup draining and a distinct new cancellation probe were added.
+
+Product worker/apply activation remains blocked while phase policy, approval UI,
+child tracking and remaining negative cases are integrated. The probes above are
+not blanket G02-G04/G14 acceptance. Go live verification is deferred at the user's
+request until a key is ready; the protocol mismatch remains unresolved. Physical
+Windows IME/herdr and macOS manual/live checks remain NOT_RUN. The prior source
+4873351 CI run 37427962111 passed all four jobs; this change needs its own CI result.
+
+Runnable fixtures: `scripts/native-safety-smoke.mjs`, `scripts/live-smoke.mjs --live`,
+`scripts/live-interrupt.mjs --live`, `scripts/live-workers.mjs --live`, and the
+worker-recovery/apply probes with the parent ID and disposable cwd from that probe.
+
 ## Bootstrap
 
 - B0: native Windows root verified, no enclosing Git repository (git exit 128 expected).

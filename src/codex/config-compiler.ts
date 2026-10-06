@@ -20,7 +20,8 @@ export function nativeSettings(config:Config):Record<string,JsonValue> {
     ...(config.workers.reasoningEffort?{'agents.default_subagent_reasoning_effort':config.workers.reasoningEffort}:{}),
     'features.apps':false,'features.plugins':false,'features.hooks':false,
     'features.browser_use':false,'features.computer_use':false,'features.image_generation':false,
-    'features.code_mode':false,'features.code_mode_host':false,'features.request_permissions_tool':false,
+    // Catalog-selected code_mode_only models need the native host to call sandboxed tools.
+    'features.code_mode_host':true,'features.request_permissions_tool':false,
     'features.skill_mcp_dependency_install':false,'features.skill_search':false,
     'features.remote_plugin':false,'features.in_app_local_automation':false,
     'features.unbounded_connection_retries':false,web_search:'disabled',

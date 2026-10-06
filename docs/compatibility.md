@@ -1,5 +1,16 @@
 # Compatibility and evidence
 
+## Current Windows live checkpoint
+
+See the current checkpoint in [status](status.md) for observed GPT read/resume,
+interruption, read-only writes, native worker communication/recovery and isolated
+main-only apply checks. Older missing-login/sandbox entries below are historical.
+The native code-mode host is enabled for catalog-selected code_mode_only models.
+Only background-terminal cleanup/list experimental types are additionally generated
+from the same pinned binary; no Codex upgrade or independent execution engine is used.
+Full product worker/apply gates remain incomplete. Go verification is user-deferred;
+macOS live/manual checks are still NOT_RUN.
+
 ## M0 contract discovery (2026-10-06)
 
 Windows 11 Pro build 26200, x64 Intel i7-12700; PowerShell Core 7.6.6;

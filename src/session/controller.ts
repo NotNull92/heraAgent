@@ -23,7 +23,7 @@ export class Controller extends EventEmitter {
     for(const key of ['agents.enabled','features.multi_agent','features.multi_agent_v2','features.apps','features.plugins','features.hooks','features.browser_use','features.computer_use','features.request_permissions_tool'])if(get(key)!==false)throw new HeraError('POLICY_NOT_ENFORCED',`Effective ${key} must be false.`,4);
     for(const key of ['mcp_servers','hooks']){const value=get(key);if(value&&typeof value==='object'&&Object.keys(value).length)throw new HeraError('EXTERNAL_TOOLS_BLOCKED',`Configured ${key} requires a separately verified read-only profile.`,4);}
     if(get('notify')||get('shell_environment_policy.inherit')!=='core')throw new HeraError('UNSAFE_RUNTIME_CONFIG','Startup hooks or shell policy differ from the safe profile.',4);
-    if(process.platform==='win32'){const readiness=z.object({status:z.string()}).parse(await this.client.rpc.request('windowsSandbox/readiness',undefined));if(readiness.status!=='ready')throw new HeraError('WINDOWS_SANDBOX_NOT_READY','Complete official Codex Windows sandbox setup; no unrestricted fallback.',4);}
+    if(process.platform==='win32'){const readiness=await this.client.windowsSandboxReadiness();if(readiness.status!=='ready')throw new HeraError('WINDOWS_SANDBOX_NOT_READY','Run hera sandbox setup in the isolated Hera profile; no unrestricted fallback.',4);}
     validateModelChoices(this.config,await this.client.models());
     const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:nativeSettings(this.config)};
     if(previous&&previous.workspaceRealPath!==this.cwd)throw new HeraError('WORKSPACE_MISMATCH','Session belongs to a different workspace.',2);
@@ -55,6 +55,16 @@ export class Controller extends EventEmitter {
     try{await this.persist();const turn=await this.client.turn({threadId:this.metadata.codexThreadId,input:[{type:'text',text:prompt,text_elements:[]}],effort:this.config.main.reasoningEffort});this.turnId=turn.id;this.metadata.lastKnownTurnId=turn.id;await this.persist();
       const done=await new Promise<z.infer<typeof completed>>((resolve,reject)=>{this.waiter=resolve;this.failure=reject;if(this.fault){reject(this.fault);return;}const early=this.early.get(turn.id);if(early){this.early.delete(turn.id);resolve(early);}});
       this.metadata.status=done.turn.status==='completed'?'complete':done.turn.status==='interrupted'?'interrupted':'unknown_outcome';await this.persist();
+      if(done.turn.status==='interrupted')await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
+      // A native turn may finish before its final command notification is delivered.
+      if(this.commands.size){
+        const history=await this.client.read(this.metadata.codexThreadId);
+        const recorded=z.object({id:z.string(),status:z.string(),items:z.array(z.unknown())}).array().parse(history.turns??[]).find(t=>t.id===turn.id);
+        if(recorded&&recorded.status!=='inProgress')for(const value of recorded.items){
+          const item=z.object({id:z.string(),type:z.literal('commandExecution'),status:z.enum(['completed','failed','declined']),exitCode:z.number()}).safeParse(value);
+          if(item.success)this.commands.delete(item.data.id);
+        }
+      }
       if(this.commands.size||this.client.rpc.requestsPending)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native turn ended while commands or approval requests remain unresolved.',5,false);
       if(await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during read-only analysis; do not apply proposals.',4,false);
       if(done.turn.status!=='completed')throw new HeraError(done.turn.status==='interrupted'?'INTERRUPTED':'TURN_FAILED','Native turn did not complete successfully.',done.turn.status==='interrupted'?130:5,done.turn.status==='interrupted');

@@ -1,5 +1,6 @@
 import {createRequire} from 'node:module';
-import {readFileSync, writeFileSync, mkdirSync, readdirSync} from 'node:fs';
+import {readFileSync, writeFileSync, mkdirSync, readdirSync, mkdtempSync, copyFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
 import {dirname, join, relative} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -11,6 +12,15 @@ for (const [command, out] of [['generate-ts', 'src/codex/generated'], ['generate
   mkdirSync(out, {recursive: true});
   const result = spawnSync(process.execPath, [launcher, 'app-server', command, '--out', out], {encoding: 'utf8', windowsHide: true});
   if (result.status !== 0) throw new Error(`${command} failed: ${result.stderr}`);
+}
+// Opt in only to the native background-command cleanup contract used by Hera.
+const backgroundTypes=['ThreadBackgroundTerminal','ThreadBackgroundTerminalsCleanParams','ThreadBackgroundTerminalsCleanResponse','ThreadBackgroundTerminalsListParams','ThreadBackgroundTerminalsListResponse'];
+const scratch=mkdtempSync(join(tmpdir(),'hera-protocol-'));
+for(const [command,extension,destination] of [['generate-ts','ts','src/codex/generated'],['generate-json-schema','json','assets/codex/schema']]){
+  const out=join(scratch,extension);
+  const result=spawnSync(process.execPath,[launcher,'app-server',command,'--experimental','--out',out],{encoding:'utf8',windowsHide:true});
+  if(result.status!==0)throw new Error(`${command} experimental generation failed: ${result.stderr}`);
+  for(const name of backgroundTypes){if(extension==='json'&&name==='ThreadBackgroundTerminal')continue;copyFileSync(join(out,'v2',`${name}.${extension}`),join(destination,'v2',`${name}.${extension}`));}
 }
 function files(dir) {return readdirSync(dir, {withFileTypes: true}).flatMap(e => e.isDirectory() ? files(join(dir,e.name)) : [join(dir,e.name)]).sort();}
 // Generated imports are extensionless; NodeNext requires explicit .js specifiers.

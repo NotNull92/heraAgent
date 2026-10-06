@@ -26,6 +26,8 @@ node bin/hera.mjs init --list-models
 node bin/hera.mjs auth login openai
 # Choose exact returned IDs; no model is silently selected.
 node bin/hera.mjs init --model <id> --effort high --worker-model <id> --worker-effort max
+# Windows only: official sandbox setup in the isolated Hera profile.
+node bin/hera.mjs sandbox setup
 node bin/hera.mjs --single-agent
 ```
 
@@ -66,6 +68,6 @@ copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses only an 
 supplied HERA_OPENCODE_GO_API_KEY and the OpenCode Go subscription route; `doctor external`
 does no paid work, while `doctor external --live` explicitly permits one bounded probe.
 
-An existing `hera` command was detected on the development PC. All development
-checks use explicit local paths or isolated installation prefixes; do not overwrite
-that command. No public license or registry/release publication is authorized.
+If another installed tool provides `hera`, use explicit local paths or an isolated
+installation prefix until command routing is resolved. No public license or
+registry/release publication is authorized.
