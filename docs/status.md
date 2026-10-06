@@ -42,3 +42,14 @@ fixed the generator and config merge, reran successfully. Markdown hard-break wh
 in the original handoff is preserved via .gitattributes.
 Windows/macOS CI added; remote CI results are pending, not assumed passed.
 M0 historical verified upload: 567ee2944d5d5fe56f5dd545fbed3eefef1ae7c2.
+
+## M2
+
+Pinned launcher, sanitized child environment, owned-process cleanup, bounded framed
+RPC, generated request adapters, native account/catalog/thread/turn methods and atomic
+reference metadata implemented. Unknown side-effect requests are surfaced, never granted.
+Windows typecheck, offline tests (6), build and native:smoke all exit 0.
+Native smoke initialized without credentials/inference; eight catalog entries returned.
+Live conversation/resume and tools: BLOCKED_NO_CREDENTIALS; no paid calls made.
+M1 verified upload: 0099c888329606ecfc5929699a104d2160e3192d.
+CI run 37421528929 completed success (Windows and macOS offline jobs).
