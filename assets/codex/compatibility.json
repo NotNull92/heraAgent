@@ -1,0 +1,7 @@
+{
+  "codexVersion": "0.160.1",
+  "schemaSha256": "fa49bcba083816ffe3d6707f49cb0ad8f27dad22db81c0a68ddefad5ad6f9bba",
+  "integrity": "sha512-f1yrJhwgimKQI1kYQlxdPJcFwkNZxZrbz7Hf89EAcnLqkQ7TiESzr2FgSZn13Ga5RuHjlVUfurzwq10wk9zw2g==",
+  "node": "v24.12.0",
+  "generatedImportTransform": "relative .js extensions only"
+}

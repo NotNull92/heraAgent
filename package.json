@@ -1,0 +1,25 @@
+{
+  "name": "hera-agent",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=24 <25" },
+  "os": ["darwin", "win32"],
+  "bin": { "hera": "bin/hera.mjs" },
+  "files": ["bin/", "dist/", "assets/", "README.md", "CHANGELOG.md", "SECURITY.md", "THIRD_PARTY_NOTICES.md", "npm-shrinkwrap.json"],
+  "dependencies": {
+    "@openai/codex": "0.160.1",
+    "commander": "15.0.0",
+    "ink": "8.0.0",
+    "react": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "@types/react": "19.3.0",
+    "ink-testing-library": "4.0.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}

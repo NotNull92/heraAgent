@@ -6,7 +6,8 @@
 - B1: initialized main, preserved three supplied handoff files; existing Git identity used.
 - B2: authenticated GitHub personal account verified as NotNull92 using gh api user.
 - B3: no local remotes; authenticated exact target lookup returned GraphQL not-found and REST 404.
-- B4/B5: pending reviewed initial commit and private creation/upload verification.
+- B4/B5: private creation and initial push verified. Historical receipt:
+  fbf228d665ede1e20cb26ddce63f7c29f6594fa0 equals remote main; upstream origin/main.
 - B6: subsequent milestones must review, test, scan and verify each push.
 - No applicable ancestor or existing descendant AGENTS.md files were found before creating root instructions.
 - Existing global hera command collision detected; leave it intact.
@@ -23,3 +24,11 @@
 
 The attempted codex.cmd version command failed because only codex.exe exists;
 the verified native executable returned codex-cli 0.160.1 (exit 0). No global update.
+
+## M0
+
+Exact dependencies installed locally; npm install --ignore-scripts exit 0, audit 0 findings.
+node scripts/generate-protocol.mjs exit 0; native-discovery.mjs exit 0;
+native version/help/features inspection exit 0. Generated protocol and matching config
+schema recorded. Live GPT: BLOCKED_NO_CREDENTIALS in isolated home.
+Cross-provider and safety enforcement remain UNVERIFIED. See compatibility.md.
