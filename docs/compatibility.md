@@ -73,3 +73,22 @@ separately from documented runner availability.
 - https://cli.github.com/manual/gh_repo_create
 
 macOS local/manual/live: MANUAL_NOT_RUN / LIVE_NOT_RUN. No local Mac required.
+
+## Verified distribution matrix (2026-10-06)
+
+Code: `fcbdd69cc26a16a4c6ec7786fc539ad24c73cdaf`.
+[CI evidence](https://github.com/NotNull92/heraAgent/actions/runs/37425015641).
+
+| Environment | Actual platform | Result |
+|---|---|---|
+| Windows local | Windows 11 10.0.26200 x64, Node 24.12.0 | 25 offline tests, typecheck, build, native smoke, downloaded CI archive install/reinstall/launcher PASS |
+| Windows CI | Windows 10.0.26100 x64, Node 24.12.0 | Offline/native checks and identical archive installation PASS |
+| macOS CI | Darwin 24.6.0 arm64, Node 24.12.0 | Offline/native checks and identical archive installation/direct shebang launcher PASS |
+| Windows physical terminal | Korean IME/herdr | MANUAL_NOT_RUN |
+| macOS manual/live | No local Mac used | MANUAL_NOT_RUN / LIVE_NOT_RUN |
+
+Both CI installation jobs and local Windows consumed the archive with SHA-256
+`7d0ea3bcb85c1b48afcf2a6a4839b2a22b08f698c4fd7fd78901ca48348c9790`.
+Live model entitlement, worker safety, apply and native Go integration remain unverified;
+worker/apply/external paths remain unavailable. Readiness is blocked by missing Hera
+login/model selections and Windows sandbox setup. See status.md for remaining work.
