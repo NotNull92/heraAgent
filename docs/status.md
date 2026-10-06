@@ -53,3 +53,15 @@ Native smoke initialized without credentials/inference; eight catalog entries re
 Live conversation/resume and tools: BLOCKED_NO_CREDENTIALS; no paid calls made.
 M1 verified upload: 0099c888329606ecfc5929699a104d2160e3192d.
 CI run 37421528929 completed success (Windows and macOS offline jobs).
+
+## M3 (implementation available; live acceptance blocked)
+
+Explicit catalog model selection, native keyring login, account readiness, read-only
+headless sessions, native resume, event streaming and reference-only persistence added.
+Native settings map the worker default and concurrency limit; all worker paths remain
+disabled until G02-G04 pass. A user must explicitly choose --single-agent; no fallback.
+Windows typecheck, 8 offline tests, build, native smoke and doctor: exit 0.
+Doctor on the actual Hera profile reported accountReady=false. Model catalog is not
+entitlement. Live worker messages, concurrency and resume: BLOCKED_NO_CREDENTIALS.
+This does not satisfy M3 live acceptance. M2 upload receipt:
+c589315aae192e374596098d07dcb62c91eca36b.

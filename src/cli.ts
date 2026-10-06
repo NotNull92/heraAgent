@@ -1,14 +1,41 @@
 import {Command} from 'commander';
-import {realpath} from 'node:fs/promises';
+import {realpath,readFile} from 'node:fs/promises';
+import {z} from 'zod';
 import {heraHome} from './paths.js';
 import {loadConfig,saveConfig} from './config.js';
 import {errorView,HeraError} from './errors.js';
+import {CodexClient} from './codex/client.js';
+import {startupArgs} from './codex/config-compiler.js';
+import {Controller} from './session/controller.js';
+import {listMetadata} from './metadata.js';
 export const VERSION='0.1.0-alpha.1';
 export async function main(argv=process.argv) {
   const program=new Command().name('hera').description('Hera local coding agent').version(`${VERSION} (Codex 0.160.1)`).option('--cwd <path>','workspace',process.cwd()).exitOverride();
-  program.command('init').action(async()=>{const home=await heraHome();const {config}=await loadConfig(home);await saveConfig(home,config);console.log('Configuration ready. Models are unselected; official OpenAI login is required.');});
-  program.command('doctor').option('--json').action(async()=>{const home=await heraHome();await loadConfig(home,await realpath(program.opts<{cwd:string}>().cwd));console.log(JSON.stringify({hera:VERSION,node:process.version,platform:process.platform,arch:process.arch,codex:'0.160.1',externalMode:'blocked',native:'not_run'},null,2));});
+  const context=async()=>{const home=await heraHome();const cwd=await realpath(program.opts<{cwd:string}>().cwd);return {home,cwd,...await loadConfig(home,cwd)};};
+  program.command('init').option('--list-models').option('--model <id>').option('--worker-model <id>').option('--language <language>').action(async(opts:{listModels?:boolean;model?:string;workerModel?:string;language?:string})=>{
+    const {home,cwd,config}=await context();
+    if(opts.listModels||opts.model||opts.workerModel){const client=await CodexClient.connect(home,cwd,startupArgs(config));try{const models=await client.models();if(opts.listModels)console.log(JSON.stringify({models,catalogNotEntitlement:true},null,2));for(const value of [opts.model,opts.workerModel])if(value&&!models.some(m=>m.model===value))throw new HeraError('MODEL_UNAVAILABLE','Model must exactly match a discovered catalog entry.',2);if(opts.model)config.main.model=opts.model;if(opts.workerModel)config.workers.gptModel=opts.workerModel;}finally{await client.close();}}
+    if(opts.language){if(opts.language!=='en'&&opts.language!=='ko')throw new HeraError('INVALID_LANGUAGE','Use en or ko.',2);config.language=opts.language;}
+    await saveConfig(home,config);if(!opts.listModels)console.log('Configuration saved. Official isolated OpenAI login is required. Catalog discovery does not verify paid model access.');
+  });
+  program.command('doctor').option('--json').action(async()=>{const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({hera:VERSION,node:process.version,platform:process.platform,arch:process.arch,codex:'0.160.1',externalMode:'blocked',native:'initialized',account:await client.account(),catalogCount:(await client.models()).length,collaboration:'G02-G04 not_run',apply:'G14 not_run'},null,2));}finally{await client.close();}});
   program.command('config').command('show').action(async()=>console.log(JSON.stringify(await loadConfig(await heraHome(),await realpath(program.opts<{cwd:string}>().cwd)),null,2)));
+  const auth=program.command('auth');
+  auth.command('status').action(async()=>{const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));try{console.log(JSON.stringify({openai:await client.account(),goKeyPresent:!!process.env.HERA_OPENCODE_GO_API_KEY}));}finally{await client.close();}});
+  auth.command('login <provider>').option('--device').action(async(provider:string,opts:{device?:boolean})=>{
+    if(provider!=='openai')throw new HeraError('UNSUPPORTED_AUTH','Only official OpenAI login is supported.',2);
+    const {home,cwd,config}=await context();const client=await CodexClient.connect(home,cwd,startupArgs(config));
+    let timer:NodeJS.Timeout|undefined;let loginId:string|undefined;
+    try{const done=new Promise<void>((resolve,reject)=>{timer=setTimeout(()=>reject(new HeraError('LOGIN_TIMEOUT','Login expired; no plaintext fallback.',3)),300000);client.on('event',e=>{if(e.method==='account/login/completed'){const p=z.object({success:z.boolean()}).parse(e.params);if(p.success)resolve();else reject(new HeraError('LOGIN_FAILED','Official login did not complete.',3));}});client.on('fault',reject);});
+      void done.catch(()=>{});
+      const reply=z.object({type:z.string(),loginId:z.string(),authUrl:z.string().optional(),verificationUrl:z.string().optional(),userCode:z.string().optional()}).parse(await client.rpc.request('account/login/start',{type:opts.device?'chatgptDeviceCode':'chatgpt'}));loginId=reply.loginId;
+      console.log(reply.authUrl??reply.verificationUrl);if(reply.userCode)console.log(`One-time code: ${reply.userCode}`);await done;console.log('Official login completed in the Hera keyring profile.');
+    }finally{clearTimeout(timer);if(loginId)await client.rpc.request('account/login/cancel',{loginId}).catch(()=>{});await client.close();}
+  });
+  program.command('sessions').action(async()=>{const {home,cwd}=await context();console.log(JSON.stringify(await listMetadata(home,cwd),null,2));});
+  const headless=async(promptFile:string,singleAgent:boolean,id?:string)=>{const {home,cwd,config}=await context();const previous=id?(await listMetadata(home,cwd)).find(s=>s.heraSessionId===id):undefined;if(id&&!previous)throw new HeraError('SESSION_NOT_FOUND','No matching workspace session reference.',2);const controller=await Controller.open(home,cwd,config,singleAgent,previous);let text='';controller.on('event',e=>{if(e.method==='item/agentMessage/delta'){const p=z.object({delta:z.string()}).safeParse(e.params);if(p.success)text=(text+p.data.delta).slice(-1024*1024);}});const cancel=()=>{void controller.interrupt().catch(()=>{});};process.once('SIGINT',cancel);try{console.log(JSON.stringify({...await controller.run(await readFile(promptFile,'utf8')),text}));}finally{process.removeListener('SIGINT',cancel);await controller.close();}};
+  program.command('run').requiredOption('--prompt-file <path>').option('--single-agent').action(async(o:{promptFile:string;singleAgent?:boolean})=>headless(o.promptFile,o.singleAgent??false));
+  program.command('resume [id]').requiredOption('--prompt-file <path>').option('--single-agent').action(async(id:string|undefined,o:{promptFile:string;singleAgent?:boolean})=>{const {home,cwd}=await context();const chosen=id??(await listMetadata(home,cwd))[0]?.heraSessionId;if(!chosen)throw new HeraError('SESSION_NOT_FOUND','No saved session in this workspace.',2);await headless(o.promptFile,o.singleAgent??false,chosen);});
   program.action(()=>{throw new HeraError('TUI_NOT_READY','TUI is under implementation. Use hera doctor.',4);});
   try {await program.parseAsync(argv);} catch(e) {if(e && typeof e==='object' && 'code' in e && (e.code==='commander.helpDisplayed'||e.code==='commander.version'))return;const view=errorView(e);if(e && typeof e==='object' && 'code' in e && String(e.code).startsWith('commander.'))view.exitCode=2;console.error(JSON.stringify(view));process.exitCode=view.exitCode;}
 }
