@@ -17,7 +17,7 @@ export function Composer({busy,send,cancel,quit,language}:{busy:boolean;send:(te
     if(key.ctrl&&input==='c'){cancel();return;}
     if(key.ctrl&&input==='q'){quit?.();return;}
     if(key.escape){setState({value:'',cursor:0});pasteRef.current=false;setPasted(false);return;}
-    if(key.ctrl&&input==='s'){const value=current.current.value;if(!busy&&value.trim()){send(pasteRef.current&&value.startsWith('/')?` ${value}`:value);setState({value:'',cursor:0});pasteRef.current=false;setPasted(false);}return;}
+    if(key.ctrl&&input==='s'){const value=current.current.value;if(!busy&&value.trim()){send(pasteRef.current&&/^[\\/]/.test(value)?` ${value}`:value);setState({value:'',cursor:0});pasteRef.current=false;setPasted(false);}return;}
     if(key.ctrl||key.meta)return;
     if(key.leftArrow){setState(s=>({...s,cursor:Math.max(0,s.cursor-1)}));return;}
     if(key.rightArrow){setState(s=>({...s,cursor:Math.min(graphemes(s.value).length,s.cursor+1)}));return;}

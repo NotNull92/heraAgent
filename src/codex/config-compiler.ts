@@ -1,12 +1,23 @@
 import type {Config} from '../config.js';
 import type {JsonValue} from './generated/serde_json/JsonValue.js';
 import {HeraError} from '../errors.js';
+import type {ModelView} from './client.js';
+export function validateModelChoices(config:Config,models:ModelView[]){
+  for(const [role,id,effort] of [['main',config.main.model,config.main.reasoningEffort],['worker',config.workers.gptModel,config.workers.reasoningEffort]] as const){
+    if(!id){if(effort!==null)throw new HeraError('MODEL_NOT_SELECTED',`Select the ${role} model before its effort.`,2);continue;}
+    const selected=models.find(m=>m.model===id);
+    if(!selected)throw new HeraError('MODEL_UNAVAILABLE',`Selected ${role} model is absent from the native catalog; no fallback.`,2);
+    if(effort!==null&&!selected.supportedReasoningEfforts.some(e=>e.reasoningEffort===effort))throw new HeraError('UNSUPPORTED_EFFORT',`Selected ${role} model does not advertise effort ${effort}.`,2);
+  }
+}
 export function nativeSettings(config:Config):Record<string,JsonValue> {
   return {
     model_provider:'openai',sandbox_mode:'read-only',approval_policy:'never',
     'agents.enabled':false,'features.multi_agent':false,'features.multi_agent_v2':false,
     'agents.max_concurrent_threads_per_session':config.workers.maxConcurrent,
     ...(config.workers.gptModel?{'agents.default_subagent_model':config.workers.gptModel}:{}),
+    ...(config.main.reasoningEffort?{model_reasoning_effort:config.main.reasoningEffort}:{}),
+    ...(config.workers.reasoningEffort?{'agents.default_subagent_reasoning_effort':config.workers.reasoningEffort}:{}),
     'features.apps':false,'features.plugins':false,'features.hooks':false,
     'features.browser_use':false,'features.computer_use':false,'features.image_generation':false,
     'features.code_mode':false,'features.code_mode_host':false,'features.request_permissions_tool':false,

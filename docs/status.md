@@ -186,3 +186,25 @@ scanner; the allowlisted package passed its separate secret/path checks.
   unresolved (ADR-002). A passing standalone probe would not prove integration.
 - Physical Windows Korean IME/herdr tests and macOS manual/live checks remain NOT_RUN.
   No local Mac is required; macOS CI success is reported separately.
+
+## Role settings follow-up (2026-10-06)
+
+Hera account readiness now reports true (ChatGPT); login is no longer a blocker.
+The user selected main `gpt-6-astra` / `high`, worker `gpt-6-luna` / `max`.
+Both combinations were checked against the authenticated catalog and saved in the
+external Hera user configuration. The existing worker limit remains 3.
+
+CLI init now supports --effort and --worker-effort, including default to clear an
+override. Older configurations receive a null worker effort without losing settings.
+The TUI accepts slash and backslash model/effort commands for each role and a worker
+limit command (1-8). Invalid catalog combinations and counts cannot overwrite saved
+settings. Literal bracketed paste protection covers both prefixes. Worker settings
+map to the pinned runtime's default_subagent_model/default_subagent_reasoning_effort;
+these are defaults, not proof that future explicit spawn overrides are constrained.
+
+Windows local: 28 offline tests, typecheck and build passed. Actual pinned-runtime
+config/read returned main effort high and worker effort max/model gpt-6-luna, with
+worker spawning still disabled. Windows PTY accepted the backslash worker model and
+count commands and Ctrl+Q exited cleanly. No inference was performed for these checks.
+Windows sandbox setup and live safety gates remain outstanding. New CI results must
+be observed separately; the earlier passing artifact predates this settings change.

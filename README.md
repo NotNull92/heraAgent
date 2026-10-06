@@ -25,7 +25,7 @@ node bin/hera.mjs doctor --json
 node bin/hera.mjs init --list-models
 node bin/hera.mjs auth login openai
 # Choose exact returned IDs; no model is silently selected.
-node bin/hera.mjs init --model <id> --worker-model <id>
+node bin/hera.mjs init --model <id> --effort high --worker-model <id> --worker-effort max
 node bin/hera.mjs --single-agent
 ```
 
@@ -34,6 +34,23 @@ Use `/help` for commands. `run --single-agent --prompt-file <file>` supports non
 and multiline input. Paste never executes a slash action. `/apply` stays blocked
 until native write/spawn negative tests pass. A Windows sandbox notConfigured result
 requires official setup; unrestricted fallback is unavailable.
+
+Inside the TUI, `/` and `\` command prefixes are equivalent:
+
+```text
+\model main <catalog-id> high
+\model worker <catalog-id> max
+\effort main high
+\effort worker max
+\workers 3
+```
+
+`\model` lists the catalog, supported efforts and current selections. `\workers`
+shows the configured limit (1-8), not an observed running count. Use `default` for
+effort to clear its override. Changes are validated against the selected model's
+catalog, saved outside the repository, and take effect in a new session. Active
+turns reject setting changes; an uncertain shutdown prevents switching sessions.
+Pasted commands remain literal text. These settings do not enable gated workers.
 
 Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
 copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses only an explicitly

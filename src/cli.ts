@@ -2,10 +2,10 @@ import {Command} from 'commander';
 import {realpath,readFile} from 'node:fs/promises';
 import {z} from 'zod';
 import {heraHome} from './paths.js';
-import {loadConfig,saveConfig} from './config.js';
+import {loadConfig,saveConfig,parseEffort} from './config.js';
 import {errorView,HeraError} from './errors.js';
 import {CodexClient} from './codex/client.js';
-import {startupArgs} from './codex/config-compiler.js';
+import {startupArgs,validateModelChoices} from './codex/config-compiler.js';
 import {Controller} from './session/controller.js';
 import {listMetadata} from './metadata.js';
 import {capabilityReport} from './codex/capabilities.js';
@@ -14,9 +14,12 @@ export const VERSION='0.1.0-alpha.1';
 export async function main(argv=process.argv) {
   const program=new Command().name('hera').description('Hera local coding agent').version(`${VERSION} (Codex 0.160.1)`).option('--cwd <path>','workspace',process.cwd()).option('--single-agent','explicit read-only single-agent operation').exitOverride();
   const context=async()=>{const home=await heraHome();const cwd=await realpath(program.opts<{cwd:string}>().cwd);return {home,cwd,...await loadConfig(home,cwd)};};
-  program.command('init').option('--list-models').option('--model <id>').option('--worker-model <id>').option('--language <language>').action(async(opts:{listModels?:boolean;model?:string;workerModel?:string;language?:string})=>{
+  program.command('init').option('--list-models').option('--model <id>').option('--worker-model <id>').option('--effort <level>','main reasoning effort, or default').option('--worker-effort <level>','worker reasoning effort, or default').option('--language <language>').action(async(opts:{listModels?:boolean;model?:string;workerModel?:string;effort?:string;workerEffort?:string;language?:string})=>{
     const {home,cwd}=await context();const {config}=await loadConfig(home);
-    if(opts.listModels||opts.model||opts.workerModel){const client=await CodexClient.connect(home,cwd,startupArgs(config));try{const models=await client.models();if(opts.listModels)console.log(JSON.stringify({models,catalogNotEntitlement:true},null,2));for(const value of [opts.model,opts.workerModel])if(value&&!models.some(m=>m.model===value))throw new HeraError('MODEL_UNAVAILABLE','Model must exactly match a discovered catalog entry.',2);if(opts.model)config.main.model=opts.model;if(opts.workerModel)config.workers.gptModel=opts.workerModel;}finally{await client.close();}}
+    if(opts.listModels||opts.model||opts.workerModel||opts.effort!==undefined||opts.workerEffort!==undefined){const client=await CodexClient.connect(home,cwd,startupArgs(config));try{const models=await client.models();if(opts.listModels)console.log(JSON.stringify({models,catalogNotEntitlement:true},null,2));if(opts.model)config.main.model=opts.model;if(opts.workerModel)config.workers.gptModel=opts.workerModel;
+      for(const [value,target] of [[opts.effort,config.main],[opts.workerEffort,config.workers]] as const)if(value!==undefined)target.reasoningEffort=parseEffort(value);
+      if(opts.model||opts.workerModel||opts.effort!==undefined||opts.workerEffort!==undefined)validateModelChoices(config,models);
+    }finally{await client.close();}}
     if(opts.language){if(opts.language!=='en'&&opts.language!=='ko')throw new HeraError('INVALID_LANGUAGE','Use en or ko.',2);config.language=opts.language;}
     await saveConfig(home,config);if(!opts.listModels)console.log('Configuration saved. Official isolated OpenAI login is required. Catalog discovery does not verify paid model access.');
   });
