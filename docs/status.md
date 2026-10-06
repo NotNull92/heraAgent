@@ -118,3 +118,19 @@ Credentials protection: HERA_HOME inside a Git repository is now rejected before
 authentication. No real credential content is included in evidence or packages.
 M6 verified upload: 74b2f8ba6a33f1accc35cd97b2d06c17b55b6e81;
 CI 37422688140 passed Windows/macOS offline jobs. Live model selection/login still pending.
+
+## Distribution follow-up
+
+Windows local expanded suite: 23 tests, typechecks and clean-prefix archive smoke pass.
+CI 37424343028: both OS offline/native checks passed; Windows packaging failed because
+npm 11.6.2 `shrinkwrap` removed Linux optional-package libc metadata from npm 11.14.1's
+reviewed lock. Reproduced locally with project-local npm 11.6.2 (global npm untouched).
+The staging helper now renames the exact source lock into the equivalent shrinkwrap
+format and verifies deep equality, preserving every reviewed platform/integrity field.
+Corrected packaging succeeds under both npm versions; follow-up artifact CI pending.
+
+Additional safety review moved unexpected-worker/external-tool detection into the shared
+controller (including headless), tracks unfinished commands, retains unknown outcomes,
+preserves repeated shutdown results and cleans up interrupted official login.
+An opt-in bounded two-turn read-only/resume fixture is available via test:live -- --live;
+it has not run against a model. It does not claim worker/apply or external acceptance.

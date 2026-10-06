@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run",
+    "test:live": "node scripts/live-smoke.mjs",
     "protocol:generate": "node scripts/generate-protocol.mjs",
     "native:smoke": "node scripts/native-smoke.mjs",
     "package:check": "node scripts/check-package.mjs",

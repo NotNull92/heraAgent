@@ -32,5 +32,5 @@ export class InteractiveSession extends EventEmitter {
   }}
   async interrupt(){if(this.controller?.busy){await this.controller.interrupt();this.add('\nInterruption requested; completion unconfirmed.\n');}else this.add('\nNo model turn is active. Use /quit to exit.\n');}
   private async newSession(){if(this.controller&&!await this.controller.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Cannot switch sessions until prior execution is reconciled.',5,false);this.controller=null;}
-  async close(){if(this.controller)await this.controller.close();}
+  async close(){if(this.controller&&!await this.controller.close())process.exitCode=5;}
 }

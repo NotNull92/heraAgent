@@ -11,7 +11,7 @@ import {acquireWorkspace} from './workspace-lock.js';
 import {baseline,PhasePolicy} from './phase-policy.js';
 const completed=z.object({threadId:z.string(),turn:z.object({id:z.string(),status:z.enum(['completed','interrupted','failed','inProgress']),error:z.unknown().optional()})});
 export class Controller extends EventEmitter {
-  readonly phase=new PhasePolicy();private lock:Awaited<ReturnType<typeof acquireWorkspace>>|null=null;private baselineHash='';private closed=false;
+  readonly phase=new PhasePolicy();private lock:Awaited<ReturnType<typeof acquireWorkspace>>|null=null;private baselineHash='';private closeResult:Promise<boolean>|null=null;private commands=new Set<string>();
   metadata:Metadata|null=null;model='';provider='';private active=false;private early=new Map<string,z.infer<typeof completed>>();private waiter:((e:z.infer<typeof completed>)=>void)|null=null;private failure:((e:Error)=>void)|null=null;private fault:HeraError|null=null;private turnId:string|null=null;
   constructor(readonly client:CodexClient,readonly home:string,readonly cwd:string,readonly config:Config){super();client.on('event',(e:RpcEvent)=>this.event(e));client.on('request',(r:RpcRequest)=>this.deny(r));client.on('fault',(e:HeraError)=>{this.fault=e;this.failure?.(e);this.emit('fault',e);});}
   static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){requireMode(config,singleAgent);const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;try{client=await CodexClient.connect(home,cwd,startupArgs(config));const controller=new Controller(client,home,cwd,config);controller.lock=lock;await controller.start(previous);return controller;}catch(e){if(!client||await client.close())await lock.release();throw e;}}
@@ -35,6 +35,10 @@ export class Controller extends EventEmitter {
     this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:'gpt_only',workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
   }
   private event(event:RpcEvent){
+    if(event.method==='item/started'||event.method==='item/completed'){
+      const item=z.object({item:z.object({id:z.string(),type:z.string()})}).safeParse(event.params);
+      if(item.success){if(['collabAgentToolCall','subAgentActivity','mcpToolCall','dynamicToolCall'].includes(item.data.item.type)){this.client.rpc.fail(new HeraError('UNEXPECTED_TOOL_ACTIVITY','A disabled worker/external tool was observed; safety gate invalidated.',4,false));void this.close();return;}if(item.data.item.type==='commandExecution'){if(event.method==='item/started')this.commands.add(item.data.item.id);else this.commands.delete(item.data.item.id);}}
+    }
     if(event.method==='turn/completed'){const p=completed.safeParse(event.params);if(!p.success){this.client.rpc.fail(new HeraError('INVALID_EVENT','Invalid completion event.',5,false));return;}if(p.data.threadId===this.metadata?.codexThreadId){if(this.waiter&&p.data.turn.id===this.turnId)this.waiter(p.data);else {if(this.early.size>=128)this.early.delete(this.early.keys().next().value!);this.early.set(p.data.turn.id,p.data);}}}
     this.emit('event',event);
   }
@@ -48,17 +52,19 @@ export class Controller extends EventEmitter {
     if(this.active||!this.metadata)throw new HeraError('TURN_ACTIVE','Wait for the current turn.',5);
     if(!prompt.trim()||Buffer.byteLength(prompt)>1024*1024)throw new HeraError('INVALID_PROMPT','Prompt must be nonempty and at most 1 MiB.',2);
     if(this.fault)throw this.fault;
-    this.active=true;this.metadata.status='running';await this.persist();
-    try{const turn=await this.client.turn({threadId:this.metadata.codexThreadId,input:[{type:'text',text:prompt,text_elements:[]}],effort:this.config.main.reasoningEffort});this.turnId=turn.id;this.metadata.lastKnownTurnId=turn.id;await this.persist();
+    this.active=true;this.metadata.status='running';
+    try{await this.persist();const turn=await this.client.turn({threadId:this.metadata.codexThreadId,input:[{type:'text',text:prompt,text_elements:[]}],effort:this.config.main.reasoningEffort});this.turnId=turn.id;this.metadata.lastKnownTurnId=turn.id;await this.persist();
       const done=await new Promise<z.infer<typeof completed>>((resolve,reject)=>{this.waiter=resolve;this.failure=reject;if(this.fault){reject(this.fault);return;}const early=this.early.get(turn.id);if(early){this.early.delete(turn.id);resolve(early);}});
       this.metadata.status=done.turn.status==='completed'?'complete':done.turn.status==='interrupted'?'interrupted':'unknown_outcome';await this.persist();
+      if(this.commands.size||this.client.rpc.requestsPending)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native turn ended while commands or approval requests remain unresolved.',5,false);
       if(await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during read-only analysis; do not apply proposals.',4,false);
       if(done.turn.status!=='completed')throw new HeraError(done.turn.status==='interrupted'?'INTERRUPTED':'TURN_FAILED','Native turn did not complete successfully.',done.turn.status==='interrupted'?130:5,done.turn.status==='interrupted');
       return {sessionId:this.metadata.heraSessionId,threadId:this.metadata.codexThreadId,turnId:turn.id,status:'completed',model:this.model,provider:this.provider};
-    }catch(e){if(this.metadata.status==='running')this.metadata.status='unknown_outcome';await this.persist();throw e;}
+    }catch(e){if(this.metadata.status==='running'||e instanceof HeraError&&!e.outcomeKnown)this.metadata.status='unknown_outcome';await this.persist();throw e;}
     finally{this.waiter=null;this.failure=null;this.active=false;this.turnId=null;}
   }
   async interrupt(){if(this.turnId&&this.metadata){await this.client.interrupt(this.metadata.codexThreadId,this.turnId);this.emit('notice','Interrupt requested; waiting for native completion.');}else if(this.active)throw new HeraError('INTERRUPTED_UNCONFIRMED','Turn acknowledgment is pending; do not replay.',5,false);}
-  async requestApply(){if(this.active)throw new HeraError('TURN_ACTIVE','Wait for the active turn before reviewing application.',4);this.phase.quiesce({workers:0,commands:0,approvals:this.client.rpc.requestsPending,turnActive:this.active,baselineMatches:await baseline(this.cwd)===this.baselineHash});this.phase.apply(false,{readOnly:false,spawnDisabled:false,resumePolicy:false});}
-  async close(){if(this.closed)return true;this.closed=true;const uncertain=this.active||this.metadata?.status==='unknown_outcome';if(this.active){try{await this.interrupt();}catch{}if(this.metadata)this.metadata.status='unknown_outcome';}const graceful=await this.client.close();await this.persist();if(graceful&&!uncertain)await this.lock?.release();return graceful&&!uncertain;}
+  async requestApply(){if(this.active)throw new HeraError('TURN_ACTIVE','Wait for the active turn before reviewing application.',4);this.phase.quiesce({workers:0,commands:this.commands.size,approvals:this.client.rpc.requestsPending,turnActive:this.active,baselineMatches:await baseline(this.cwd)===this.baselineHash});this.phase.apply(false,{readOnly:false,spawnDisabled:false,resumePolicy:false});}
+  close():Promise<boolean>{if(!this.closeResult)this.closeResult=this.shutdown();return this.closeResult;}
+  private async shutdown(){const uncertain=this.active||this.commands.size>0||this.fault!==null||this.metadata?.status==='unknown_outcome';if(this.active){try{await this.interrupt();}catch{}if(this.metadata)this.metadata.status='unknown_outcome';}const graceful=await this.client.close();await this.persist();if(graceful&&!uncertain)await this.lock?.release();return graceful&&!uncertain;}
 }
