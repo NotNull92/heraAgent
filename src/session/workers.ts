@@ -5,6 +5,8 @@ import type {Config} from '../config.js';
 import type {RpcEvent} from '../codex/transport.js';
 import {HeraError} from '../errors.js';
 import {assignmentSchema,validateResult} from './phase-policy.js';
+import {GO_PROVIDER,GO_EFFORT} from '../codex/external-runtime.js';
+import {GO_MODEL} from '../providers/opencode-go.js';
 
 export const workerContractsSchema=z.array(z.strictObject({threadId:z.string(),assignment:assignmentSchema})).max(511);
 
@@ -67,8 +69,8 @@ export class NativeWorkers {
     this.snapshot=owned;
     if([...owned.values()].some(t=>t.status.type==='systemError'))throw new HeraError('WORKER_STATE_UNKNOWN','A native thread reports a system error.',5,false);
     if(checkRouting)for(const t of owned.values()){
-      const main=t.id===this.root;const model=main?this.config.main.model:this.config.workers.gptModel;const effort=main?this.config.main.reasoningEffort:this.config.workers.reasoningEffort;
-      if(t.modelProvider!=='openai'||t.model!==model||effort!==null&&t.reasoningEffort!==effort)throw new HeraError('WORKER_ROUTING_DRIFT','Observed native model/provider/effort differs from the selected role. Defaults are not preventive override enforcement.',4,false);
+      const main=t.id===this.root;const external=!main&&this.config.mode==='external_workers';const model=main?this.config.main.model:external?GO_MODEL:this.config.workers.gptModel;const effort=main?this.config.main.reasoningEffort:external?GO_EFFORT:this.config.workers.reasoningEffort;
+      if(t.modelProvider!==(external?GO_PROVIDER:'openai')||t.model!==model||effort!==null&&t.reasoningEffort!==effort)throw new HeraError('WORKER_ROUTING_DRIFT','Observed native model/provider/effort differs from the selected role. Defaults are not preventive override enforcement.',4,false);
     }
     if(this.activeCount>this.config.workers.maxConcurrent)throw new HeraError('WORKER_LIMIT_DRIFT','Observed active workers exceed the configured limit.',4,false);
     return owned;
@@ -89,7 +91,16 @@ export class NativeWorkers {
     for(;;){
       const tree=await this.refresh(client,false);
       // Stop the parent first so it cannot deliberately start more work during cancellation.
-      for(const t of tree.values())for(const turn of t.turns)if(turn.status==='inProgress'&&!sent.has(t.id+':'+turn.id)){sent.add(t.id+':'+turn.id);await client.interrupt(t.id,turn.id);}
+      for(const t of tree.values())for(const turn of t.turns)if(turn.status==='inProgress'&&!sent.has(t.id+':'+turn.id)){
+        sent.add(t.id+':'+turn.id);
+        try{await client.interrupt(t.id,turn.id);}catch(error){
+          // A turn can complete between the snapshot and interrupt RPC. Ignore only
+          // that exact native race, and only after a fresh read proves it is idle.
+          if(!(error instanceof HeraError)||error.errorCode!=='RPC_-32600'||!error.message.includes('no active turn to interrupt'))throw error;
+          const current=thread.parse(await client.read(t.id));
+          if(current.id!==t.id||current.status.type==='systemError'||threadBusy(current))throw error;
+        }
+      }
       for(const t of tree.values())if(t.status.type!=='notLoaded')await client.cleanBackgroundTerminals(t.id);
       const after=await this.refresh(client,false);
       if(![...after.values()].some(threadBusy)&&after.size===tree.size)return;

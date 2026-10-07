@@ -4,6 +4,7 @@ import {HeraError} from '../errors.js';
 import type {ModelView} from './client.js';
 export function validateModelChoices(config:Config,models:ModelView[]){
   for(const [role,id,effort] of [['main',config.main.model,config.main.reasoningEffort],['worker',config.workers.gptModel,config.workers.reasoningEffort]] as const){
+    if(role==='worker'&&config.mode==='external_workers')continue;
     if(!id){if(effort!==null)throw new HeraError('MODEL_NOT_SELECTED',`Select the ${role} model before its effort.`,2);continue;}
     const selected=models.find(m=>m.model===id);
     if(!selected)throw new HeraError('MODEL_UNAVAILABLE',`Selected ${role} model is absent from the native catalog; no fallback.`,2);
@@ -35,8 +36,8 @@ export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'=
 }
 export function startupArgs(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false){return Object.entries(nativeSettings(config,mode,workers)).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]);}
 export function requireMode(config:Config,singleAgent:boolean,workersVerified=false){
-  if(config.mode==='external_workers')throw new HeraError('EXTERNAL_MODE_BLOCKED','Go native routing and collaboration gates G10-G15 have not passed; no fallback.',4);
+  if(config.mode==='external_workers'&&(singleAgent||!workersVerified))throw new HeraError('EXTERNAL_MODE_BLOCKED','Mixed runtime and native routing/safety verification are required; no fallback. Use GPT-only for single-agent operation.',4);
   if(!singleAgent&&!workersVerified)throw new HeraError('COLLABORATION_UNVERIFIED','Native worker gates are unverified for these settings. Use hera doctor or explicitly select --single-agent.',4);
   if(!config.main.model)throw new HeraError('MODEL_NOT_SELECTED','Run hera init --list-models, then explicitly select --model and --worker-model.',2);
-  if(!singleAgent&&!config.workers.gptModel)throw new HeraError('MODEL_NOT_SELECTED','Select a native worker model before starting collaboration.',2);
+  if(!singleAgent&&config.mode==='gpt_only'&&!config.workers.gptModel)throw new HeraError('MODEL_NOT_SELECTED','Select a native worker model before starting collaboration.',2);
 }

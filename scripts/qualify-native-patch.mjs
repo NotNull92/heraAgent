@@ -8,6 +8,7 @@ import {spawnSync} from 'node:child_process';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const manifest=JSON.parse(await readFile(join(root,'experiments/codex-provider-routing/manifest.json'),'utf8'));
+assert.equal(JSON.parse(await readFile(join(root,'assets/codex-provider/manifest.json'),'utf8')).patchSha256,manifest.patchSha256);
 const patch=join(root,'experiments/codex-provider-routing/native-v1.patch');
 assert.equal(createHash('sha256').update(await readFile(patch)).digest('hex'),manifest.patchSha256);
 const platforms={'win32-x64':['x86_64-pc-windows-msvc','codex.exe'],'darwin-arm64':['aarch64-apple-darwin','codex'],'darwin-x64':['x86_64-apple-darwin','codex']};
@@ -46,4 +47,7 @@ if(process.argv.includes('--prepare-only')){
   const smoke=JSON.parse(run(process.execPath,[join(root,'scripts/native-patch-smoke.mjs'),binary],root,true));
   const receipt={sourceCommit:manifest.commit,patchSha256:manifest.patchSha256,rustToolchain:manifest.rustToolchain,...smoke,productDefaultChanged:false,macosLiveManual:'not_run'};
   await writeFile(join(root,'.artifacts','native-patch-receipt.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+  const artifact=join(root,'.artifacts','native-runtime');await mkdir(artifact);
+  await copyFile(binary,join(artifact,process.platform==='win32'?'codex-app-server.exe':'codex-app-server'));
+  await copyFile(join(root,'.artifacts','native-patch-receipt.json'),join(artifact,'receipt.json'));
 }

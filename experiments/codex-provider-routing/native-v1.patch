@@ -1728,10 +1728,31 @@ index ac6171c0..0eacea22 100644
        "description": "Suppress warnings about unstable (under development) features.",
        "type": "boolean"
 diff --git a/codex-rs/core/src/agent/child_config.rs b/codex-rs/core/src/agent/child_config.rs
-index 713c4418..ca211810 100644
+index 713c4418..ec9132b7 100644
 --- a/codex-rs/core/src/agent/child_config.rs
 +++ b/codex-rs/core/src/agent/child_config.rs
-@@ -268,9 +268,13 @@ pub(crate) async fn apply_spawn_agent_service_tier(
+@@ -56,6 +56,20 @@ pub(crate) async fn prepare_agent_spawn_config(
+     let turn = step_context.turn.as_ref();
+     let mut config =
+         build_agent_spawn_config(&session.get_base_instructions().await, step_context)?;
++    // A full-history fork skips role application. Do not let it bypass a user-owned
++    // cross-provider default and silently create a worker on the parent's provider.
++    if options.full_history_fork
++        && config
++            .agent_roles
++            .get(DEFAULT_ROLE_NAME)
++            .and_then(|role| role.model_provider.as_deref())
++            .is_some_and(|provider| provider != config.model_provider_id)
++    {
++        return Err(
++            "history forks cannot bypass the configured cross-provider default role; use a fresh worker task"
++                .to_string(),
++        );
++    }
+     if options.version == SpawnConfigVersion::V1 && options.full_history_fork {
+         reject_full_fork_agent_type_override(options.role_name)?;
+     }
+@@ -268,9 +282,13 @@ pub(crate) async fn apply_spawn_agent_service_tier(
      let model = config.model.clone().ok_or_else(|| {
          "spawn_agent could not resolve the child model for service tier validation".to_string()
      })?;
@@ -1748,7 +1769,7 @@ index 713c4418..ca211810 100644
          .get_model_info(model.as_str(), &config.to_models_manager_config())
          .await;
  
-@@ -285,10 +289,13 @@ async fn apply_spawn_agent_role(
+@@ -285,10 +303,13 @@ async fn apply_spawn_agent_role(
      config: &mut Config,
      role_name: Option<&str>,
  ) -> Result<(), String> {
@@ -1763,7 +1784,7 @@ index 713c4418..ca211810 100644
      {
          return Ok(());
      }
-@@ -299,9 +306,13 @@ async fn apply_spawn_agent_role(
+@@ -299,9 +320,13 @@ async fn apply_spawn_agent_role(
      let model = config.model.clone().ok_or_else(|| {
          "spawn_agent could not resolve the child model for reasoning effort validation".to_string()
      })?;
@@ -3356,10 +3377,10 @@ index 480b5bb5..570333f0 100644
      parent_call_id: &'static str,
 diff --git a/codex-rs/core/tests/suite/cross_provider_v1.rs b/codex-rs/core/tests/suite/cross_provider_v1.rs
 new file mode 100644
-index 00000000..80dd4fac
+index 00000000..20753512
 --- /dev/null
 +++ b/codex-rs/core/tests/suite/cross_provider_v1.rs
-@@ -0,0 +1,249 @@
+@@ -0,0 +1,419 @@
 +use super::agent_execution::mount_completed_worker;
 +use super::agent_execution::mount_namespaced_collaboration_call;
 +use anyhow::Result;
@@ -3371,14 +3392,23 @@ index 00000000..80dd4fac
 +use codex_model_provider_info::WireApi;
 +use codex_model_provider_info::create_oss_provider_with_base_url;
 +use codex_models_manager::bundled_models_response;
++use codex_protocol::protocol::EventMsg;
 +use codex_protocol::protocol::MultiAgentVersion;
 +use core_test_support::responses::ResponseMock;
 +use core_test_support::responses::ResponsesRequest;
++use core_test_support::responses::ev_response_created;
++use core_test_support::responses::sse;
 +use core_test_support::responses::start_mock_server;
 +use core_test_support::test_codex::test_codex;
++use core_test_support::wait_for_event;
 +use pretty_assertions::assert_eq;
 +use serde_json::json;
 +use std::time::Duration;
++use test_case::test_case;
++use wiremock::Mock;
++use wiremock::ResponseTemplate;
++use wiremock::matchers::method;
++use wiremock::matchers::path;
 +
 +const CUSTOM_ROLE: &str = "custom_child";
 +const CUSTOM_PROVIDER: &str = "custom";
@@ -3605,6 +3635,167 @@ index 00000000..80dd4fac
 +            .expect("child requests")
 +            .len(),
 +        0
++    );
++    assert_eq!(test.thread_manager.list_thread_ids().await.len(), 1);
++    Ok(())
++}
++
++#[test_case(401; "unauthorized")]
++#[test_case(429; "quota_or_rate_limit")]
++#[test_case(400; "unavailable_model")]
++#[test_case(200; "stream_eof")]
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn v1_provider_failure_does_not_retry_or_fall_back(status: u16) -> Result<()> {
++    let root_server = start_mock_server().await;
++    let child_server = start_mock_server().await;
++    mount_namespaced_collaboration_call(
++        &root_server,
++        "multi_agent_v1",
++        "spawn failing worker",
++        "failure-spawn",
++        "spawn_agent",
++        json!({"message": "bounded task", "agent_type": CUSTOM_ROLE}),
++    )
++    .await;
++    let response = if status == 200 {
++        ResponseTemplate::new(200)
++            .insert_header("content-type", "text/event-stream")
++            .set_body_string(sse(vec![ev_response_created("incomplete")]))
++    } else {
++        ResponseTemplate::new(status).set_body_json(
++            json!({"error": {"message": "fixture rejection", "type": "fixture_error"}}),
++        )
++    };
++    Mock::given(method("POST"))
++        .and(path("/v1/responses"))
++        .respond_with(response)
++        .mount(&child_server)
++        .await;
++    let child_url = format!("{}/v1", child_server.uri());
++    let mut builder = test_codex()
++        .with_model("gpt-5.5")
++        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
++        .with_config(move |config| {
++            configure_custom_provider(config, child_url, MultiAgentVersion::V1)
++        })
++        .with_model_info_override("gpt-5.5", |model| {
++            model.multi_agent_version = Some(MultiAgentVersion::V1)
++        });
++    let test = builder.build_with_auto_env(&root_server).await?;
++    test.submit_turn("spawn failing worker").await?;
++    let ids = test.thread_manager.list_thread_ids().await;
++    assert_eq!(ids.len(), 2);
++    let child_id = *ids
++        .iter()
++        .find(|id| **id != test.session_configured.thread_id)
++        .expect("native child");
++    let child = test.thread_manager.get_thread(child_id).await?;
++    wait_for_event(&child, |event| matches!(event, EventMsg::Error(_))).await;
++    wait_for_event(&child, |event| matches!(event, EventMsg::TurnComplete(_))).await;
++    let requests = child_server
++        .received_requests()
++        .await
++        .expect("child requests");
++    assert_eq!(requests.len(), 1);
++    assert_eq!(
++        serde_json::from_slice::<serde_json::Value>(&requests[0].body)?["model"],
++        CUSTOM_MODEL
++    );
++    for request in root_server
++        .received_requests()
++        .await
++        .expect("root requests")
++    {
++        if request.url.path().ends_with("/responses") {
++            assert_eq!(
++                serde_json::from_slice::<serde_json::Value>(&request.body)?["model"],
++                "gpt-5.5"
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn v2_provider_switch_is_rejected_before_child_request() -> Result<()> {
++    let root_server = start_mock_server().await;
++    let child_server = start_mock_server().await;
++    let parent=mount_namespaced_collaboration_call(
++        &root_server,"collaboration","try unsupported transport","v2-spawn","spawn_agent",
++        json!({"message":"bounded task","agent_type":CUSTOM_ROLE,"task_name":"external","fork_turns":"none"}),
++    ).await;
++    let child_url = format!("{}/v1", child_server.uri());
++    let mut builder = test_codex()
++        .with_model("gpt-5.5")
++        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
++        .with_config(move |config| {
++            configure_custom_provider(config, child_url, MultiAgentVersion::V2)
++        })
++        .with_model_info_override("gpt-5.5", |model| {
++            model.multi_agent_version = Some(MultiAgentVersion::V2)
++        });
++    let test = builder.build_with_auto_env(&root_server).await?;
++    test.submit_turn("try unsupported transport").await?;
++    assert!(
++        parent
++            .function_call_output_text("v2-spawn")
++            .expect("native rejection")
++            .contains("V1 plaintext worker backend")
++    );
++    assert!(
++        child_server
++            .received_requests()
++            .await
++            .expect("child requests")
++            .is_empty()
++    );
++    assert_eq!(test.thread_manager.list_thread_ids().await.len(), 1);
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn v1_history_fork_cannot_bypass_cross_provider_default_role() -> Result<()> {
++    let root_server = start_mock_server().await;
++    let child_server = start_mock_server().await;
++    let parent = mount_namespaced_collaboration_call(
++        &root_server,
++        "multi_agent_v1",
++        "try history fork",
++        "fork-spawn",
++        "spawn_agent",
++        json!({"message": "bounded task", "fork_context": true}),
++    )
++    .await;
++    let child_url = format!("{}/v1", child_server.uri());
++    let mut builder = test_codex()
++        .with_model("gpt-5.5")
++        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
++        .with_config(move |config| {
++            configure_custom_provider(config, child_url, MultiAgentVersion::V1);
++            let role = config
++                .agent_roles
++                .get(CUSTOM_ROLE)
++                .expect("custom role")
++                .clone();
++            config.agent_roles.insert("default".to_string(), role);
++        })
++        .with_model_info_override("gpt-5.5", |model| {
++            model.multi_agent_version = Some(MultiAgentVersion::V1)
++        });
++    let test = builder.build_with_auto_env(&root_server).await?;
++    test.submit_turn("try history fork").await?;
++    assert!(
++        parent
++            .function_call_output_text("fork-spawn")
++            .expect("native rejection")
++            .contains("cannot bypass the configured cross-provider default role")
++    );
++    assert!(
++        child_server
++            .received_requests()
++            .await
++            .expect("requests")
++            .is_empty()
 +    );
 +    assert_eq!(test.thread_manager.list_thread_ids().await.len(), 1);
 +    Ok(())

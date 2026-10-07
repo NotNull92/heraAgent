@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import type {JsonValue} from '../codex/generated/serde_json/JsonValue.js';
 import type {Config} from '../config.js';
 import {CodexClient} from '../codex/client.js';
-import {nativeSettings,startupArgs,requireMode,validateModelChoices} from '../codex/config-compiler.js';
+import {nativeSettings,requireMode,validateModelChoices} from '../codex/config-compiler.js';
 import type {RpcEvent,RpcRequest} from '../codex/transport.js';
 import {HeraError,safeText} from '../errors.js';
 import {saveMetadata,type Metadata} from '../metadata.js';
@@ -13,18 +13,20 @@ import {acquireWorkspace} from './workspace-lock.js';
 import {baseline,PhasePolicy,validateProposalPath,assignmentSchema,resultSchema} from './phase-policy.js';
 import {proposalSchema,reviewProposal,matchesTestCommand,type ApplyReview} from './apply-review.js';
 import {goCredentialStatus} from '../providers/go-credentials.js';
-import {NativeWorkers,workerContractsSchema} from './workers.js';
+import {NativeWorkers,workerContractsSchema,threadBusy} from './workers.js';
 import {workerCapability} from '../codex/capabilities.js';
+import {GO_PROVIDER,GO_ROLE,GO_EFFORT} from '../codex/external-runtime.js';
+import {GO_MODEL} from '../providers/opencode-go.js';
 const completed=z.object({threadId:z.string(),turn:z.object({id:z.string(),status:z.enum(['completed','interrupted','failed','inProgress']),error:z.unknown().optional()})});
 export class Controller extends EventEmitter {
-  readonly phase=new PhasePolicy();private lock:Awaited<ReturnType<typeof acquireWorkspace>>|null=null;private baselineHash='';private closeResult:Promise<boolean>|null=null;private commands=new Set<string>();
+  readonly phase=new PhasePolicy();private lock:Awaited<ReturnType<typeof acquireWorkspace>>|null=null;private baselineHash='';private closeResult:Promise<boolean>|null=null;private commands=new Map<string,string>();
   metadata:Metadata|null=null;model='';provider='';private active=false;private early=new Map<string,z.infer<typeof completed>>();private waiter:((e:z.infer<typeof completed>)=>void)|null=null;private failure:((e:Error)=>void)|null=null;private fault:HeraError|null=null;private turnId:string|null=null;
   review:ApplyReview|null=null;
   private applying=false;private applyCanceled=false;
   workers:NativeWorkers|null=null;private workerChecks:Promise<void>=Promise.resolve();private workerDirty=false;private checkingWorkers=false;private stopping:Promise<void>|null=null;
   constructor(public client:CodexClient,readonly home:string,readonly cwd:string,readonly config:Config,private workerAnalysis=false){super();this.bindClient();}
   private bindClient(){this.client.on('event',(e:RpcEvent)=>this.event(e));this.client.on('request',(r:RpcRequest)=>this.deny(r));this.client.on('fault',(e:HeraError)=>{this.fault=e;this.failure?.(e);this.emit('fault',e);});}
-  static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){requireMode(config,singleAgent,singleAgent?false:(await workerCapability(home,config)).ready);const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;try{client=await CodexClient.connect(home,cwd,startupArgs(config,'read-only',!singleAgent));const controller=new Controller(client,home,cwd,config,!singleAgent);controller.lock=lock;await controller.start(previous);return controller;}catch(e){if(!client||await client.close())await lock.release();throw e;}}
+  static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){requireMode(config,singleAgent,singleAgent?false:(await workerCapability(home,config)).ready);const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;try{client=await CodexClient.session(home,cwd,config,'read-only',!singleAgent);const controller=new Controller(client,home,cwd,config,!singleAgent);controller.lock=lock;await controller.start(previous);return controller;}catch(e){if(!client||await client.close())await lock.release();throw e;}}
   get busy(){return this.active||this.applying||(this.workers?.activeCount??0)>0;}
   get collaborationEnabled(){return this.workerAnalysis;}
   private async start(previous?:Metadata){
@@ -33,8 +35,9 @@ export class Controller extends EventEmitter {
     await this.verifyRuntime();
     validateModelChoices(this.config,await this.client.models());
     this.baselineHash=await baseline(this.cwd);
-    const developerInstructions=this.workerAnalysis?`Hera uses native read-only collaboration. The root owns task contracts and shared interfaces; use native spawn/followup/message/wait tools, never independent agent processes. Every worker must use model ${this.config.workers.gptModel}, effort ${this.config.workers.reasoningEffort??'the configured model default'}, fork_turns=none, and no custom agent role. Main and workers may read and propose code, but must not write, run tests, expand permissions or use external side effects during analysis. Only the reviewed main-only phase may apply and test. Send every worker an assignment matching ${JSON.stringify(z.toJSONSchema(assignmentSchema))}. Keep taskId and contractHash stable until the task/interface contract changes; then issue a new version/hash through native follow-up. Every worker final answer, including follow-ups, must be JSON matching ${JSON.stringify(z.toJSONSchema(resultSchema))}. Never claim unexecuted tests as run. The root must preserve the latest assignment for each native thread, coordinate interface changes, and reject stale results. If a result needs correction use native follow-up at most twice, then report the blocker. No separate execution or conversation store.`:undefined;
-    const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:nativeSettings(this.config,'read-only',this.workerAnalysis),...(developerInstructions?{developerInstructions:developerInstructions+` All assignments use baseline.relevantFilesHash=${this.baselineHash}. Include the result schema and these restrictions in each native worker task message; do not assume shared conversation with fork_turns=none.`}:{})};
+    const developerInstructions=this.workerAnalysis?`Hera uses native read-only collaboration. The root owns task contracts and shared interfaces; use native spawn/followup/message/wait tools, never independent agent processes. ${this.config.mode==='external_workers'?`Every worker must use agent_type=${GO_ROLE}, omit model/reasoning overrides, use fork_context=false, and receive a fresh plaintext task. Use the native V1 spawn_agent/send_input/wait/resume_agent tools. After a cold restart, resume an unloaded saved Go child with resume_agent before sending it work. The user selected Go ${GO_MODEL}/${GO_EFFORT}; never fall back to GPT workers.`:`Every worker must use model ${this.config.workers.gptModel}, effort ${this.config.workers.reasoningEffort??'the configured model default'}, fork_turns=none, and no custom agent role.`} Main and workers may read and propose code, but must not write, run tests, expand permissions or use external side effects during analysis. Only the reviewed main-only phase may apply and test. Send every worker an assignment matching ${JSON.stringify(z.toJSONSchema(assignmentSchema))}. Keep taskId and contractHash stable until the task/interface contract changes; then issue a new version/hash through native follow-up. Every worker final answer, including follow-ups, must be JSON matching ${JSON.stringify(z.toJSONSchema(resultSchema))}. Never claim unexecuted tests as run. The root must preserve the latest assignment for each native thread, coordinate interface changes, and reject stale results. If a result needs correction use native follow-up at most twice, then report the blocker. No separate execution or conversation store.`:undefined;
+    const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:this.client.sessionSettings??nativeSettings(this.config,'read-only',this.workerAnalysis),...(developerInstructions?{developerInstructions:developerInstructions+` All assignments use baseline.relevantFilesHash=${this.baselineHash}. Include the result schema and these restrictions in each native worker task message; do not assume shared conversation with fork_turns=none.`}:{})};
+    if(previous&&previous.mode!==this.config.mode)throw new HeraError('SESSION_MODE_MISMATCH','Resume the session in its saved provider mode; no silent route change.',4);
     if(previous&&previous.workspaceRealPath!==this.cwd)throw new HeraError('WORKSPACE_MISMATCH','Session belongs to a different workspace.',2);
     if(previous){this.workers=new NativeWorkers(previous.codexThreadId,this.cwd,this.config);await this.workers.assertIdle(this.client);}
     const started=previous?await this.client.resume({...params,threadId:previous.codexThreadId}):await this.client.start(params);
@@ -43,20 +46,29 @@ export class Controller extends EventEmitter {
     await this.workers.refresh(this.client);
     if(!this.workerAnalysis&&this.workers.count)throw new HeraError('COLLABORATION_UNVERIFIED','Choose a verified worker session to resume a native child tree.',4);
     for(const child of this.workers.snapshot.values())if(child.id!==started.thread.id){
+      // Native resume_agent restores Go routing and reapplies the parent's current
+      // read-only policy. Do not inject the OpenAI catalog into a Go thread/resume.
+      if(this.config.mode==='external_workers')continue;
       const resumed=await this.client.resume({...params,threadId:child.id,model:this.config.workers.gptModel,config:{...params.config,model_reasoning_effort:this.config.workers.reasoningEffort}});
       if(resumed.model!==this.config.workers.gptModel||resumed.modelProvider!=='openai'||resumed.sandbox.type!=='readOnly'||resumed.sandbox.networkAccess!==false||resumed.approvalPolicy!=='never')throw new HeraError('WORKER_POLICY_DRIFT','Saved worker policy did not resume read-only.',4,false);
     }
     this.model=started.model;this.provider=started.modelProvider;if(await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during session startup.',4);this.phase.analyze();
-    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:'gpt_only',workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
+    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:this.config.mode,workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:this.workerAnalysis?(await workerCapability(this.home,this.config)).fingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
   }
   private async verifyRuntime(){
     const effective=z.object({config:z.record(z.string(),z.unknown())}).parse(await this.client.rpc.request('config/read',{cwd:this.cwd,includeLayers:true})).config;
     const get=(key:string):unknown=>key.split('.').reduce<unknown>((value,part)=>value&&typeof value==='object'&&part in value?Reflect.get(value,part):undefined,effective);
-    for(const key of ['agents.enabled','features.multi_agent','features.multi_agent_v2'])if(get(key)!==this.workerAnalysis)throw new HeraError('POLICY_NOT_ENFORCED',`Effective ${key} differs from the phase policy.`,4);
+    for(const key of ['agents.enabled','features.multi_agent','features.multi_agent_v2'])if(get(key)!==(key==='features.multi_agent_v2'&&this.config.mode==='external_workers'?false:this.workerAnalysis))throw new HeraError('POLICY_NOT_ENFORCED',`Effective ${key} differs from the phase policy.`,4);
     for(const key of ['features.apps','features.plugins','features.hooks','features.browser_use','features.computer_use','features.request_permissions_tool'])if(get(key)!==false)throw new HeraError('POLICY_NOT_ENFORCED',`Effective ${key} must be false.`,4);
     if(this.workerAnalysis){
-      if(get('agents.max_concurrent_threads_per_session')!==this.config.workers.maxConcurrent||get('agents.default_subagent_model')!==this.config.workers.gptModel||this.config.workers.reasoningEffort!==null&&get('agents.default_subagent_reasoning_effort')!==this.config.workers.reasoningEffort)throw new HeraError('WORKER_CONFIG_DRIFT','Native worker defaults/limit differ from the selected configuration.',4);
-      const agents=get('agents');if(agents&&typeof agents==='object'&&Object.values(agents).some(value=>value&&typeof value==='object'))throw new HeraError('WORKER_ROLE_OVERRIDE','Custom agent role layers require separate safety verification.',4);
+      if(get('agents.max_concurrent_threads_per_session')!==this.config.workers.maxConcurrent||this.config.mode==='gpt_only'&&(get('agents.default_subagent_model')!==this.config.workers.gptModel||this.config.workers.reasoningEffort!==null&&get('agents.default_subagent_reasoning_effort')!==this.config.workers.reasoningEffort))throw new HeraError('WORKER_CONFIG_DRIFT','Native worker defaults/limit differ from the selected configuration.',4);
+      const agents=get('agents');if(this.config.mode==='gpt_only'&&agents&&typeof agents==='object'&&Object.values(agents).some(value=>value&&typeof value==='object'))throw new HeraError('WORKER_ROLE_OVERRIDE','Custom agent role layers require separate safety verification.',4);
+      if(this.config.mode==='external_workers'){
+        const roles=Object.entries(agents as Record<string,unknown>).filter(([,value])=>value&&typeof value==='object').map(([key])=>key).sort();
+        if(JSON.stringify(roles)!==JSON.stringify([GO_ROLE,'default','worker','explorer'].sort())||get('agents.max_depth')!==1||get('agents.default_subagent_model')!=null)throw new HeraError('WORKER_CONFIG_DRIFT','Mixed role inventory or depth/defaults changed.',4);
+        const provider=`model_providers.${GO_PROVIDER}`;
+        if(get(provider+'.base_url')!==this.config.providers.opencode_go_deepseek.baseUrl||get(provider+'.requires_openai_auth')!==false||get(provider+'.env_key')!=='HERA_OPENCODE_GO_API_KEY'||get(provider+'.request_max_retries')!==0||get(provider+'.stream_max_retries')!==0)throw new HeraError('WORKER_CONFIG_DRIFT','Go endpoint/auth/retry policy changed.',4);
+      }
     }
     for(const key of ['mcp_servers','hooks']){const value=get(key);if(value&&typeof value==='object'&&Object.keys(value).length)throw new HeraError('EXTERNAL_TOOLS_BLOCKED',`Configured ${key} requires a separately verified read-only profile.`,4);}
     if(get('notify')||get('shell_environment_policy.inherit')!=='core')throw new HeraError('UNSAFE_RUNTIME_CONFIG','Startup hooks or shell policy differ from the safe profile.',4);
@@ -71,7 +83,7 @@ export class Controller extends EventEmitter {
     this.workers?.observe(event);
     if(event.method==='item/started'||event.method==='item/completed'){
       const item=z.object({item:z.object({id:z.string(),type:z.string()})}).safeParse(event.params);
-      if(item.success){const collaboration=['collabAgentToolCall','subAgentActivity'].includes(item.data.item.type);if(['mcpToolCall','dynamicToolCall'].includes(item.data.item.type)||collaboration&&(!this.workerAnalysis||this.phase.phase!=='ANALYZE_READ_ONLY')){this.client.rpc.fail(new HeraError('UNEXPECTED_TOOL_ACTIVITY','A disabled worker/external tool was observed; safety gate invalidated.',4,false));void this.close();return;}if(collaboration&&this.workers&&event.method==='item/completed')this.checkWorkers();if(item.data.item.type==='commandExecution'){if(event.method==='item/started')this.commands.add(item.data.item.id);else this.commands.delete(item.data.item.id);}}
+      if(item.success){const collaboration=['collabAgentToolCall','subAgentActivity'].includes(item.data.item.type);if(['mcpToolCall','dynamicToolCall'].includes(item.data.item.type)||collaboration&&(!this.workerAnalysis||this.phase.phase!=='ANALYZE_READ_ONLY')){this.client.rpc.fail(new HeraError('UNEXPECTED_TOOL_ACTIVITY','A disabled worker/external tool was observed; safety gate invalidated.',4,false));void this.close();return;}if(collaboration&&this.workers&&event.method==='item/completed')this.checkWorkers();if(item.data.item.type==='commandExecution'){const owner=z.object({threadId:z.string()}).safeParse(event.params);if(!owner.success){this.client.rpc.fail(new HeraError('INVALID_EVENT','Command event has no native owner.',5,false));return;}if(event.method==='item/started')this.commands.set(item.data.item.id,owner.data.threadId);else this.commands.delete(item.data.item.id);}}
     }
     if(event.method==='turn/completed'){const p=completed.safeParse(event.params);if(!p.success){this.client.rpc.fail(new HeraError('INVALID_EVENT','Invalid completion event.',5,false));return;}if(p.data.threadId===this.metadata?.codexThreadId){if(this.waiter&&p.data.turn.id===this.turnId)this.waiter(p.data);else {if(this.early.size>=128)this.early.delete(this.early.keys().next().value!);this.early.set(p.data.turn.id,p.data);}}}
     this.emit('event',event);
@@ -108,7 +120,8 @@ export class Controller extends EventEmitter {
       await this.workerChecks;if(this.fault)throw this.fault;
       // A native turn may finish before its final command notification is delivered.
       await this.reconcileCommands();
-      if(this.commands.size||this.client.rpc.requestsPending)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native turn ended while commands or approval requests remain unresolved.',5,false);
+      const unresolved=[...this.commands.values()].some(id=>{const child=this.workers?.snapshot.get(id);return id===this.metadata!.codexThreadId||!this.workerAnalysis||this.phase.phase!=='ANALYZE_READ_ONLY'||!child||!threadBusy(child);});
+      if(unresolved||this.client.rpc.requestsPending)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native turn ended while its commands or approval requests remain unresolved.',5,false);
       if(this.phase.phase==='ANALYZE_READ_ONLY'&&await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during read-only analysis; do not apply proposals.',4,false);
       if(done.turn.status!=='completed')throw new HeraError(done.turn.status==='interrupted'?'INTERRUPTED':'TURN_FAILED','Native turn did not complete successfully.',done.turn.status==='interrupted'?130:5,done.turn.status==='interrupted');
       return {sessionId:this.metadata.heraSessionId,threadId:this.metadata.codexThreadId,turnId:turn.id,status:'completed',model:this.model,provider:this.provider};
@@ -145,10 +158,10 @@ export class Controller extends EventEmitter {
       const paths=new Set(await Promise.all(review.proposal.changes.map(async c=>(await validateProposalPath(this.cwd,c.path)).toLowerCase())));const otherFiles=await baseline(this.cwd,paths);
       if(!await this.client.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Old native runtime did not close cleanly.',5,false);
       this.workerAnalysis=false;
-      this.client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config,'workspace-write'));
+      this.client=await CodexClient.session(this.home,this.cwd,this.config,'workspace-write',false);
       if(this.closeResult||this.applyCanceled){await this.client.close();throw new HeraError('INTERRUPTED','Application canceled during policy transition.',130);}
       this.bindClient();await this.verifyRuntime();
-      const resumed=await this.client.resume({threadId:this.metadata.codexThreadId,model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,sandbox:'workspace-write',approvalPolicy:'never',config:nativeSettings(this.config,'workspace-write')});
+      const resumed=await this.client.resume({threadId:this.metadata.codexThreadId,model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,sandbox:'workspace-write',approvalPolicy:'never',config:this.client.sessionSettings??nativeSettings(this.config,'workspace-write')});
       const sandbox=z.object({type:z.literal('workspaceWrite'),networkAccess:z.literal(false),excludeTmpdirEnvVar:z.literal(true),excludeSlashTmp:z.literal(true),writableRoots:z.array(z.string()).max(0)}).safeParse(resumed.sandbox);
       if(!sandbox.success||resumed.model!==this.model||resumed.modelProvider!=='openai'||resumed.approvalPolicy!=='never')throw new HeraError('POLICY_NOT_ENFORCED','Apply resume did not preserve the approved model and workspace sandbox.',4);
       if(this.workers){await this.workers.assertIdle(this.client);const loaded=await this.client.loadedThreads();if([...this.workers.snapshot.keys()].some(id=>id!==this.metadata!.codexThreadId&&loaded.has(id)))throw new HeraError('WORKER_SURVIVED_TRANSITION','A child was loaded in the single-writer runtime.',4,false);}

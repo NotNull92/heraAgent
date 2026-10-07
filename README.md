@@ -95,6 +95,19 @@ explicitly use `--single-agent`. See [verification evidence](docs/status.md) for
 maintainer live fixtures and current gaps. Native histories remain the source of truth;
 there is no Hera conversation database. Worker test claims never count as executed tests.
 
+Mixed mode uses a separately installed, reviewed native App Server patch. GPT-only
+continues using the official pinned package. Build instructions and the pinned source
+are in [native runtime qualification](experiments/codex-provider-routing/README.md).
+Install the resulting executable with `hera runtime install <binary> --sha256 <reviewed-hash>`.
+This copies the binary and matching official helpers into the Hera user home; it never
+changes global Codex, imports credentials or enables inference. Existing runtime slots
+are preserved. Binary/helper integrity is checked before launch, and mismatched or
+missing local acceptance blocks the mode without fallback. `/mode` selects a new
+GPT-only or mixed session. `/model worker` and `/effort worker` in mixed mode show only
+the qualified DeepSeek V4.1 Flash / low setting, preserving the saved GPT worker choice.
+Mixed analysis uses read-only native Go children; reviewed application restarts only
+the GPT root with all spawn paths disabled and without the Go key in its environment.
+
 Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
 copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses its OS-stored
 key by default. An explicitly supplied HERA_OPENCODE_GO_API_KEY overrides it for that

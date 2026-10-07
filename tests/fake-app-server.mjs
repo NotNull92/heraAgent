@@ -13,6 +13,7 @@ createInterface({input:process.stdin}).on('line',line=>{
     case 'thread/read':result={thread};break;
     case 'thread/loaded/list':result={data:['fixture-thread'],nextCursor:process.argv[2]==='loaded-cycle'?'same-cursor':null};break;
     case 'turn/start':{
+      if(['active-child-command','active-main-command'].includes(process.argv[2]))send({method:'item/started',params:{threadId:process.argv[2]==='active-child-command'?'fixture-child':thread.id,item:{id:'pending-command',type:'commandExecution',status:'inProgress',exitCode:null}}});
       if(process.argv[2]==='interrupt-order'){
         const item={id:'late-command',type:'commandExecution',status:'failed',exitCode:-1};
         send({method:'item/started',params:{threadId:thread.id,item:{...item,status:'inProgress',exitCode:null}}});

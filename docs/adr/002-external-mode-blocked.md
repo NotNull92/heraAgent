@@ -145,6 +145,13 @@ proxy or second harness is not justified just to solve a route already proven di
 
 ## Implementation choices after research
 
+The user subsequently explicitly approved product adoption for mixed mode only:
+"네, 혼합 모드에만 적용해서 진행해" (2026-10-07). The scope exception is now
+recorded in specification section 1.2. GPT-only stays on official 0.160.1; mixed
+mode requires an explicitly installed, integrity-checked private runtime and new
+local acceptance evidence. Implementation and verification are in progress, not
+an activation claim. No global installation or existing credential is replaced.
+
 On 2026-10-07 the user accepted the GPT-main / read-only DeepSeek-worker division
 and continued mixed-worker implementation. This authorizes the bounded project-local
 native patch qualification recommended above. It does not establish compatibility or
@@ -158,7 +165,7 @@ persisted provider on resume, and rejects cross-provider history forks/V2 spawni
 Model metadata can select V2 even when the V2 feature flag is false; qualification
 must observe the actual backend rather than infer V1 from the feature flag alone.
 The port built on native Windows with Rust 1.95.0 (App Server, exit 0) and passed
-101 model-provider tests, 27 focused role/grant tests and two native mocked routing/revocation integration tests
+101 model-provider tests, 27 focused role/grant tests and seven native mocked integration tests
 (1,761 other integration tests filtered out). Fresh-home native initialization, strict profile loading,
 disabled worker flags and invalid profile-path rejection also passed without inference.
 The older reference CLI built and answered its version command only.
@@ -170,6 +177,12 @@ decryption work limit. The rebuilt App Server reported the existing ChatGPT acco
 On this runtime, actual Windows Astra/high -> Go DeepSeek V4.1 Flash read/follow-up,
 cold same-child resume without rereading, read-only write denial, root worker limit
 rejection and owned-tree cancellation passed (see status for thread IDs and scope).
+A subsequent native main-only phase passed exact GPT application and a Node test,
+with an actual spawn lookup failure and the Go child remaining unloaded. Mocked
+HTTP 401/429/400/EOF each produced one failed child request without retry or GPT
+fallback; an unsupported V2 route was rejected before contacting the child endpoint.
+The macOS arm64 CI build/fresh-home native smoke passed at b01ee01; Windows CI is
+still in progress. These checks do not establish macOS live/credential compatibility.
 This proves a working local native path, not complete product integration or stability.
 Remaining safety/failure tests and Windows/macOS distribution checks are outstanding.
 Never run the older 0.154 reference binary against Hera's existing 0.160 history.
@@ -177,7 +190,7 @@ Never run the older 0.154 reference binary against Hera's existing 0.160 history
 | Path | Concrete effect | Current disposition |
 |---|---|---|
 | Native provider-capable Codex child API | Keeps current native history, worker controls and permission architecture | Preferred within the current specification; unavailable in the tested pinned path |
-| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Local Windows routing, follow-up, cold resume, write denial, root limit and cancellation passed; no product adoption; macOS patch build outstanding |
+| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Local Windows routing, follow-up, cold resume, write denial, root limit, cancellation and native main-only phase passed; macOS CI build/smoke passed; no product adoption |
 | Separate Go App Server sessions behind an explicit delegation tool | Reuses proven Go native tools; Hera must own mapping, messaging, limits, cancellation and resume between independent roots | Architectural extension, not implemented or represented as native child cooperation |
 | Direct Go completion/tool loop or Harness orchestration | Controls provider selection independently | Replaces/duplicates the required harness responsibilities; not silently substituted |
 

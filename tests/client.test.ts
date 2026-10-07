@@ -1,4 +1,4 @@
-import {it,expect} from 'vitest';
+import {it,expect,vi} from 'vitest';
 import {spawn} from 'node:child_process';
 import {resolve} from 'node:path';
 import {CodexClient} from '../src/codex/client.js';
@@ -9,6 +9,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {baseline} from '../src/session/phase-policy.js';
 import {randomUUID} from 'node:crypto';
+import {NativeWorkers} from '../src/session/workers.js';
 it('drives bidirectional fake native lifecycle and retains pre-ack events',async()=>{const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs')],{stdio:['pipe','pipe','pipe'],windowsHide:true}));const events:string[]=[];client.on('event',e=>events.push(e.method));try{await client.initialize();expect(await client.account()).toEqual({ready:true,category:'chatgpt'});expect((await client.models())[0]?.model).toBe('fixture-gpt');const session=await client.start({model:'fixture-gpt',sandbox:'read-only',approvalPolicy:'never'});expect(session.modelProvider).toBe('openai');await client.turn({threadId:session.thread.id,input:[{type:'text',text:'fixture',text_elements:[]}]});expect(events).toContain('turn/completed');expect(events).toContain('item/agentMessage/delta');expect((await client.resume({threadId:session.thread.id,model:'fixture-gpt'})).thread.id).toBe(session.thread.id);await client.interrupt(session.thread.id,'fixture-turn');}finally{expect(await client.close()).toBe(true);}});
 it('shared controller blocks unexpected workers and never turns repeated uncertain shutdown into success',async()=>{const home=await mkdtemp(join(tmpdir(),'hera-controller-'));const sentinel=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore',windowsHide:true});const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs')],{stdio:['pipe','pipe','pipe'],windowsHide:true}));try{await client.initialize();const controller=new Controller(client,home,home,structuredClone(defaults));client.emit('event',{method:'item/started',params:{item:{id:'unexpected',type:'collabAgentToolCall'}}});expect(await controller.close()).toBe(false);expect(await controller.close()).toBe(false);expect(sentinel.exitCode).toBeNull();expect(sentinel.killed).toBe(false);}finally{await client.close();sentinel.kill();}});
 it('requires both setup acknowledgment and completion, handles early events and cleans listeners',async()=>{
@@ -39,4 +40,19 @@ it('does not treat a native cleanup acknowledgment as proof that commands stoppe
 });
 it('rejects repeated native inventory cursors instead of claiming a complete worker tree',async()=>{
   const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),'loaded-cycle'],{stdio:['pipe','pipe','pipe'],windowsHide:true}));try{await client.initialize();await expect(client.loadedThreads()).rejects.toMatchObject({errorCode:'THREAD_INVENTORY_LIMIT'});}finally{await client.close();}
+});
+it('allows the read-only root to finish while an owned worker runs, but still blocks apply and unresolved main commands',async()=>{
+  for(const scenario of ['active-child-command','active-main-command']){
+    const home=await mkdtemp(join(tmpdir(),'hera-command-owner-'));const cwd=await mkdtemp(join(tmpdir(),'hera-command-work-'));
+    const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),scenario],{stdio:['pipe','pipe','pipe'],windowsHide:true}));
+    try{
+      await client.initialize();const config=structuredClone(defaults);const controller=new Controller(client,home,cwd,config,true);controller.phase.analyze();Object.assign(controller,{baselineHash:await baseline(cwd)});
+      controller.metadata={schemaVersion:1,heraSessionId:randomUUID(),codexThreadId:'fixture-thread',codexVersion:'0.160.1',mode:'gpt_only',workspaceRealPath:cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:'fixture',capabilityFingerprint:'fixture',updatedAt:new Date().toISOString()};
+      const workers=new NativeWorkers('fixture-thread',cwd,config);controller.workers=workers;
+      const child={id:'fixture-child',parentThreadId:'fixture-thread',cwd,modelProvider:'openai',model:null,reasoningEffort:null,status:{type:'active' as const},turns:[{id:'child-turn',status:'inProgress' as const,items:[]}]};
+      workers.snapshot.set(child.id,child);vi.spyOn(workers,'refresh').mockImplementation(async()=>workers.snapshot);
+      if(scenario==='active-child-command'){await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(controller.busy).toBe(true);await expect(controller.requestApply()).rejects.toMatchObject({errorCode:'NOT_QUIESCENT'});}
+      else await expect(controller.run('fixture')).rejects.toMatchObject({errorCode:'INTERRUPTED_UNCONFIRMED',outcomeKnown:false});
+    }finally{await client.close();}
+  }
 });

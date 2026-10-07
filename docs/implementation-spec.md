@@ -92,7 +92,12 @@ Do not skip Sections 0, 2, 9, 12, 18, 20, or 21 even when working in a short imp
 - Terminal emulation, multiplexing, or a herdr replacement.
 - A cloud Hera service, Hera account server, remote desktop, or cross-PC session synchronization.
 - A second LLM loop, conversation database, memory-search service, or general DAG/workflow framework.
-- A fork of the Codex TUI or Rust harness, or mandatory OpenCode runtime.
+- A fork of the Codex TUI, a default Rust harness fork, or mandatory OpenCode runtime.
+  User-authorized exception (2026-10-07): mixed mode alone may use the reviewed,
+  pinned project-specific native provider-routing patch. GPT-only mode keeps the
+  official runtime. Keep the same native tools/history/worker controls, separate
+  Windows/macOS qualification, runtime integrity checks and fresh capability
+  fingerprints. No global Codex replacement or automatic provider fallback.
 - Linux support, WSL requirements, mobile apps, GUI installers, or automatic update daemons.
 - Reimplementation or automatic installation of Unity/Godot connectors.
 - Silent model/provider switching based on guessed prices, quality, or quota.

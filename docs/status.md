@@ -2,6 +2,68 @@
 
 ## Current checkpoint (2026-10-07)
 
+### Authorized mixed-mode product integration (in progress)
+
+The user explicitly approved a maintained native patch **only for mixed mode**;
+specification section 1.2 records this exception. GPT-only retains official 0.160.1.
+Hera now has explicit runtime installation/integrity checking, isolated native role
+profiles, a separate mixed-mode acceptance fingerprint, mode selection and Go-aware
+worker reconciliation. The Go key is present only in the read-only analysis server's
+environment; main-only application launches without it. No acceptance record is
+automatically created by installation, CI or mocked tests.
+
+Current Windows checks: typecheck and 51 offline tests passed (exit 0). Eight native
+cross-provider integration tests passed (1,761 filtered), including a new full-history
+fork bypass rejection for a user-owned cross-provider default role. Scoped Clippy
+passed twice (16m29s for affected crates; 10m32s after the new core guard); unrelated
+baseline unused-import fixes were reviewed and restored. Bazel 9.0.0 native lock
+refresh exited 0 with no MODULE.bazel.lock change. Native configuration schema
+generation exited 0 without content drift. Re-exporting the compiled pinned protocol
+crate produced 318 JSON schemas matching the existing schema SHA-256 exactly.
+The first schema-export helper build used the wrong compiler, then lacked a Windows
+import-library search path; both setup failures were corrected without global changes.
+
+The maintained patch is now SHA-256
+`057f04af2e05d945a6a00613fadc77202c6063f30a12e8136caab157e36b6eaf`.
+This new guard needs a rebuilt executable and fresh product-level live checks;
+the earlier experimental binary/CI receipts below do not qualify this product build.
+Product CI [37573653148](https://github.com/NotNull92/heraAgent/actions/runs/37573653148)
+at `b01ee01954105c66d5c411325adb298b9b37f859` passed all four Windows/macOS jobs.
+The new optimized Windows executable built in 1m38s (exit 0), SHA-256
+`97225251787f19adf19d4641efc00dc22593f6a5bd9569ab75b21e1399df5aca`.
+Fresh-home installation/integrity/initialization smoke and explicit installation into
+the external Hera runtime slot passed. No acceptance record or mode switch was
+created by installation. Product-level positive live checks passed on Windows (exit 0):
+
+- GPT-only official runtime: root `01a114da-5f76-7692-8bbd-f1b174052dbe`.
+- Mixed runtime: root `01a114db-23bc-7982-89cb-35da37ebb455`, Go
+  `deepseek-v4.1-flash/low`, configured worker limit 3. Native read/follow-up,
+  cold same-child resume, latest worker-result contract validation, exact reviewed
+  main-only file application and observed Node test exit 0 all passed.
+
+The scripts use disposable workspaces and the real Controller, while deliberately
+bypassing its public acceptance gate for qualification. No public gate is promoted
+by that bypass. Mixed negative gates passed: native read-only write denial, root N+1 rejection at
+fixture limit 1, and actual spawn lookup rejection after all three switches were
+disabled (root `01a114de-0987-75c3-a0ca-50ed36be0c15`). Recursive spawning
+was not exercised by that live Go fixture. A separate on-request fixture observed
+a real Go child approval request and the existing Hera decline handler; sentinel
+unchanged, no permission granted (root `01a114e0-cf43-7d23-9346-cb8b0b305a04`).
+Product policy remains never.
+
+Two product cancellation attempts failed and are not counted as passes. First, a
+root completed between inventory and interrupt, returning `no active turn to
+interrupt`. The shared cancellation path now rereads that exact native thread
+and accepts only a proven idle result. Second, a completed root was incorrectly
+rejected because an owned read-only worker still had a running command. Controller
+command tracking now retains native ownership: active child work may outlive the
+root response, while apply still requires full-tree quiescence. Focused regression
+tests cover both races and retain rejection of active/unknown main outcomes. The
+corrected live cancellation passed (exit 0): actual child command interrupted,
+pending-worker apply blocked, tree/terminals idle, workspace released, unrelated
+process preserved. Windows full offline regression passed 53/53 (exit 0). No new-patch CI
+result or current uncommitted source upload is claimed.
+
 ### Mixed-worker qualification in progress
 
 The user accepted GPT main for task selection, review and final application/testing,
@@ -14,8 +76,9 @@ experimental port now targets the existing V1 plaintext worker backend: user-own
 provider grants/roles, separate provider auth/catalog and persisted child routing.
 Cross-provider history forks and V2 child creation are rejected in that experiment.
 Both experimental runtimes built on native Windows. The smaller 0.160.1 App Server
-port passed 101 model-provider tests, 27 focused role/grant tests, two mocked native integration tests (actual child
-provider routing/auth separation and revoked-grant rejection with zero child requests),
+port passed 101 model-provider tests, 27 focused role/grant tests, seven mocked native
+integration tests (routing/auth separation; revoked grants and V2 rejected before a
+child request; HTTP 401, 429, 400 and stream EOF with one request and no GPT fallback),
 and a no-inference profile/initialization smoke. The other 1,761 integration tests were
 filtered out, as were 2,528 other core unit tests; these are not a full native-suite
 pass. An initial `codex-agent-roles --lib` invocation exited 1 because that crate has
@@ -40,16 +103,28 @@ The experimental runtime then passed these actual Windows live checks (exit 0):
 - An actual child sleep command interrupted through Hera's existing owned-tree
   cancellation; no active turns/background commands remained and an unrelated
   test-owned process survived.
+- Cold restart into a main-only write phase: all three worker switches were false,
+  an actual native spawn lookup failed, the Go child stayed unloaded with unchanged
+  turn count, and only the GPT root applied the exact fixture change and ran its
+  Node assertion successfully. The check file and sentinel stayed unchanged.
 
 Parent: `01a114aa-825f-7321-b763-733282f5abf8`; child:
 `01a114aa-c4ab-76b0-96ce-b9d48db4cedb`. These are experimental native cooperation
-checks, not product external-mode or main-only-apply acceptance. Provider failure/quota
-coverage, remaining safety checks, product/schema/fingerprint integration and patched
-Windows/macOS distribution qualification are still outstanding.
+checks, not product Controller external-mode/apply acceptance. The error-path tests
+use local mocked HTTP; they do not claim a real Go quota exhaustion or expired key.
+Remaining safety checks, product/schema/fingerprint integration and patched runtime
+distribution qualification are still outstanding.
 Source checkouts/build outputs stay under ignored `.artifacts/`; the source-only patch
 and pinned reproduction manifest are under `experiments/codex-provider-routing` and
 excluded from the npm package. A manually dispatched Windows/macOS build/smoke workflow
-is prepared; its existence is not a passing result. The older reference runtime did
+ran at `b01ee01954105c66d5c411325adb298b9b37f859`. Its macOS arm64 job passed a
+Rust 1.95.0 build and actual fresh-home native initialization/profile smoke; the
+downloaded receipt identifies patch SHA-256
+`7ee14e1215de57d917a4ea0ed6e3ef52c449ca616d9cd9bb321d7458b50013bb`
+and binary SHA-256
+`00c08bac7f0174fffdd99e4dac552f242f35408c7f284c248e48eb495654bff6`.
+The Windows x64 job also completed successfully. This CI checks no inference or existing
+credentials and does not run the native Rust test suite. The older reference runtime did
 not open the existing Hera home or migrate its history.
 
 CI run [37565451567](https://github.com/NotNull92/heraAgent/actions/runs/37565451567)
@@ -68,7 +143,7 @@ archive checks. The exact CI archive SHA-256 is
 `81c5ce1ae8b12ac67249246cb2c71ba0e11e5cae9bfca62d6c1ae836f1799b95`;
 those bytes also passed local Windows clean-prefix install, native initialization,
 credential persistence, reinstall and launcher smoke (exit 0). macOS native-patch
-build/live/manual checks remain NOT_RUN. No login material enters these checkouts or
+live/manual checks remain NOT_RUN. No login material enters these checkouts or
 tracked files.
 
 The earlier sections below are historical. The real Go key is now present in the

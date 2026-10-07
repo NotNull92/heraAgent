@@ -8,16 +8,18 @@ import {Controller} from '../dist/session/controller.js';
 import {CodexClient} from '../dist/codex/client.js';
 import {heraHome} from '../dist/paths.js';
 import {loadConfig} from '../dist/config.js';
+import {GO_ROLE,GO_EFFORT} from '../dist/codex/external-runtime.js';
+import {GO_MODEL} from '../dist/providers/opencode-go.js';
 import {startupArgs} from '../dist/codex/config-compiler.js';
 import {acquireWorkspace} from '../dist/session/workspace-lock.js';
 import {errorView} from '../dist/errors.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One main/worker turn in a disposable workspace, 120 seconds.');process.exit(4);}
-const cwd=await mkdtemp(join(tmpdir(),'hera-worker-cancel-'));const home=await heraHome();const {config}=await loadConfig(home);
+const cwd=await mkdtemp(join(tmpdir(),'hera-worker-cancel-'));const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');if(external)config.mode='external_workers';else config.mode='gpt_only';
 const unrelated=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore',windowsHide:true});let controller;let running;
 try{
-  const client=await CodexClient.connect(home,cwd,startupArgs(config,'read-only',true));controller=new Controller(client,home,cwd,config,true);controller.lock=await acquireWorkspace(home,cwd);await controller.start();
+  const client=await CodexClient.session(home,cwd,config,'read-only',true);controller=new Controller(client,home,cwd,config,true);controller.lock=await acquireWorkspace(home,cwd);await controller.start();
   console.error(JSON.stringify({scope:'product worker cancellation',deadlineSeconds:120,cwd}));
-  running=controller.run(`Spawn one native worker named sleeper, fork_turns=none, model=${config.workers.gptModel}, reasoning_effort=${config.workers.reasoningEffort??'medium'}, no custom role. Ask it to run exactly one new 90-second native shell sleep for this cancellation test, without writes, network or more workers. After the spawn acknowledgment return immediately without waiting. A test client will interrupt the child; do not retry it.`);void running.catch(()=>{});
+  running=controller.run(`Spawn one native worker named sleeper, ${external?`agent_type=${GO_ROLE}, omit model and effort arguments, fork_context=false`:`fork_turns=none, model=${config.workers.gptModel}, reasoning_effort=${config.workers.reasoningEffort??'medium'}, no custom role`}. Ask it to run exactly one new 90-second native shell sleep for this cancellation test, without writes, network or more workers. After the spawn acknowledgment return immediately without waiting. A test client will interrupt the child; do not retry it.`);void running.catch(()=>{});
   const deadline=performance.now()+120000;let child;
   for(;;){await controller.workers.refresh(client);for(const t of controller.workers.snapshot.values())if(t.id!==controller.metadata.codexThreadId){const list=await client.rpc.request('thread/backgroundTerminals/list',{threadId:t.id});if(list.data.length)child=t;}if(child)break;if(performance.now()>deadline)throw new Error('No actual worker command observed within deadline');await delay(250);}
   await assert.rejects(controller.requestApply(),e=>['APPLY_GATE_BLOCKED','NOT_QUIESCENT'].includes(e.errorCode));await controller.interrupt();await running.catch(e=>{if(e.errorCode!=='INTERRUPTED')throw e;});await controller.workers.assertIdle(client);
