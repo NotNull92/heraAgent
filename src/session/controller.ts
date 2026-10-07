@@ -11,7 +11,7 @@ import {HeraError,safeText} from '../errors.js';
 import {saveMetadata,type Metadata} from '../metadata.js';
 import {acquireWorkspace} from './workspace-lock.js';
 import {baseline,PhasePolicy,validateProposalPath,assignmentSchema,resultSchema} from './phase-policy.js';
-import {proposalSchema,reviewProposal,matchesTestCommand,type ApplyReview} from './apply-review.js';
+import {editProposalSchema,reviewEdits,reviewProposal,testResults,observeTestSequence,type ApplyReview} from './apply-review.js';
 import {goCredentialStatus} from '../providers/go-credentials.js';
 import {NativeWorkers,workerContractsSchema,threadBusy} from './workers.js';
 import {workerCapability} from '../codex/capabilities.js';
@@ -23,6 +23,7 @@ export class Controller extends EventEmitter {
   metadata:Metadata|null=null;model='';provider='';private active=false;private early=new Map<string,z.infer<typeof completed>>();private waiter:((e:z.infer<typeof completed>)=>void)|null=null;private failure:((e:Error)=>void)|null=null;private fault:HeraError|null=null;private turnId:string|null=null;
   review:ApplyReview|null=null;
   private applying=false;private applyCanceled=false;
+  private testObserver:((event:RpcEvent)=>void)|null=null;
   workers:NativeWorkers|null=null;private workerChecks:Promise<void>=Promise.resolve();private workerDirty=false;private checkingWorkers=false;private stopping:Promise<void>|null=null;
   constructor(public client:CodexClient,readonly home:string,readonly cwd:string,readonly config:Config,private workerAnalysis=false){super();this.bindClient();}
   private bindClient(){this.client.on('event',(e:RpcEvent)=>this.event(e));this.client.on('request',(r:RpcRequest)=>this.deny(r));this.client.on('fault',(e:HeraError)=>{this.fault=e;this.failure?.(e);this.emit('fault',e);});}
@@ -35,7 +36,7 @@ export class Controller extends EventEmitter {
     await this.verifyRuntime();
     validateModelChoices(this.config,await this.client.models());
     this.baselineHash=await baseline(this.cwd);
-    const developerInstructions=this.workerAnalysis?`Hera uses native read-only collaboration. The root owns task contracts and shared interfaces; use native spawn/followup/message/wait tools, never independent agent processes. ${this.config.mode==='external_workers'?`Every worker must use agent_type=${GO_ROLE}, omit model/reasoning overrides, use fork_context=false, and receive a fresh plaintext task. Use the native V1 spawn_agent/send_input/wait/resume_agent tools. After a cold restart, resume an unloaded saved Go child with resume_agent before sending it work. The user selected Go ${GO_MODEL}/${GO_EFFORT}; never fall back to GPT workers.`:`Every worker must use model ${this.config.workers.gptModel}, effort ${this.config.workers.reasoningEffort??'the configured model default'}, fork_turns=none, and no custom agent role.`} Main and workers may read and propose code, but must not write, run tests, expand permissions or use external side effects during analysis. Only the reviewed main-only phase may apply and test. Send every worker an assignment matching ${JSON.stringify(z.toJSONSchema(assignmentSchema))}. Keep taskId and contractHash stable until the task/interface contract changes; then issue a new version/hash through native follow-up. Every worker final answer, including follow-ups, must be JSON matching ${JSON.stringify(z.toJSONSchema(resultSchema))}. Never claim unexecuted tests as run. The root must preserve the latest assignment for each native thread, coordinate interface changes, and reject stale results. If a result needs correction use native follow-up at most twice, then report the blocker. No separate execution or conversation store.`:undefined;
+    const developerInstructions=this.workerAnalysis?`Hera: native read-only collaboration only. Handle small tasks yourself; spawn only for separable work worth its coordination cost. The worker limit is a ceiling, not a target. ${this.config.mode==='external_workers'?`Every worker must use agent_type=${GO_ROLE}, omit model/reasoning overrides, use fork_context=false, and receive a fresh plaintext task. Use the native V1 spawn_agent/send_input/wait/resume_agent tools. After a cold restart, resume an unloaded saved Go child with resume_agent before sending it work. The user selected Go ${GO_MODEL}/${GO_EFFORT}; never fall back to GPT workers.`:`Every worker must use model ${this.config.workers.gptModel}, effort ${this.config.workers.reasoningEffort??'the configured model default'}, fork_turns=none, and no custom agent role.`} Analysis: read/propose only; no writes, tests, permission expansion or external side effects. Apply/tests require reviewed main-only mode. Worker assignments: ${JSON.stringify(z.toJSONSchema(assignmentSchema))}. Keep taskId/hash stable until the contract changes; then version/hash the update. Every worker final must match ${JSON.stringify(z.toJSONSchema(resultSchema))}. Main owns interfaces and latest per-thread contracts; reject stale results. Never claim unrun tests. Correct invalid results via native follow-up at most twice, then report blocked. Follow-ups send only changes; reuse unchanged schema/context. No independent agents or conversation store.`:undefined;
     const params={model:this.config.main.model,modelProvider:'openai',cwd:this.cwd,approvalPolicy:'never' as const,sandbox:'read-only' as const,config:this.client.sessionSettings??nativeSettings(this.config,'read-only',this.workerAnalysis),...(developerInstructions?{developerInstructions:developerInstructions+` All assignments use baseline.relevantFilesHash=${this.baselineHash}. Include the result schema and these restrictions in each native worker task message; do not assume shared conversation with fork_turns=none.`}:{})};
     if(previous&&previous.mode!==this.config.mode)throw new HeraError('SESSION_MODE_MISMATCH','Resume the session in its saved provider mode; no silent route change.',4);
     if(previous&&previous.workspaceRealPath!==this.cwd)throw new HeraError('WORKSPACE_MISMATCH','Session belongs to a different workspace.',2);
@@ -80,6 +81,7 @@ export class Controller extends EventEmitter {
     this.workerChecks=(async()=>{do{this.workerDirty=false;await this.workers!.refresh(this.client);this.emit('workers');}while(this.workerDirty);})().catch(async error=>{const fault=error instanceof HeraError?error:new HeraError('WORKER_STATE_UNKNOWN','Native worker reconciliation failed.',5,false);this.fault=fault;this.failure?.(fault);this.emit('fault',fault);await this.interrupt().catch(()=>{});}).finally(()=>{this.checkingWorkers=false;if(this.workerDirty&&!this.fault)this.checkWorkers();});
   }
   private event(event:RpcEvent){
+    try{this.testObserver?.(event);}catch(error){this.client.rpc.fail(error instanceof HeraError?error:new HeraError('INVALID_TEST_EVENT','Malformed native test event; outcome is unconfirmed.',5,false));void this.close();return;}
     this.workers?.observe(event);
     if(event.method==='item/started'||event.method==='item/completed'){
       const item=z.object({item:z.object({id:z.string(),type:z.string()})}).safeParse(event.params);
@@ -133,14 +135,14 @@ export class Controller extends EventEmitter {
   async requestApply(){
     if(this.active||!this.metadata||this.phase.phase!=='ANALYZE_READ_ONLY')throw new HeraError('APPLY_GATE_BLOCKED','Finish read-only analysis before requesting a review.',4);
     await this.assertThreadIdle(this.metadata.codexThreadId);
-    const withWorkers=(this.workers?.count??0)>0;const schema=withWorkers?proposalSchema.extend({workerContracts:workerContractsSchema}):proposalSchema;
-    const result=await this.run('Prepare the concrete change proposal from our analysis for user review. Return complete UTF-8 replacement contents for each file, exact test commands for this operating system, and risks. No deletions, binaries, secrets or permission changes. Do not write or execute tests. If no supported proposal exists, explain the blocker instead of inventing a change.'+(withWorkers?' Include workerContracts: the exact latest main-authorized assignment and native threadId for every descendant. Ensure each worker latest final answer is matching WorkerResult JSON; request native follow-up at most twice for corrections, then stop on a blocker. Worker test claims are unverified; only the main will execute approved tests. Native identity mapping: '+JSON.stringify(this.workers!.contractReferences()):''),z.toJSONSchema(schema) as JsonValue);
+    const withWorkers=(this.workers?.count??0)>0;const schema=withWorkers?editProposalSchema.extend({workerContracts:workerContractsSchema}):editProposalSchema;
+    const result=await this.run('Prepare a compact change proposal for review: each file has ordered edits {oldText,newText}. Each oldText must match exactly once in the current text after preceding edits. Use empty oldText only for a new or empty file. Return the smallest unique snippets, preserving UTF-8 and line endings, not whole existing files. Hera reconstructs full before/after text locally. Include exact test commands for this OS and risks. No deletions, secrets, writes or tests yet. Report a blocker instead of inventing edits.'+(withWorkers?' Include workerContracts: the exact latest main-authorized assignment and native threadId for every descendant. Ensure each worker latest final answer is matching WorkerResult JSON; request native follow-up at most twice for corrections, then stop on a blocker. Worker test claims are unverified; only the main will execute approved tests. Native identity mapping: '+JSON.stringify(this.workers!.contractReferences()):''),z.toJSONSchema(schema) as JsonValue);
     const history=await this.client.read(result.threadId);const turn=z.array(z.object({id:z.string(),items:z.array(z.unknown())})).parse(history.turns).find(t=>t.id===result.turnId);
     const messages=(turn?.items??[]).map(i=>z.object({type:z.literal('agentMessage'),text:z.string(),phase:z.string().nullable().optional()}).safeParse(i)).filter(p=>p.success).map(p=>p.data!);
     const final=messages.findLast(m=>m.phase==='final_answer')??messages.at(-1);if(!final)throw new HeraError('MISSING_PROPOSAL','No native final proposal was recorded.',4);
     const parsed=schema.parse(JSON.parse(final.text));if(withWorkers){await this.workers!.refresh(this.client);this.workers!.validateResults(workerContractsSchema.parse(Reflect.get(parsed,'workerContracts')),this.baselineHash);}
     const proposal=withWorkers?Object.fromEntries(Object.entries(parsed).filter(([key])=>key!=='workerContracts')):parsed;
-    const review=await reviewProposal(this.cwd,proposal,this.baselineHash);
+    const review=await reviewEdits(this.cwd,proposal,this.baselineHash);
     await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
     await this.assertThreadIdle(this.metadata.codexThreadId);
     this.phase.quiesce({workers:this.workers?.activeCount??0,commands:this.commands.size,approvals:this.client.rpc.requestsPending,turnActive:this.active,baselineMatches:await baseline(this.cwd)===this.baselineHash});
@@ -151,7 +153,8 @@ export class Controller extends EventEmitter {
     this.applying=true;
     try{
     if(await baseline(this.cwd)!==review.baseline){this.cancelApply();throw new HeraError('BASELINE_CHANGED','Workspace changed after review; generate a new proposal.',4);}
-    if((await reviewProposal(this.cwd,review.proposal,review.baseline)).id!==id)throw new HeraError('STALE_APPROVAL','Proposal changed after review.',4);
+    const checked=review.edits?await reviewEdits(this.cwd,review.edits,review.baseline):await reviewProposal(this.cwd,review.proposal,review.baseline);
+    if(checked.id!==id||JSON.stringify(checked.proposal)!==JSON.stringify(review.proposal))throw new HeraError('STALE_APPROVAL','Proposal changed after review.',4);
     await this.assertThreadIdle(this.metadata.codexThreadId);await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
     this.review=null;this.metadata.status='running';await this.persist();
     try{
@@ -167,22 +170,20 @@ export class Controller extends EventEmitter {
       if(this.workers){await this.workers.assertIdle(this.client);const loaded=await this.client.loadedThreads();if([...this.workers.snapshot.keys()].some(id=>id!==this.metadata!.codexThreadId&&loaded.has(id)))throw new HeraError('WORKER_SURVIVED_TRANSITION','A child was loaded in the single-writer runtime.',4,false);}
       if(await baseline(this.cwd)!==review.baseline)throw new HeraError('BASELINE_CHANGED','Workspace changed during native policy transition.',4);
       this.phase.apply(true,{readOnly:true,spawnDisabled:true,resumePolicy:true});
-      await this.execute('The user approved these exact text replacements. Apply ONLY the listed file contents through native tools. Do not run tests yet, spawn workers, delete files, expand permissions, or change any other files. Stop on any mismatch. Windows sandbox PowerShell uses ConstrainedLanguage: prefer native apply_patch or Get-Content/Set-Content cmdlets; static .NET file methods are unavailable. Preserve the exact reviewed encoding and line endings.\n'+JSON.stringify(review.proposal.changes));
+      await this.execute('Apply ONLY these approved changes through native tools. For edits, replace each unique oldText with newText in order; empty oldText means a new or empty file. Do not echo full files. Do not run tests, spawn workers, delete files, expand permissions or change other files. Stop on mismatch; no fuzzy matching. Preserve UTF-8 and exact line endings. On Windows use native apply_patch or PowerShell cmdlets; static .NET file methods are unavailable.\n'+JSON.stringify(review.edits?.changes??review.proposal.changes));
       for(const change of review.proposal.changes){const actual=await readFile(await validateProposalPath(this.cwd,change.path),'utf8');if(actual!==change.content)throw new HeraError('APPLY_MISMATCH','Applied file content differs from the reviewed proposal; no automatic retry.',4);}
       if(await baseline(this.cwd,paths)!==otherFiles)throw new HeraError('APPLY_SCOPE_CHANGED','Unlisted files changed during apply; preserve changes for review.',4);
-      this.phase.verify();await this.persist();const results:{command:string;exitCode:number|null}[]=[];
-      for(const test of review.proposal.tests){
-        const run=await this.execute(`Run this one approved test command exactly, without wrappers, extra commands or file edits. Report its actual result; do not fix failures.\n${test.command}`);
-        const history=await this.client.read(run.threadId);const turn=z.array(z.object({id:z.string(),items:z.array(z.unknown())})).parse(history.turns).find(t=>t.id===run.turnId);
-        const commands=(turn?.items??[]).map(i=>z.object({type:z.literal('commandExecution'),command:z.string(),exitCode:z.number().nullable()}).safeParse(i)).filter(p=>p.success).map(p=>p.data!);
-        const actual=commands.find(c=>matchesTestCommand(c.command,test.command));results.push({command:test.command,exitCode:commands.some(c=>c.exitCode!==0)?null:actual?.exitCode??null});
-        this.emit('notice',JSON.stringify({approvedTest:test.command,observedCommands:commands}));
-        if(!actual||actual.exitCode!==0||commands.some(c=>c.exitCode!==0))break;
-      }
+      this.phase.verify();await this.persist();
+      this.testObserver=observeTestSequence(review.proposal.tests,this.metadata.codexThreadId);
+      const run=await this.execute('Run these approved test commands sequentially in this exact order, each as a separate native command execution. Wait for each final exit code before starting the next; stop at the first nonzero or unknown exit. No combined commands, wrappers, extra commands, file edits or fixes. Report only observed results.\n'+JSON.stringify(review.proposal.tests));
+      this.testObserver=null;
+      const history=await this.client.read(run.threadId);const turn=z.array(z.object({id:z.string(),items:z.array(z.unknown())})).parse(history.turns).find(t=>t.id===run.turnId);
+      const results=testResults(review.proposal.tests,turn?.items??[]);
+      this.emit('notice',JSON.stringify({approvedTests:review.proposal.tests,observedResults:results}));
       await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
       this.phase.complete(results.length===review.proposal.tests.length&&results.every(r=>r.exitCode===0)?0:null);this.metadata.status='complete';await this.persist();return results;
     }catch(e){this.phase.phase='NEEDS_FIX';this.metadata.status='unknown_outcome';await this.persist();throw e;}
-    }finally{this.applying=false;}
+    }finally{this.testObserver=null;this.applying=false;}
   }
   close():Promise<boolean>{if(!this.closeResult)this.closeResult=this.shutdown();return this.closeResult;}
   private async shutdown(){let uncertain=this.active||this.applying||this.commands.size>0||this.fault!==null||this.metadata?.status==='unknown_outcome';if(this.workers){try{await this.interrupt();}catch{uncertain=true;}}else if(this.busy){try{await this.interrupt();}catch{}if(this.metadata)this.metadata.status='unknown_outcome';}if(uncertain&&this.metadata)this.metadata.status='unknown_outcome';const graceful=await this.client.close();await this.persist();if(graceful&&!uncertain)await this.lock?.release();return graceful&&!uncertain;}

@@ -62,6 +62,10 @@ an unknown test result rather than a pass. Use `/resume <ID>` to continue read-o
 after completion. Failed or interrupted writes are never automatically replayed.
 The initial review supports bounded UTF-8 replacements/new files; binary changes,
 deletions, symlink targets and credential/configuration paths require separate work.
+Existing files use compact, uniquely matched edits; Hera reconstructs the full review
+locally and checks the exact final contents. Approved tests run sequentially in one
+model turn, with native command/exit evidence checked individually. See
+[token-efficiency measurements and limits](docs/token-efficiency.md).
 
 Inside the TUI, type `/model`, `/effort` or `/workers` and press Enter to open a
 selection menu. Use Up/Down and Enter to choose, or Escape to cancel without saving.
