@@ -83,6 +83,15 @@ Previous commit 2350c0d52faae2d0932db7c99f24b3b3e99d0f46 was uploaded and its CI
 Windows physical Korean IME/herdr and macOS manual/live remain NOT_RUN. Windows/macOS
 product code and CI are retained. No public release, npm publication or license grant.
 
+Private main commit 65a5480611ea190a786fabda871875522ea21699 was uploaded and remote SHA
+verified. CI 37564398977 passed macOS offline checks, but Windows passed 47/48 tests:
+the picker test sent its next keys after session state changed and before Ink committed
+the replacement menu. Package jobs were skipped, not passed. The test now waits for
+the rendered current menu and idle selection handler, with a bounded slower-runner
+timeout. The focused picker test and full 48-test Windows suite passed locally after
+the fix; the subsequent CI must be checked separately. Actual local TTY provider menu
+showed both saved providers and exited 0; this does not establish physical IME/herdr.
+
 ## Provider setup and OS credential storage (2026-10-06)
 
 User-requested scope extension: store Go credentials persistently in the OS credential
