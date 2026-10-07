@@ -1,7 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Box,Static,useApp,useStdout} from 'ink';
 import type {InteractiveSession} from '../session/interactive.js';
-import type {Phase} from '../session/phase-policy.js';
 import {ProviderKeyInput,ProviderLogin} from './ProviderInput.js';
 import {Composer} from './Composer.js';
 import {ApplyReview} from './ApplyReview.js';
@@ -14,20 +13,11 @@ import {windowsFor} from '../session/limits.js';
 import type {LimitWindow} from '../session/limits.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
 
-const TRACK:[Phase,string][]=[['IDLE','IDLE'],['ANALYZE_READ_ONLY','ANALYZE'],['QUIESCING','QUIESCE'],['READY_TO_APPLY','READY'],['APPLY_SINGLE_WRITER','APPLY'],['VERIFY_SINGLE_WRITER','VERIFY'],['COMPLETE','COMPLETE']];
 // Title-screen greetings: well-known Skyrim lines of at most 51 characters, one chosen per TUI start.
 export const GREETINGS=["Hey, you. You're finally awake.","Let me guess: someone stole your sweetroll?","Do you get to the Cloud District very often?","Fus Ro Dah!","I am sworn to carry your burdens.","Skyrim belongs to the Nords!","Never should have come here!","Some may call this junk. Me, I call them treasures.","No lollygaggin'.","Khajiit has wares, if you have coin.","Sky above, voice within."];
 const EMBLEM=['◇','◇ ┃ ◇','◇   ┃   ◇','◆━━━━━╋━━━━━◆','◇   ┃   ◇','◇ ┃ ◇','◆'];
 // Lines already written to the terminal keep their slot but drop their text beyond this many.
 const KEPT_LINES=2000;
-// Footer phase track. NEEDS_FIX takes the terminal slot; narrow terminals get studs plus the current name.
-function Track({phase,wide,ko}:{phase:Phase;wide:boolean;ko:boolean}){
-  const {c}=useTheme();
-  if(phase==='NATIVE')return <Text>{ko?'◆ 작업 · 추가 권한이 필요할 때 확인':'◆ Work · ask when extra permission is needed'}</Text>;
-  const failed=phase==='NEEDS_FIX';const at=(id:Phase)=>id===phase||failed&&id==='COMPLETE';const hue=failed?c.blood:c.gold;
-  if(!wide)return <Text>{TRACK.map(([id])=><Text key={id} color={at(id)?hue:c.iron}>{at(id)?'◆':'◇'}</Text>)}<Text bold color={hue}> {failed?'NEEDS_FIX':TRACK.find(([id])=>id===phase)?.[1]}</Text></Text>;
-  return <Text>{TRACK.map(([id,label],i)=><Text key={id}><Text color={c.iron}>{i?' ── ':''}</Text><Text bold={at(id)} color={at(id)?hue:c.iron}>{at(id)?'◆':'◇'} {at(id)&&failed?'NEEDS_FIX':label}</Text></Text>)}</Text>;
-}
 // One footer line per role: the configured route, the remaining share of each limit window the runtime
 // actually returned, or a plain statement when there is none.
 function Role({label,children,windows,fallback,reset,language}:{label:string;children:React.ReactNode;windows:LimitWindow[];fallback:string;reset:boolean;language:'ko'|'en'}){
@@ -67,9 +57,9 @@ export function App({session}:{session:InteractiveSession}){
     log.current={seen:session.written,tail:parts.at(-1)!,lines:next};
   }
   const items=useMemo(()=>[null,...log.current.lines],[log.current.lines]);
-  const approval=safeText(session.approval);const rows=height-6-Number(!!approval);
+  const approval=safeText(session.approval);const rows=height-5-Number(!!approval);
   const request=session.controller?.requests.values().next().value;
-  const phase=session.controller?.phase.phase??'NATIVE';const active=session.controller?.workers?.activeCount??0;const limit=session.config.workers.maxConcurrent;
+  const active=session.controller?.workers?.activeCount??0;const limit=session.config.workers.maxConcurrent;
   const tone=session.busy?c.gold:session.status==='Ready'||session.status==='COMPLETE'?c.moss:/^[A-Z][A-Z0-9_-]+$/.test(session.status)?c.blood:undefined;
   const quit=()=>{void session.close().finally(()=>exit());};const external=session.config.mode!=='gpt_only';const adaptive=session.config.mode==='adaptive';
   const unread=session.limits===undefined?(ko?'확인 전':'not read yet'):(ko?'한도 정보 없음':'limit unavailable');const unset=ko?'선택 필요':'unselected';
@@ -88,7 +78,6 @@ export function App({session}:{session:InteractiveSession}){
         :session.controller?.review&&!session.busy?<ApplyReview key={session.controller.review.id} review={session.controller.review} rows={Math.max(8,rows)} columns={width} language={session.config.language} approve={()=>{void session.approveApply();}} cancel={()=>session.cancelApply()}/>
         :session.selection?<SettingsPicker key={session.selection.title} menu={session.selection} language={session.config.language} rows={Math.max(7,rows)} choose={value=>{void session.selectOption(value);}} cancel={()=>session.cancelSelection()} quit={quit}/>
         :<Composer language={session.config.language} busy={session.busy} send={text=>{void session.submit(text);}} cancel={()=>{void session.interrupt().catch(e=>session.add(String(e)));}} quit={quit}/>}
-      <Track phase={phase} wide={width>=76} ko={ko}/>
       <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{adaptive?'DeepSeek + Astra':external?'GPT + DeepSeek':'GPT'}</Text>
         {session.controller?.collaborationEnabled&&<Text><Text color={c.iron}> · {ko?'워커':'Workers'} </Text><Text color={c.frost}>{'◆'.repeat(Math.min(active,limit))}</Text><Text color={c.iron}>{'◇'.repeat(Math.max(0,limit-active))}</Text>{ko?` ${active} 활성 / 상한 ${limit}`:` ${active} active / limit ${limit}`}</Text>}</Box>
       <Role label={adaptive?(ko?'깊은 추론':'Reasoning'):(ko?'메인':'Main')} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language}>{safeText(session.config.main.model??unset)}<Text color={c.iron}> · effort </Text>{session.config.main.reasoningEffort??'default'}</Role>

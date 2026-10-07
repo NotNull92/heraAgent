@@ -2,6 +2,14 @@
 
 ## Current checkpoint (2026-10-07)
 
+### Remove the obsolete TUI workflow track
+
+Removed the historical IDLE-to-COMPLETE track and its native guidance replacement
+from the footer. Existing status, mode, worker and model information remains;
+pickers can use the freed row. Native Windows typecheck, build and all 15 TUI tests
+passed, exit 0, including wide/narrow scrollback and status rendering. Live model,
+physical terminal/IME and macOS checks were not rerun for this display-only change.
+
 ### Codex-native execution replaces the mandatory apply workflow
 
 The user authorized immediate edits and checks, with questions only for decisions
