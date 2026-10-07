@@ -15,7 +15,7 @@ export function Composer({busy,send,cancel,quit,language}:{busy:boolean;send:(te
   const insert=(text:string)=>setState(s=>editInput(s.value,s.cursor,'insert',text));
   usePaste(text=>{insert(text);pasteRef.current=true;setPasted(true);});
   useInput((input,key)=>{
-    if(key.ctrl&&input==='c'){cancel();return;}
+    if(key.ctrl&&input==='c'){if(busy)cancel();else quit?.();return;}
     if(key.ctrl&&input==='q'){quit?.();return;}
     if(key.escape){setState({value:'',cursor:0});pasteRef.current=false;setPasted(false);return;}
     if(key.ctrl&&input==='s'){const value=current.current.value;if(!busy&&value.trim()){send(pasteRef.current&&/^[\\/]/.test(value)?` ${value}`:value);setState({value:'',cursor:0});pasteRef.current=false;setPasted(false);}return;}
@@ -27,5 +27,5 @@ export function Composer({busy,send,cancel,quit,language}:{busy:boolean;send:(te
     if(input)insert(input);
   });
   const parts=graphemes(state.value);
-  return <Text>{language==='ko'?'입력':'Input'} &gt; {parts.slice(0,state.cursor).join('')}│{parts.slice(state.cursor).join('')}{'\n'}{!pasted&&isSettingsCommand(state.value)?(language==='ko'?'Enter: 선택 메뉴 열기 · Esc: 지우기':'Enter: open selection menu · Esc: clear'):(language==='ko'?'Enter: 줄바꿈 · Ctrl+S: 전송 · Esc: 지우기 · Ctrl+C: 중단 요청 · Ctrl+Q: 종료':'Enter: newline · Ctrl+S: send · Esc: clear · Ctrl+C: interrupt · Ctrl+Q: exit')}{pasted?' [paste: literal text]':''}</Text>;
+  return <Text>{language==='ko'?'입력':'Input'} &gt; {parts.slice(0,state.cursor).join('')}│{parts.slice(state.cursor).join('')}{'\n'}{!pasted&&isSettingsCommand(state.value)?(language==='ko'?'Enter: 선택 메뉴 열기 · Esc: 지우기':'Enter: open selection menu · Esc: clear'):(language==='ko'?`Enter: 줄바꿈 · Ctrl+S: 전송 · Esc: 지우기 · Ctrl+C: ${busy?'중단 요청':'종료'} · Ctrl+Q: 종료`:`Enter: newline · Ctrl+S: send · Esc: clear · Ctrl+C: ${busy?'interrupt':'exit'} · Ctrl+Q: exit`)}{pasted?' [paste: literal text]':''}</Text>;
 }

@@ -2,6 +2,20 @@
 
 ## Current checkpoint (2026-10-07)
 
+### Ctrl+C follows the existing shutdown path
+
+In the composer, Ctrl+C now interrupts busy work and quits when idle, using the
+same awaited session cleanup as Ctrl+Q. Dialog cancellation is unchanged. The
+pinned Codex source disables its double-press shortcut and uses this busy/idle
+distinction. Korean/English footer text and help document the behavior.
+
+Native Windows PowerShell checks passed: typecheck, build, focused TUI tests 6/6
+and the full offline suite 54/54 (all exit 0). The new keyboard regression verifies
+busy interruption, idle cleanup before unmount and no exit from bracketed paste.
+The actual `hera` launcher was exercised in a Windows PTY: one idle Ctrl+C restored
+cursor/input modes and exited 0. No paid inference was needed. This change's CI
+results are separate from prior runs; macOS manual/live checks remain NOT_RUN.
+
 ### Authorized mixed-mode product integration (Windows locally verified)
 
 The user explicitly approved a maintained native patch **only for mixed mode**;
