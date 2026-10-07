@@ -17,16 +17,29 @@ import {providerStatus,loginOpenAI} from '../providers/accounts.js';
 import {saveGoCredential} from '../providers/go-credentials.js';
 import {externalRuntime,GO_EFFORT} from '../codex/external-runtime.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
+import {parseLimits,mergeLimits} from './limits.js';
+import type {LimitSnapshot} from './limits.js';
 const exec=promisify(execFile);
 type Role='main'|'worker';
 export type SelectionMenu={title:string;options:{value:string;label:string}[];current:string|null;choose:(value:string)=>Promise<void>};
 export class InteractiveSession extends EventEmitter {
   controller:Controller|null=null;busy=false;transcript='';status='Ready';approval='';
   selection:SelectionMenu|null=null;
+  // undefined: not read yet; null: the runtime returned no usable limit data.
+  limits:LimitSnapshot[]|null|undefined=undefined;
+  // Cumulative totals from native thread/tokenUsage/updated, keyed by thread; absent until observed.
+  private tokens=new Map<string,number>();
+  tokenTotals(){const root=this.controller?.metadata?.codexThreadId;let main:number|null=null,workers:number|null=null;for(const [id,total] of this.tokens){if(id===root)main=total;else workers=(workers??0)+total;}return {main,workers};}
   providerSetupRequired=false;providerKeyInput=false;providerLoginText='';private providerAbort:AbortController|null=null;
   constructor(readonly home:string,readonly cwd:string,readonly config:Config,readonly singleAgent:boolean){super();}
   add(text:string){this.transcript=(this.transcript+safeText(text)).slice(-128*1024);this.emit('change');}
   private async models(){const client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config));try{return await client.models();}finally{await client.close();}}
+  // Read-only native account call; no inference. A failed refresh keeps the last observed snapshot.
+  async refreshLimits(){
+    const read=async(client:CodexClient)=>parseLimits(await client.rpc.request('account/rateLimits/read',undefined));
+    try{if(this.controller)this.limits=await read(this.controller.client);else{const client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config));try{this.limits=await read(client);}finally{await client.close();}}}catch{this.limits??=null;}
+    this.emit('change');
+  }
   cancelSelection(){if(this.busy)return;if(this.providerSetupRequired){this.add('\n먼저 OpenAI와 OpenCode Go를 설정하세요. 종료하려면 Ctrl+Q를 누르세요.\n');return;}this.selection=null;this.emit('change');}
   async initializeProviders(){if(this.busy)return;this.providerSetupRequired=true;this.busy=true;this.status='Checking providers';this.emit('change');try{await this.openProviders(true);this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);this.providerMenu(null,null);}finally{this.busy=false;this.emit('change');}}
   private async openProviders(startup=false){const status=await providerStatus(this.home,this.cwd,this.config);this.providerSetupRequired=!status.openai.ready||!status.go.credentialStored;if(startup&&!this.providerSetupRequired){this.selection=null;return;}this.providerMenu(status.openai.ready,status.go.credentialStored);}
@@ -81,14 +94,16 @@ export class InteractiveSession extends EventEmitter {
     this.controller.on('event',event=>{
       if(event.method==='item/agentMessage/delta'){const p=z.object({threadId:z.string(),delta:z.string()}).safeParse(event.params);if(p.success&&p.data.threadId===this.controller?.metadata?.codexThreadId)this.add(p.data.delta);}
       else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);}
+      else if(event.method==='thread/tokenUsage/updated'){const p=z.object({threadId:z.string(),tokenUsage:z.object({total:z.object({totalTokens:z.number()})})}).safeParse(event.params);if(p.success){this.tokens.set(p.data.threadId,p.data.tokenUsage.total.totalTokens);this.emit('change');}}
+      else if(event.method==='account/rateLimits/updated'&&this.limits){this.limits=mergeLimits(this.limits,event.params);this.emit('change');}
     });
     this.controller.on('workers',()=>this.emit('change'));
     this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));
   }
-  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text))await this.command('/'+text.trim().slice(1));else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
+  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text))await this.command('/'+text.trim().slice(1));else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
     case '/providers':if(args.length)throw new HeraError('INVALID_COMMAND','/providers에서 선택하세요. 키를 명령 인수에 넣지 마세요.',2);await this.openProviders();break;
-    case '/help':this.add('\n/providers /help /mode [gpt_only|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /apply /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter inserts a line; Ctrl+S sends. Escape clears input. Ctrl+C interrupts active work or exits when idle; Ctrl+Q exits after cleanup.\n');break;
+    case '/help':this.add('\n/providers /help /mode [gpt_only|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /apply /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
     case '/mode':{if(!args[0]){this.selection={title:'모드 선택 · 다음 세션부터 적용',current:this.config.mode,options:[{value:'gpt_only',label:'GPT 전용 · 공식 엔진'},{value:'external_workers',label:'GPT 메인 + DeepSeek 워커 · 전용 엔진'}],choose:async value=>this.command(`/mode ${value}`)};break;}if(args.length!==1||!['gpt_only','external_workers'].includes(args[0]))throw new HeraError('INVALID_MODE','Use gpt_only or external_workers.',2);if(args[0]==='external_workers'&&!await externalRuntime(this.home))throw new HeraError('EXTERNAL_RUNTIME_MISSING','혼합 모드용 검증 엔진을 먼저 설치하세요. GPT로 자동 전환하지 않습니다.',4);const candidate={...this.config,mode:args[0] as Config['mode']};await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);this.add(`\n모드: ${this.config.mode} · 다음 세션부터 적용. /doctor에서 검증 상태를 확인하세요.\n`);break;}
     case '/model':case '/effort':{
       if(!args.length){await this.openSettings(command==='/model'?'model':'effort');break;}
@@ -114,6 +129,6 @@ export class InteractiveSession extends EventEmitter {
     default:throw new HeraError('UNKNOWN_COMMAND','Unknown slash command. Use /help.',2);
   }}
   async interrupt(){if(this.providerAbort){this.providerAbort.abort();return;}if(this.controller?.busy){await this.controller.interrupt();}else this.add('\nNo model turn is active. Use /quit to exit.\n');}
-  private async newSession(){if(this.controller&&!await this.controller.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Cannot switch sessions until prior execution is reconciled.',5,false);this.controller=null;}
+  private async newSession(){if(this.controller&&!await this.controller.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Cannot switch sessions until prior execution is reconciled.',5,false);this.controller=null;this.tokens.clear();}
   async close(){this.providerAbort?.abort();this.providerKeyInput=false;if(this.controller&&!await this.controller.close())process.exitCode=5;}
 }

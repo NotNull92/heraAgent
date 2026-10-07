@@ -28,8 +28,8 @@ GPT workers require matching local verification; Windows acceptance does not unl
 macOS. External Go workers remain blocked. Neither absence of a local Mac nor these
 live evidence gaps removes macOS CI/package support.
 
-Enter inserts a newline; Ctrl+S sends. If terminal flow control captures Ctrl+S,
-use the headless `run --single-agent --prompt-file <file>` path. Bracketed paste is
+Enter sends; backslash+Enter or Ctrl+J inserts a newline. For long multiline input
+the headless `run --single-agent --prompt-file <file>` path also works. Bracketed paste is
 literal. Real macOS Korean IME/herdr/terminal/live checks are MANUAL_NOT_RUN/LIVE_NOT_RUN;
 automated macOS CI is reported independently.
 

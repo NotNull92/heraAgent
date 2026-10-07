@@ -35,9 +35,12 @@ node bin/hera.mjs sandbox setup
 node bin/hera.mjs --single-agent
 ```
 
-Enter inserts a line, Ctrl+S sends and Escape clears. In the composer, Ctrl+C
-interrupts active work or exits when idle, after the existing session cleanup.
-Ctrl+Q exits directly through the same cleanup. Dialogs retain their cancel behavior.
+Composer keys follow Claude Code. Enter sends; backslash+Enter, Shift+Enter (where the
+terminal reports it) or Ctrl+J inserts a line. Escape interrupts active work and,
+pressed twice, clears the input. Ctrl+C interrupts active work; when idle it clears
+the input and arms exit, and a second Ctrl+C exits after the existing session cleanup.
+Up/Down recall sent input. Ctrl+Q exits directly through the same cleanup. Dialogs
+retain their cancel behavior.
 Use `/help` for commands. `run --single-agent --prompt-file <file>` supports non-TTY
 and multiline input. Paste never executes a slash action. A Windows sandbox notConfigured result
 requires official setup; unrestricted fallback is unavailable.

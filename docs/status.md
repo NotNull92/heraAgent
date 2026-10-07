@@ -672,3 +672,101 @@ with Escape and exited with Ctrl+Q (exit 0). The user's Astra/high, Luna/max and
 worker limit 3 remain unchanged. No model inference or worker execution was claimed.
 Prior role-settings CI 37426852347 passed all four Windows/macOS jobs; this menu
 change requires its own CI result. Physical IME/macOS manual/live remain NOT_RUN.
+
+## Nordic-fantasy TUI presentation (2026-10-07)
+
+The TUI presentation was restyled after the Skyrim HUD/menu look: a title plate, a
+compass-style phase track, iron frames with gold corner studs, a journal panel with
+an emblem title screen while the transcript is empty, and themed menus, review and
+provider panels. The art and palette are original; no third-party asset, code or new
+dependency was added. A public GitHub search found no licensed kit worth reusing.
+
+This is a presentation-only change. Commands, key bindings, approval rules and every
+displayed value are unchanged; the phase track and worker studs show only observed
+state, and the activity mark is indeterminate. `NO_COLOR` and `ui.color=never` drop
+all hues, `ui.reducedMotion` stops the activity animation, and the phase track and
+worker row collapse on small terminals. The journal is now bottom-anchored, so
+wrapped lines no longer hide the newest output.
+
+Windows local: typecheck, build and 56 offline tests passed (exit 0), including new
+checks for the colorless palette, the phase track, narrow collapse and newest-output
+visibility. Colors were inspected from a truecolor render of the test frames in a
+headless browser, not in a terminal. Actual Windows Terminal/herdr, IME, macOS
+terminal and light-background checks are NOT_RUN. CI for this change is not observed.
+
+Follow-up the same day, at the user's request: the composer has gold top and bottom
+rules, a bare `>` prompt and an English placeholder; a "Worker model" row names the
+configured provider, model and effort (configured values, not an observed route).
+Divergence from the illustrative Section 15.3 layout: the static "worker
+verification / quota unknown" row and the "no approval pending" row are removed.
+The worker row appears only with live native collaboration, the approval row only
+while a notice is pending, and the /help hint moved to the composer key line.
+Windows local after these edits: typecheck, build and 57 offline tests passed (exit 0).
+
+Korean input follow-up: the composer drew its own caret while the terminal cursor
+stayed hidden, so a terminal IME had nowhere to show the syllable being composed and
+Korean text appeared only after each commit. The composer now places the real cursor
+at the caret through Ink's cursor API (cell widths for Hangul/CJK/emoji, newlines and
+hard wraps) and no longer draws a substitute caret. Windows local: typecheck, build
+and 58 offline tests passed (exit 0). A fake-TTY render emitted the expected
+cursor-move and show sequences (column 10 after typing "한글 ab"). Composition in an
+actual Windows Terminal/herdr or macOS IME is NOT_RUN and remains the acceptance check.
+
+## Usage display (2026-10-07)
+
+The TUI shows a usage line under the requested model (and under the worker model in
+gpt_only mode, which shares the OpenAI account). It reads the native
+`account/rateLimits/read` at startup and after each model turn, merges sparse
+`account/rateLimits/updated` notifications, and draws only the windows the runtime
+returned, labeled by their real duration. Nothing is estimated; unread and
+unavailable states are stated as such.
+
+Windows local: typecheck, build and 59 offline tests passed (exit 0). Live read-only
+check against the authenticated pinned runtime (no inference): one `codex` bucket
+with a single 10080-minute window and no 5-hour window or per-model bucket; the
+product session's refresh returned the same snapshot.
+
+Live Go usage probe, explicitly requested by the user: one direct native Go
+read-only text turn (deepseek-v4.1-flash, effort low, retries disabled, 120 s bound)
+completed. The runtime emitted one `thread/tokenUsage/updated` (7,122 total tokens,
+6,784 cached input, 2 output) and one `account/rateLimits/updated` whose windows
+were all null; `account/rateLimits/read` on that Go-configured runtime failed with
+RPC -32600. So token counts are observable for a Go-routed thread, Go limits are
+not. The official Go page documents 5-hour/weekly/monthly limits visible only in the
+web console. This was the stock-runtime direct route, not a patched cross-provider
+worker child; worker-child attribution of token usage is NOT_RUN. No usage line is
+shown for Go workers yet.
+
+Worker token attribution follow-up, explicitly requested by the user: one live
+external_workers product turn in a disposable workspace (GPT main spawning one Go
+worker to read a sentinel, read-only, 300 s bound) completed with exit 0. The
+runtime emitted `thread/tokenUsage/updated` for two distinct thread IDs, so totals
+can be attributed per thread. During the Go turn `account/rateLimits/updated`
+arrived with null windows, while GPT turns carried the weekly window; the sparse
+merge keeps the last observed window. The per-thread detail at the top of the probe
+output was cut off by the capture, so the exact main/worker split of that run is not
+recorded here.
+
+The TUI now appends the observed cumulative thread tokens to each usage line (main =
+the root thread, workers = the sum of the other owned threads; cached input is
+included in the runtime's total). The Go worker line shows those tokens plus a
+pointer to the provider console and never a limit figure. Windows local: typecheck,
+build and 60 offline tests passed (exit 0). The token display has offline render
+tests only; it has not been observed in a live TUI session.
+
+## Composer keys follow Claude Code (2026-10-07)
+
+At the user's request the composer key bindings now follow Claude Code and the key
+guide line under the input is removed. Enter sends; backslash+Enter, Shift/Alt+Enter
+(when the terminal reports the modifier) or Ctrl+J inserts a line; Escape interrupts
+active work and, pressed twice within a second, clears the input; Ctrl+C interrupts
+active work, otherwise clears the input and arms exit (the placeholder turns into a
+red farewell), and a second Ctrl+C exits through the existing cleanup; any other
+input disarms it. Ctrl+D on an empty input behaves the same. Up/Down recall sent
+input and Ctrl+A/E/U/K/W edit the line. Ctrl+S no longer sends; Ctrl+Q still exits.
+
+This supersedes the earlier "Enter inserts a newline, Ctrl+S sends" behavior.
+Bracketed paste still never submits or exits, a pasted leading slash stays literal,
+and a single input chunk containing text plus a carriage return does not submit.
+Windows local: typecheck, build and 65 offline tests passed (exit 0). Real terminal
+key reporting (Shift+Enter, Alt+Enter) and IME behavior are NOT_RUN.

@@ -42,8 +42,9 @@ GPT worker verification record; `doctor` reports readiness. A different runtime,
 model/effort, worker limit or OS requires fresh verification. External Go workers are
 still blocked; stored credentials and a direct Go response alone do not enable them.
 
-TUI: Enter inserts a newline, Ctrl+S sends, Escape clears the composer, Ctrl+C requests
-turn interruption, `/quit` exits. Pasted slash text is literal, not a command.
+TUI: Enter sends, backslash+Enter or Ctrl+J inserts a newline, Escape interrupts a turn
+(twice clears the composer), Ctrl+C interrupts a turn or, when idle, exits on the second
+press, `/quit` exits. Pasted slash text is literal, not a command.
 Use `run --single-agent --prompt-file <file>` for a reliable multiline/non-TTY path.
 Physical Korean IME and herdr manual checks are still outstanding.
 
