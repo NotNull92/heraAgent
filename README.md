@@ -8,8 +8,18 @@ isolated login, read-only sessions, resume, Korean/English Ink UI and offline ch
 are implemented. GPT workers use native thread history, task/result contracts and
 recursive cancellation; `/apply` requires the entire tree to be idle before reviewed
 main-only writes and tests. Windows integration fixtures passed. **GPT collaboration
-requires matching local verification; Go workers remain blocked.** A catalog entry is not proof of model entitlement.
+requires matching local verification; Go workers additionally require the reviewed
+mixed runtime and their own local verification.** A catalog entry is not proof of model entitlement.
 No provider fallback. macOS live/manual checks have not been performed.
+
+Public web research uses the official Exa remote MCP through the pinned native
+runtime, with no additional package or API key. Only search and page fetch are
+available in analysis; apply/tests disable the server. Search results have a native
+1,500-token output budget and fetches 2,000 (before native serialization allowance).
+Queries and requested URLs go to Exa: use public topics, never secrets/private code.
+Free access is rate-limited; connection/catalog failure blocks session startup,
+and tool failures must be reported without a paid fallback. This connects an external
+service, not an offline search index. See [research, limits and actual tests](docs/web-research.md).
 
 See [status](docs/status.md), [compatibility](docs/compatibility.md) and the full
 [specification](docs/implementation-spec.md). Windows x64 and macOS Apple Silicon

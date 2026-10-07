@@ -2,6 +2,7 @@ import type {Config} from '../config.js';
 import type {JsonValue} from './generated/serde_json/JsonValue.js';
 import {HeraError} from '../errors.js';
 import type {ModelView} from './client.js';
+import {searchSettings} from './web-research.js';
 export function validateModelChoices(config:Config,models:ModelView[]){
   for(const [role,id,effort] of [['main',config.main.model,config.main.reasoningEffort],['worker',config.workers.gptModel,config.workers.reasoningEffort]] as const){
     if(role==='worker'&&config.mode==='external_workers')continue;
@@ -28,7 +29,7 @@ export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'=
     'features.code_mode_host':true,'features.request_permissions_tool':false,
     'features.skill_mcp_dependency_install':false,'features.skill_search':false,
     'features.remote_plugin':false,'features.in_app_local_automation':false,
-    'features.unbounded_connection_retries':false,web_search:'disabled',
+    'features.unbounded_connection_retries':false,web_search:'disabled',...searchSettings(mode==='read-only'),
     allow_login_shell:false,'shell_environment_policy.inherit':'core',
     'shell_environment_policy.exclude':['*KEY*','*TOKEN*','*SECRET*','*PASSWORD*','GH_*','GITHUB_*','AWS_*','AZURE_*'],
     'analytics.enabled':false,check_for_update_on_startup:false

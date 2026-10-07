@@ -2,6 +2,22 @@
 
 ## Current checkpoint (2026-10-07)
 
+### Bundled public web research
+
+Official Exa remote MCP is integrated through the native runtime, with exactly
+search/fetch in analysis and the server disabled in apply/tests. No new dependency,
+key, global plugin or custom search loop. Effective settings/catalog checks and
+native per-tool output budgets constrain the integration; this is not a hard task
+token cap, private-data filter or offline index. The requested 3-5 DRD research
+workflow is not yet enforced by this increment.
+
+[Research and precise evidence](web-research.md) compare Exa, Tavily, Brave and
+Firecrawl primary sources and record actual GPT/Go worker search, Astra fetch,
+native write-phase search denial, regression failures and package results.
+Windows typecheck/build, 67 offline tests, native smoke and the newly prepared
+archive installation/reinstall/credential persistence/launcher passed. macOS
+live/manual search remains NOT_RUN; current-source CI is verified separately.
+
 ### Ctrl+C follows the existing shutdown path
 
 In the composer, Ctrl+C now interrupts busy work and quits when idle, using the

@@ -16,7 +16,7 @@ const workerEvidence=z.strictObject({schemaVersion:z.literal(1),fingerprint:z.st
 export async function workerCapability(home:string|undefined,config:Config){
   const contract=await verifyContract();const hash=createHash('sha256').update(JSON.stringify({contract,config:{mode:config.mode,main:config.main,workers:config.workers,safety:config.safety},os:process.platform,arch:process.arch}));
   const ext=import.meta.url.endsWith('.ts')?'.ts':'.js';
-  for(const path of ['capabilities','client','config-compiler','launcher','transport','external-runtime','../providers/opencode-go','../providers/go-credentials','../session/controller','../session/workers','../session/phase-policy','../session/apply-review','../config'])hash.update(path).update(await readFile(new URL(path+ext,import.meta.url)));
+  for(const path of ['capabilities','client','config-compiler','web-research','launcher','transport','external-runtime','../providers/opencode-go','../providers/go-credentials','../session/controller','../session/workers','../session/phase-policy','../session/apply-review','../config'])hash.update(path).update(await readFile(new URL(path+ext,import.meta.url)));
   const external=config.mode==='external_workers';const runtime=external&&home?await externalRuntime(home):null;if(external)hash.update(JSON.stringify(runtime?.receipt??null));
   const fingerprint=hash.digest('hex');const raw=home?await existsJson(join(home,'metadata',external?'external-worker-verification.json':'worker-verification.json')):undefined;const evidence=workerEvidence.safeParse(raw);
   const ready=evidence.success&&evidence.data.fingerprint===fingerprint&&(!external||runtime!==null&&evidence.data.externalChecks!==undefined);
