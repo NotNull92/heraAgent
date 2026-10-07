@@ -46,11 +46,109 @@ Read-only investigation at commit `5badb15009ae1756c3afe0ae0cef1faafc290ccc`:
 No Harness dependency, source code, credentials or separate runtime was installed.
 The user's Hera OS credential store remains authoritative.
 
-## Implementation choices
+## Precedents investigated on 2026-10-07
+
+Searches covered the exact symptom, OpenCode Go Responses workers, native provider
+patches, encrypted V2 delivery and endpoint routers. Findings below distinguish source
+inspection and other authors' reports from Hera's own Windows live evidence above.
+No candidate was installed, built or executed. No credential was supplied to a router.
+
+### Official regression and its security boundary
+
+[OpenAI issue 40858](https://github.com/openai/codex/issues/40858) remains open.
+It reports the same model-applied/provider-ignored behavior; a
+[Go-specific reproduction](https://github.com/openai/codex/issues/40858#issuecomment-5540953471)
+also reports that Responses compatibility alone does not fix native children.
+[PR 39299](https://github.com/openai/codex/pull/39299), merged August 18, intentionally
+restricted roles so they cannot replace parent-owned provider or permission settings.
+This explains why older role configuration examples do not establish support in 0.160.1.
+
+Routing is only one boundary: [issue 36387](https://github.com/openai/codex/issues/36387)
+records a Windows child with the correct external provider but an unreadable encrypted
+task. Changing the provider without proving task delivery, follow-up and recovery is
+insufficient. Reverting all role restrictions would undo unrelated authority protections.
+
+### Native runtime patch candidates
+
+| Candidate | Inspected revision and evidence | Hera assessment |
+|---|---|---|
+| [Bozentan/codex PR 2](https://github.com/Bozentan/codex/pull/2) | `af3072ebbcde8d47bb8592a6a3226ef1b83b560a`, based on 0.154.0-alpha.1; 55 files, 4,046 additions / 464 deletions. User-owned provider allowlist, provider-specific child state/catalog, fresh cross-provider context, plaintext external delivery and resume checks. | Strongest reference for preserving native orchestration, but a substantial fork candidate, not an upstream fix or a drop-in 0.160.1 patch. |
+| [magic3007/codex patch](https://github.com/magic3007/codex/commit/30e9f16e2c9db34ca233dd28ae74ed9a5356aca9) | `30e9f16e2c9db34ca233dd28ae74ed9a5356aca9`; 23 files, 643 additions / 107 deletions; routing and plaintext/fresh-context work. Fork PR 1 is closed and **not merged**. | Additional implementation precedent; no verified Hera/Go compatibility. A smaller diff does not establish equivalent isolation/resume coverage. |
+| [NathanNT/codex-mux](https://github.com/NathanNT/codex-mux/tree/60efa6dede8990e6ae8e3e6f1911cea714f09560) | Source patch and PowerShell build script target 0.154.0-alpha.6.2. Role selection requires read-only + on-request + automatic review; documentation uses a file-backed assignment for encrypted messages. | Windows source-build precedent, but its approval policy differs from Hera's never-policy and its mailbox is not proof of native message delivery. No macOS acceptance established. |
+
+Bozentan's author reports 6/6 cross-provider integration checks, 417/417 affected
+package checks and a Windows release build. The inspected
+[cross-provider suite](https://github.com/Bozentan/codex/blob/af3072ebbcde8d47bb8592a6a3226ef1b83b560a/codex-rs/core/tests/suite/cross_provider_subagents.rs)
+uses `start_mock_server`, synthetic SSE and fixture credentials. Those numbers are
+author-reported **mock-backed native integration results**, not real Go acceptance.
+The PR's CI is not all green; its author reports base/fork infrastructure limitations,
+including macOS billing limits. We have not independently validated that attribution.
+
+Inspected [provider restoration](https://github.com/Bozentan/codex/blob/af3072ebbcde8d47bb8592a6a3226ef1b83b560a/codex-rs/core/src/agent/control/model_provider.rs)
+rejects cross-provider history forks and reselects the persisted provider during resume.
+Its [allowlist implementation](https://github.com/Bozentan/codex/blob/af3072ebbcde8d47bb8592a6a3226ef1b83b560a/codex-rs/core/src/config/subagent_model_provider.rs)
+accepts grants from the user configuration layer. These are useful review requirements,
+not a complete security audit. The [current-main adaptation PR](https://github.com/RobertKoval/codex/pull/1)
+is still a draft staging PR, not proof the candidate works on Hera's pinned version.
+
+### Endpoint and bridge precedents
+
+- [HisenWeb/codex-opencode-adapter](https://github.com/HisenWeb/codex-opencode-adapter/tree/c78bfe9052d32b779b1b3065871a6b0984478ca1)
+  translates Responses into Go Chat Completions. Its June 25 real-validation record
+  reports streaming, tools and continuation against Go, but explicitly leaves broader
+  real Codex subagent end-to-end testing outstanding. It predates the August role
+  restriction. Project `.env` keys and global installation instructions are not suitable
+  for Hera's credential/runtime policy. Hera already passed a direct Go Responses turn,
+  so this translation layer does not address the observed blocker by itself.
+- [duolahypercho/codex-router](https://github.com/duolahypercho/codex-router/tree/053f1b741dc89cc5b684b4df2e885cefcbdfabc7)
+  routes model slugs behind an OpenAI base URL and merged catalog. Inspected
+  [relay code](https://github.com/duolahypercho/codex-router/blob/053f1b741dc89cc5b684b4df2e885cefcbdfabc7/src/router.mjs#L1954)
+  makes an additional native GPT request to reproduce an encrypted task as plaintext.
+  This is model-assisted transport, not local decryption or transparent forwarding;
+  exact reproduction and extra native usage need separate verification. Its inspected
+  [DeepSeek proof](https://github.com/duolahypercho/codex-router/blob/053f1b741dc89cc5b684b4df2e885cefcbdfabc7/v2_agent/deepseek/deepseek-v4-flash/proof.md)
+  and [Go/Qwen proof](https://github.com/duolahypercho/codex-router/blob/053f1b741dc89cc5b684b4df2e885cefcbdfabc7/v2_agent/opencode-go-messages/qwen3.8-max/proof.md)
+  are drafts with pending relay, marker-return and follow-up checks. They do not prove
+  Hera's Go/DeepSeek V4.1 Flash combination. The related sacoken fork was inspected
+  at `09fabe3e69d1dbb74915325b8ead6465334946a1`, then checked against this upstream.
+- [OpenCodex issue 3661](https://github.com/lidge-jun/opencodex/issues/3661) provides a
+  field report using GPT-6 Astra and routed Go workers: many deliveries worked, but
+  encrypted-task recovery intermittently failed. Its updated status says bounded error
+  reporting landed while multipart recovery gaps remain. Issue closure is not evidence
+  that every underlying compatibility problem was fixed. This is another user's
+  macOS report, **not a macOS test performed for Hera**.
+- Separate parent-level Codex worker scripts are reported in issue 40858, including
+  the Go-specific comment above. This corroborates the independent-session workaround,
+  but does not supply Hera's required cancellation, concurrency or resume guarantees.
+  DeepSeek Harness's one-turn Codex adapter remains subject to the limitations above.
+
+### Recommendation from the evidence
+
+First evaluate a bounded native-runtime patch against the pinned 0.160.1 source, using
+the Bozentan candidate as the most complete reference. That best preserves Hera's
+native child tree and avoids adding a second orchestration system or GPT payload relay.
+This is a recommendation for a compatibility experiment, not a runtime adoption.
+The current specification excludes a harness fork; adopting a maintained patch requires
+an explicit scope decision and reproducible Windows/macOS builds, new schemas and a
+fresh capability fingerprint. No specification or runtime was silently changed.
+
+Acceptance still requires real Astra/high -> Go deepseek-v4.1-flash task delivery and
+same-child follow-up/resume; exact provider/auth separation; owned-tree cancellation;
+worker limits; read-only denial; and main-only apply with spawning disabled. Offline
+protocol tests must cover invalid grants, unavailable models, expired auth, 429 and
+uncertain outcomes. A local Mac is not required; macOS CI results and unperformed
+macOS live/manual checks must remain separate.
+
+If maintaining a Rust patch is rejected, separate Go App Server sessions are the next
+concrete option because their standalone tool path already passed locally. A generic
+proxy or second harness is not justified just to solve a route already proven direct.
+
+## Implementation choices after research
 
 | Path | Concrete effect | Current disposition |
 |---|---|---|
 | Native provider-capable Codex child API | Keeps current native history, worker controls and permission architecture | Preferred within the current specification; unavailable in the tested pinned path |
+| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Research candidate only; specification currently excludes a harness fork; no candidate installed or passed |
 | Separate Go App Server sessions behind an explicit delegation tool | Reuses proven Go native tools; Hera must own mapping, messaging, limits, cancellation and resume between independent roots | Architectural extension, not implemented or represented as native child cooperation |
 | Direct Go completion/tool loop or Harness orchestration | Controls provider selection independently | Replaces/duplicates the required harness responsibilities; not silently substituted |
 

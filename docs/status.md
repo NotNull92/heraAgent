@@ -92,6 +92,19 @@ timeout. The focused picker test and full 48-test Windows suite passed locally a
 the fix; the subsequent CI must be checked separately. Actual local TTY provider menu
 showed both saved providers and exited 0; this does not establish physical IME/herdr.
 
+Follow-up main a85ff66342c14db506dd300eda6269a1bc609309 was also uploaded and remote
+SHA verified. CI 37564801010 again passed macOS offline and failed the Windows picker
+test (47/48): the worker-effort check observed the main role's options. Waiting for
+the menu title alone did not fully synchronize navigation. The test now waits for the
+visible arrow selection and the composer after cancellation/save before sending its
+next input. Focused test, typecheck and all 48 tests passed locally on native Windows;
+the next CI result remains separate. Both failed runs skipped package jobs.
+
+The requested precedent investigation is recorded with pinned sources in ADR-002:
+native cross-provider forks exist, but their mock-based tests are not real Go acceptance;
+routers also need encrypted task transport. No external runtime, proxy or Harness was
+installed, no secret was moved, and no architectural extension was adopted.
+
 ## Provider setup and OS credential storage (2026-10-06)
 
 User-requested scope extension: store Go credentials persistently in the OS credential

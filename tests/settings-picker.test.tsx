@@ -22,17 +22,17 @@ it('opens keyboard menus, shows model-specific efforts, cancels atomically and r
   // Session state changes before Ink commits the replacement menu/input listener.
   // Wait for that menu to render before sending keys on slower Windows CI runners.
   const wait=async(check:()=>boolean)=>{await vi.waitFor(()=>{expect(check()).toBe(true);expect(session.busy).toBe(false);if(session.selection)expect(ui.lastFrame()).toContain(session.selection.title);},{timeout:8000,interval:80});};
-  const key=async(value:string)=>{ui.stdin.write(value);await tick();};
+  const key=async(value:string,frame?:string)=>{ui.stdin.write(value);if(frame)await vi.waitFor(()=>expect(ui.lastFrame()).toContain(frame),{timeout:8000,interval:80});else await tick();};
   try{
     await tick();await key('/model');await key('\r');await wait(()=>session.selection?.options[0]?.value==='main');expect(ui.lastFrame()).toContain('설정할 역할 선택');
-    await key('\x1b[B');await key('\r');await wait(()=>session.selection?.options[0]?.value==='fixture-a');
-    await key('\x1b[A');await key('\r');await wait(()=>session.selection?.options[0]?.value==='default');expect(ui.lastFrame()).toContain('ultra');
-    expect(await readFile(join(home,'config.json'),'utf8')).toBe(original);await key('\x1b');expect(session.selection).toBeNull();expect(await readFile(join(home,'config.json'),'utf8')).toBe(original);
-    await key('/effort');await key('\r');await wait(()=>session.selection?.options[0]?.value==='main');await key('\x1b[B');await key('\r');await wait(()=>session.selection?.options[0]?.value==='default');
+    await key('\x1b[B','› 워커');await key('\r');await wait(()=>session.selection?.options[0]?.value==='fixture-a');
+    await key('\x1b[A','› A (fixture-a)');await key('\r');await wait(()=>session.selection?.options[0]?.value==='default');expect(ui.lastFrame()).toContain('ultra');
+    expect(await readFile(join(home,'config.json'),'utf8')).toBe(original);await key('\x1b','입력 >');expect(session.selection).toBeNull();expect(await readFile(join(home,'config.json'),'utf8')).toBe(original);
+    await key('/effort','/effort');await key('\r');await wait(()=>session.selection?.options[0]?.value==='main');await key('\x1b[B','› 워커');await key('\r');await wait(()=>session.selection?.options[0]?.value==='default');
     expect(session.selection?.options.map(o=>o.value)).toEqual(['default','high','max']);
     await key('\x1b[200~\r\x1b[201~');expect(session.selection).not.toBeNull();expect(await readFile(join(home,'config.json'),'utf8')).toBe(original);
-    await key('\x1b[A');await key('\r');await wait(()=>!session.busy&&!session.selection);expect((await loadConfig(home)).config.workers.reasoningEffort).toBe('high');
-    await key('/workers');await key('\r');await wait(()=>session.selection?.options[0]?.value==='1');await key('\x1b[B');await key('\r');await wait(()=>!session.busy&&!session.selection);expect((await loadConfig(home)).config.workers.maxConcurrent).toBe(4);
+    await key('\x1b[A','› high');await key('\r','입력 >');await wait(()=>!session.busy&&!session.selection);expect((await loadConfig(home)).config.workers.reasoningEffort).toBe('high');
+    await key('/workers','/workers');await key('\r');await wait(()=>session.selection?.options[0]?.value==='1');await key('\x1b[B','› 4');await key('\r','입력 >');await wait(()=>!session.busy&&!session.selection);expect((await loadConfig(home)).config.workers.maxConcurrent).toBe(4);
     // A model switch with an incompatible old effort must wait for an explicit new choice.
     await session.submit('/model main');await session.selectOption('fixture-b');expect(session.selection?.options.map(o=>o.value)).not.toContain('ultra');expect(config.main.model).toBe('fixture-a');await session.selectOption('max');expect(config.main).toEqual({model:'fixture-b',reasoningEffort:'max'});
     await session.submit('/effort main');catalog[1]!.supportedReasoningEfforts=[{reasoningEffort:'high'}];await session.selectOption('max');expect(session.status).toBe('UNSUPPORTED_EFFORT');expect((await loadConfig(home)).config.main.reasoningEffort).toBe('max');
