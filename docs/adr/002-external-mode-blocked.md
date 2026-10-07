@@ -145,6 +145,22 @@ proxy or second harness is not justified just to solve a route already proven di
 
 ## Implementation choices after research
 
+On 2026-10-07 the user accepted the GPT-main / read-only DeepSeek-worker division
+and continued mixed-worker implementation. This authorizes the bounded project-local
+native patch qualification recommended above. It does not establish compatibility or
+activate a fork in the distributed product. Official 0.160.1 remains the default.
+
+The reference patch does not apply cleanly to the pinned source (22 conflicted files).
+An initial smaller port uses the already-present V1 plaintext collaboration backend
+instead of introducing the reference patch's V2 external namespace. It retains native
+child storage/control, isolates provider authentication and catalogs, restores the
+persisted provider on resume, and rejects cross-provider history forks/V2 spawning.
+Model metadata can select V2 even when the V2 feature flag is false; qualification
+must observe the actual backend rather than infer V1 from the feature flag alone.
+This port remains experimental and unbuilt at this checkpoint. Its safety tests,
+real Go cooperation and Windows/macOS reproducible build checks are outstanding.
+Never run the older 0.154 reference binary against Hera's existing 0.160 history.
+
 | Path | Concrete effect | Current disposition |
 |---|---|---|
 | Native provider-capable Codex child API | Keeps current native history, worker controls and permission architecture | Preferred within the current specification; unavailable in the tested pinned path |

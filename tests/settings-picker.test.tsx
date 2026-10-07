@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{act} from 'react';
 import {it,expect,vi} from 'vitest';
 import {render} from 'ink-testing-library';
 import {spawn} from 'node:child_process';
@@ -17,12 +17,14 @@ it('opens keyboard menus, shows model-specific efforts, cancels atomically and r
   ];
   const connect=vi.spyOn(CodexClient,'connect').mockImplementation(async()=>{const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs')],{stdio:['pipe','pipe','pipe'],windowsHide:true}));await client.initialize();vi.spyOn(client,'models').mockImplementation(async()=>structuredClone(catalog));return client;});
   const home=await mkdtemp(join(tmpdir(),'hera-picker-'));const config=structuredClone(defaults);config.main={model:'fixture-a',reasoningEffort:'ultra'};config.workers.gptModel='fixture-b';config.workers.reasoningEffort='max';await saveConfig(home,config);
-  const original=await readFile(join(home,'config.json'),'utf8');const session=new InteractiveSession(home,home,config,true);const ui=render(<App session={session}/>);
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  const original=await readFile(join(home,'config.json'),'utf8');const session=new InteractiveSession(home,home,config,true);let ui!:ReturnType<typeof render>;
+  await act(async()=>{ui=render(<App session={session}/>);});
   const tick=()=>new Promise(resolve=>setTimeout(resolve,80));
-  // Session state changes before Ink commits the replacement menu/input listener.
-  // Wait for that menu to render before sending keys on slower Windows CI runners.
-  const wait=async(check:()=>boolean)=>{await vi.waitFor(()=>{expect(check()).toBe(true);expect(session.busy).toBe(false);if(session.selection)expect(ui.lastFrame()).toContain(session.selection.title);},{timeout:8000,interval:80});};
-  const key=async(value:string,frame?:string)=>{ui.stdin.write(value);if(frame)await vi.waitFor(()=>expect(ui.lastFrame()).toContain(frame),{timeout:8000,interval:80});else await tick();};
+  // A rendered frame can precede useInput's passive-effect subscription. Flush
+  // React work with act before sending another key, then check the visible result.
+  const wait=async(check:()=>boolean)=>{await vi.waitFor(async()=>{await act(tick);expect(check()).toBe(true);expect(session.busy).toBe(false);if(session.selection)expect(ui.lastFrame()).toContain(session.selection.title);},{timeout:8000,interval:80});};
+  const key=async(value:string,frame?:string)=>{await act(tick);await act(async()=>{ui.stdin.write(value);await tick();});if(frame)await vi.waitFor(()=>expect(ui.lastFrame()).toContain(frame),{timeout:8000,interval:80});};
   try{
     await tick();await key('/model');await key('\r');await wait(()=>session.selection?.options[0]?.value==='main');expect(ui.lastFrame()).toContain('설정할 역할 선택');
     await key('\x1b[B','› 워커');await key('\r');await wait(()=>session.selection?.options[0]?.value==='fixture-a');
@@ -36,5 +38,5 @@ it('opens keyboard menus, shows model-specific efforts, cancels atomically and r
     // A model switch with an incompatible old effort must wait for an explicit new choice.
     await session.submit('/model main');await session.selectOption('fixture-b');expect(session.selection?.options.map(o=>o.value)).not.toContain('ultra');expect(config.main.model).toBe('fixture-a');await session.selectOption('max');expect(config.main).toEqual({model:'fixture-b',reasoningEffort:'max'});
     await session.submit('/effort main');catalog[1]!.supportedReasoningEfforts=[{reasoningEffort:'high'}];await session.selectOption('max');expect(session.status).toBe('UNSUPPORTED_EFFORT');expect((await loadConfig(home)).config.main.reasoningEffort).toBe('max');
-  }finally{ui.unmount();connect.mockRestore();await session.close();}
+  }finally{await act(async()=>{ui.unmount();await session.close();});connect.mockRestore();vi.unstubAllGlobals();}
 },30000);

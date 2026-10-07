@@ -2,6 +2,31 @@
 
 ## Current checkpoint (2026-10-07)
 
+### Mixed-worker qualification in progress
+
+The user accepted GPT main for task selection, review and final application/testing,
+with read-only Go DeepSeek workers for bounded discovery and proposals. The authorized
+next step is a project-local native-runtime compatibility experiment (ADR-002).
+The shipped runtime remains official Codex 0.160.1; external mode is still blocked.
+
+The full reference patch conflicts with 22 files on the pinned source. A smaller
+experimental port now targets the existing V1 plaintext worker backend: user-owned
+provider grants/roles, separate provider auth/catalog and persisted child routing.
+Cross-provider history forks and V2 child creation are rejected in that experiment.
+Neither experimental runtime has passed a build or a live mixed-worker test yet.
+Source checkouts/build outputs stay under ignored `.artifacts/`; the older reference
+runtime must not open the existing Hera home or migrate its history.
+
+CI run [37565451567](https://github.com/NotNull92/heraAgent/actions/runs/37565451567)
+at `7a8f2f3` passed macOS offline checks, failed the Windows picker test and skipped
+installed-package jobs. Waiting for visible frames did not flush React's passive
+input subscription. The test now uses React `act` around rendering and keyboard
+transitions. Windows focused picker and typecheck passed (exit 0). Two full-suite
+runs during the Rust build each timed out in five tests (43/48 passed, exit 1),
+including unchanged file-sync tests; these are recorded failures, not a full pass.
+Full local checks must be repeated after build contention ends. macOS live/manual
+checks remain NOT_RUN. No login material enters these checkouts or tracked files.
+
 The earlier sections below are historical. The real Go key is now present in the
 OS credential store; a fresh process reports source=keyring. No key value was printed,
 copied into the repository, sent in command arguments, or included in an artifact.
