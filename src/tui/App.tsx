@@ -45,11 +45,11 @@ function Banner({width,cwd,greeting,language}:{width:number;cwd:string;greeting:
 export function App({session}:{session:InteractiveSession}){
   const [,update]=useState(0);const [greeting]=useState(()=>GREETINGS[Math.floor(Math.random()*GREETINGS.length)]!);const {exit}=useApp();const {stdout}=useStdout();
   // A terminal re-wraps lines it already holds when its width changes, so the rows Ink erases by count no
-  // longer match and old input rules pile up. Once resizing settles, wipe the screen and scrollback and
-  // print the conversation again at the new width.
+  // longer match and old input rules pile up. Each resize therefore wipes the screen and scrollback before
+  // Ink repaints (hence the prepended listener), and the next tick prints the conversation again at the new width.
   const [epoch,redraw]=useState(0);
-  useEffect(()=>{let dirty=false;let resizedAt=0;const changed=()=>{dirty=true;};const resized=()=>{dirty=true;resizedAt=Date.now();};const quit=()=>exit();session.on('change',changed);session.on('quit',quit);stdout.on('resize',resized);const timer=setInterval(()=>{
-    if(resizedAt&&Date.now()-resizedAt>=100){resizedAt=0;if('isTTY'in stdout&&stdout.isTTY){stdout.write('\x1b[2J\x1b[3J\x1b[H');redraw(n=>n+1);}}
+  useEffect(()=>{let dirty=false;let wiped=false;const changed=()=>{dirty=true;};const resized=()=>{dirty=true;if('isTTY'in stdout&&stdout.isTTY){stdout.write('\x1b[2J\x1b[3J\x1b[H');wiped=true;}};const quit=()=>exit();session.on('change',changed);session.on('quit',quit);stdout.prependListener('resize',resized);const timer=setInterval(()=>{
+    if(wiped){wiped=false;redraw(n=>n+1);}
     if(dirty){dirty=false;update(n=>n+1);}},50);return()=>{clearInterval(timer);session.off('change',changed);session.off('quit',quit);stdout.off('resize',resized);};},[session,exit,stdout]);
   const {color,reducedMotion}=session.config.ui;const theme=useMemo(()=>({c:palette(color),motion:!reducedMotion}),[color,reducedMotion]);const c=theme.c;
   const ko=session.config.language==='ko';const width='columns'in stdout&&typeof stdout.columns==='number'?stdout.columns:80;const height='rows'in stdout&&typeof stdout.rows==='number'?stdout.rows:24;

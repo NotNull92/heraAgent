@@ -1015,3 +1015,11 @@ offline tests passed (exit 0), including a test that the clear is written once a
 a burst of resize events. The cause was read from Ink 8.0.0's resize handler, not
 reproduced; behavior in herdr or any real terminal is NOT_RUN. A terminal that
 ignores CSI 3J would keep the old copy in scrollback above the reprinted one.
+
+Resize follow-up (user observed in herdr: rules still stacked while dragging and
+vanished on release, which confirms the settle-time clear works there): the clear no
+longer waits for resizing to settle. A prepended resize listener wipes the screen and
+scrollback before Ink repaints for the same event, and the next 50 ms tick reprints
+the banner and conversation. Windows local: typecheck, build and 81 offline tests
+passed (exit 0). Behavior while dragging in herdr after this change is NOT_RUN; a
+long conversation is reprinted up to 20 times per second during a drag.
