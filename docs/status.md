@@ -18,6 +18,16 @@ Windows typecheck/build, 67 offline tests, native smoke and the newly prepared
 archive installation/reinstall/credential persistence/launcher passed. macOS
 live/manual search remains NOT_RUN; current-source CI is verified separately.
 
+Source commit `98862bb5aa5efc3d324ee614a0a19189a1f63b3e` was pushed to private
+`NotNull92/heraAgent` main after identity, origin, ancestry, staged-content and
+secret checks; remote SHA matched local HEAD. CI
+[37594309507](https://github.com/NotNull92/heraAgent/actions/runs/37594309507)
+completed successfully: Windows/macOS offline checks and both identical-archive
+installation jobs (4/4). These CI jobs do not perform live search/model inference.
+Actual Windows GPT/Go search and write-phase denial are separately recorded above;
+macOS live/manual search remains NOT_RUN. Unrelated local `.omo/` and `outputs/`
+files were preserved and excluded from the push.
+
 ### Ctrl+C follows the existing shutdown path
 
 In the composer, Ctrl+C now interrupts busy work and quits when idle, using the
