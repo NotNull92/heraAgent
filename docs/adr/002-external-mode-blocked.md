@@ -1,9 +1,13 @@
-# ADR-002: Keep external workers unavailable pending native compatibility
+# ADR-002: Opt-in maintained native routing for mixed workers
 
-Status: blocked native child routing; updated 2026-10-07 after live Go tests and
-the user's request to investigate endpoint APIs and DeepSeek Harness.
+Status: accepted for mixed mode only on 2026-10-07; implemented and locally verified
+on Windows at `67c68e3`. GPT-only retains official project-local Codex 0.160.1.
+The user explicitly authorized the maintained native patch. Current evidence and
+pending platform checks are recorded in [status](../status.md). Historical research
+and experimental limitations below describe why the patch was needed, not the current
+product activation state. No global runtime or credential replacement is authorized.
 
-## Observed endpoint and native behavior
+## Historical endpoint and official native behavior
 
 Codex 0.160.1 WireApi contains only `responses`. Go documentation lists DeepSeek on
 `/chat/completions`, but actual tests now establish more: the stored Go key returned
@@ -13,7 +17,7 @@ unpredictable file marker. No bridge was needed for that standalone turn. See st
 for exact native thread IDs and failures. The earlier wire-format-only concern is
 superseded; this does not imply Go supports every Responses feature.
 
-The remaining observed failure is GPT-to-Go **native child routing**:
+The official runtime's observed failure was GPT-to-Go **native child routing**:
 
 1. An explicit DeepSeek spawn model is rejected by the GPT parent's available-model
    validation before creating a child.
@@ -149,8 +153,13 @@ The user subsequently explicitly approved product adoption for mixed mode only:
 "네, 혼합 모드에만 적용해서 진행해" (2026-10-07). The scope exception is now
 recorded in specification section 1.2. GPT-only stays on official 0.160.1; mixed
 mode requires an explicitly installed, integrity-checked private runtime and new
-local acceptance evidence. Implementation and verification are in progress, not
-an activation claim. No global installation or existing credential is replaced.
+local acceptance evidence. Product Controller routing, follow-up, cold resume,
+read-only boundaries, cancellation and main-only application now pass on Windows.
+Separate maintainer-attested local acceptance enabled mixed mode in the user's Hera
+home; installation and mocked tests alone never enable it. No global installation
+or existing credential is replaced. macOS live/manual checks remain unperformed.
+
+The following paragraphs preserve the preceding experimental qualification record.
 
 On 2026-10-07 the user accepted the GPT-main / read-only DeepSeek-worker division
 and continued mixed-worker implementation. This authorizes the bounded project-local
@@ -190,7 +199,7 @@ Never run the older 0.154 reference binary against Hera's existing 0.160 history
 | Path | Concrete effect | Current disposition |
 |---|---|---|
 | Native provider-capable Codex child API | Keeps current native history, worker controls and permission architecture | Preferred within the current specification; unavailable in the tested pinned path |
-| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Local Windows routing, follow-up, cold resume, write denial, root limit, cancellation and native main-only phase passed; macOS CI build/smoke passed; no product adoption |
+| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Adopted for mixed mode only; Windows product live checks and public local gate passed; see status for exact platform CI and unperformed manual checks |
 | Separate Go App Server sessions behind an explicit delegation tool | Reuses proven Go native tools; Hera must own mapping, messaging, limits, cancellation and resume between independent roots | Architectural extension, not implemented or represented as native child cooperation |
 | Direct Go completion/tool loop or Harness orchestration | Controls provider selection independently | Replaces/duplicates the required harness responsibilities; not silently substituted |
 
@@ -204,4 +213,7 @@ implementation and real tests if that architectural extension is selected.
 The main GPT selection stays unchanged. Missing credentials, quota, protocol or
 tool support never trigger a switch to GPT, direct DeepSeek or another billing route.
 Go account overflow/balance behavior is controlled by the user's provider console.
-G11-G15 are not promoted by successful standalone calls. External mode stays blocked.
+G11-G15 are not promoted by successful standalone calls. External mode requires the
+installed runtime's integrity receipt and current mode-specific local acceptance;
+missing or stale evidence keeps it blocked. Recorded HTTP failure checks use native
+mock servers and do not claim real provider quota exhaustion or expired credentials.

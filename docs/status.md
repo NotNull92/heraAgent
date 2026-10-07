@@ -2,7 +2,7 @@
 
 ## Current checkpoint (2026-10-07)
 
-### Authorized mixed-mode product integration (in progress)
+### Authorized mixed-mode product integration (Windows locally verified)
 
 The user explicitly approved a maintained native patch **only for mixed mode**;
 specification section 1.2 records this exception. GPT-only retains official 0.160.1.
@@ -12,7 +12,7 @@ worker reconciliation. The Go key is present only in the read-only analysis serv
 environment; main-only application launches without it. No acceptance record is
 automatically created by installation, CI or mocked tests.
 
-Current Windows checks: typecheck and 51 offline tests passed (exit 0). Eight native
+Current Windows checks: typecheck and 53 offline tests passed (exit 0). Eight native
 cross-provider integration tests passed (1,761 filtered), including a new full-history
 fork bypass rejection for a user-owned cross-provider default role. Scoped Clippy
 passed twice (16m29s for affected crates; 10m32s after the new core guard); unrelated
@@ -25,8 +25,8 @@ import-library search path; both setup failures were corrected without global ch
 
 The maintained patch is now SHA-256
 `057f04af2e05d945a6a00613fadc77202c6063f30a12e8136caab157e36b6eaf`.
-This new guard needs a rebuilt executable and fresh product-level live checks;
-the earlier experimental binary/CI receipts below do not qualify this product build.
+The rebuilt executable and fresh product-level live checks below qualify this guard;
+the earlier experimental binary/CI receipts do not qualify this product build.
 Product CI [37573653148](https://github.com/NotNull92/heraAgent/actions/runs/37573653148)
 at `b01ee01954105c66d5c411325adb298b9b37f859` passed all four Windows/macOS jobs.
 The new optimized Windows executable built in 1m38s (exit 0), SHA-256
@@ -61,15 +61,64 @@ root response, while apply still requires full-tree quiescence. Focused regressi
 tests cover both races and retain rejection of active/unknown main outcomes. The
 corrected live cancellation passed (exit 0): actual child command interrupted,
 pending-worker apply blocked, tree/terminals idle, workspace released, unrelated
-process preserved. Windows full offline regression passed 53/53 (exit 0). No new-patch CI
-result or current uncommitted source upload is claimed.
+process preserved. Both corrected product cancellation probes passed: mixed root
+`01a114e5-5079-7902-aa60-05d0fd9eed03` and official GPT root
+`01a114e8-f0bf-7072-805c-a119fad9f0f1`. Windows full offline regression passed
+53/53 (exit 0). Four additional native unit tests passed for depth, shared concurrency,
+legacy limit configuration and resume limits (2,551 filtered); these are not live Go
+recursive-spawn tests or a full native-suite pass.
 
-### Mixed-worker qualification in progress
+The independent read-only audit of Go child `01a114db-a2cc-79d1-92c5-202111c0c32e`
+confirmed an actual command exit 0 and unpredictable marker, followed by cold-resume
+recall without a new command/file read. Maintainer-attested Windows acceptance records
+were then saved outside Git, separately for GPT and mixed mode. Provider failure
+coverage is mocked native HTTP, not paid-service quota exhaustion or expired-key live
+testing. Public `Controller.open` subsequently passed with its real mixed-mode gate.
+`hera doctor --json` reports `verified_local`; the saved user mode is now mixed,
+with Astra/high, Go DeepSeek V4.1 Flash/low and limit 3. GPT Luna/max preferences remain
+saved for GPT-only mode. Installation and mocked tests cannot self-promote acceptance.
+
+The actual `hera` launcher opened the mixed-mode TUI. A PTY exercised `/model worker`,
+the DeepSeek-only model and low-only effort pickers, then Ctrl+Q exited 0. This is not
+physical Korean IME/herdr testing. A fresh auth status process confirmed OpenAI ChatGPT
+ready and Go source=keyring, without displaying credentials.
+
+The locally prepared archive SHA-256 is
+`a61b502889fc71f623b6cac8b362569b5c96bd3104938fb949a3820824518fee`.
+Its Windows clean-prefix installation, native initialization, reinstall, credential
+persistence and launcher smoke passed. An exact-value Go-key check found no match in
+the full Git patch history, staged diff or decompressed archive; the key stayed in
+process memory and was never printed or supplied in command arguments. Source/history
+pattern scanning also passed (1,161 tracked files).
+
+Source commit `67c68e30d65ba812c4f12126f5243921fe66a90c` was pushed to private
+`NotNull92/heraAgent` main after origin, identity, staged-content, secret and ancestry
+checks. `ls-remote` matched the local SHA. At the latest observation, product CI
+[37578298594](https://github.com/NotNull92/heraAgent/actions/runs/37578298594) had passed
+both platform offline checks, Windows packaging and macOS installed-package checks;
+the Windows installed-package job was pending. The downloaded CI archive checksum
+matched `944f53782ac68963c492a67705055fd3b48501e3b8e0033cf214d0ff2058314b`;
+those exact bytes passed local Windows install/native initialization/reinstall,
+credential persistence and launcher checks. The first invocation used the local
+artifact directory's checksum and failed before installation; selecting the downloaded
+artifact directory corrected the invocation. Native qualification
+[37578328995](https://github.com/NotNull92/heraAgent/actions/runs/37578328995) passed
+the macOS arm64 build, explicit runtime installation/integrity and fresh-home native
+initialization/profile smoke; its completed job log reports the current patch SHA and
+binary SHA-256 `2e630d57c66b46e9c7ec0d881bb150a31124e10e870311bdda784a80338fa674`.
+The optional 128 MB macOS binary download was stopped after remaining pending; no
+local download/hash or execution of that binary is claimed. Windows was still building.
+These CI checks do not use
+existing credentials or perform inference. macOS live/manual and physical Korean IME
+checks remain NOT_RUN. No public release, npm publication or global Codex change occurred.
+
+### Historical mixed-worker experiment (superseded by product checkpoint above)
 
 The user accepted GPT main for task selection, review and final application/testing,
 with read-only Go DeepSeek workers for bounded discovery and proposals. The authorized
 next step is a project-local native-runtime compatibility experiment (ADR-002).
-The shipped runtime remains official Codex 0.160.1; external mode is still blocked.
+At that experimental checkpoint, the shipped runtime remained official Codex 0.160.1
+and external product mode was still blocked. The product checkpoint above supersedes it.
 
 The full reference patch conflicts with 22 files on the pinned source. A smaller
 experimental port now targets the existing V1 plaintext worker backend: user-owned
