@@ -16,3 +16,8 @@ Generated Codex protocol declarations and matching config schema originate from
 openai/codex rust-v0.160.1 (Apache-2.0). Hera changes only generated relative import
 extensions for NodeNext. The original Apache license is included under assets/codex.
 No third-party license changes the approval boundary for publishing Hera itself.
+
+The development-only `experiments/codex-provider-routing/native-v1.patch` adapts
+Apache-2.0 source from openai/codex and Bozentan/codex. Exact source revisions and
+modifications are documented beside the patch. It is excluded from the npm archive
+and does not replace the installed dependency or change Hera's license.

@@ -157,14 +157,27 @@ child storage/control, isolates provider authentication and catalogs, restores t
 persisted provider on resume, and rejects cross-provider history forks/V2 spawning.
 Model metadata can select V2 even when the V2 feature flag is false; qualification
 must observe the actual backend rather than infer V1 from the feature flag alone.
-This port remains experimental and unbuilt at this checkpoint. Its safety tests,
-real Go cooperation and Windows/macOS reproducible build checks are outstanding.
+The port built on native Windows with Rust 1.95.0 (App Server, exit 0) and passed
+101 model-provider tests, 27 focused role/grant tests and two native mocked routing/revocation integration tests
+(1,761 other integration tests filtered out). Fresh-home native initialization, strict profile loading,
+disabled worker flags and invalid profile-path rejection also passed without inference.
+The older reference CLI built and answered its version command only.
+The port's first live parent failed HTTP 401 before creating any child. Official
+Hera still reported ChatGPT ready. A read-only native storage diagnostic established
+that the debug crypto build rejected the existing age-encrypted store's work factor.
+Optimizing age/scrypt/salsa20 resolved the failure without changing credentials or the
+decryption work limit. The rebuilt App Server reported the existing ChatGPT account ready.
+On this runtime, actual Windows Astra/high -> Go DeepSeek V4.1 Flash read/follow-up,
+cold same-child resume without rereading, read-only write denial, root worker limit
+rejection and owned-tree cancellation passed (see status for thread IDs and scope).
+This proves a working local native path, not complete product integration or stability.
+Remaining safety/failure tests and Windows/macOS distribution checks are outstanding.
 Never run the older 0.154 reference binary against Hera's existing 0.160 history.
 
 | Path | Concrete effect | Current disposition |
 |---|---|---|
 | Native provider-capable Codex child API | Keeps current native history, worker controls and permission architecture | Preferred within the current specification; unavailable in the tested pinned path |
-| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Research candidate only; specification currently excludes a harness fork; no candidate installed or passed |
+| Reviewed project-local native runtime patch | Adds provider-safe native child routing and external task transport | Local Windows routing, follow-up, cold resume, write denial, root limit and cancellation passed; no product adoption; macOS patch build outstanding |
 | Separate Go App Server sessions behind an explicit delegation tool | Reuses proven Go native tools; Hera must own mapping, messaging, limits, cancellation and resume between independent roots | Architectural extension, not implemented or represented as native child cooperation |
 | Direct Go completion/tool loop or Harness orchestration | Controls provider selection independently | Replaces/duplicates the required harness responsibilities; not silently substituted |
 

@@ -3,6 +3,7 @@
 *.ps1 text eol=lf
 *.cmd text eol=crlf
 *.mjs text eol=lf
+*.patch text eol=lf whitespace=-blank-at-eol
 *.ts text eol=lf
 *.tsx text eol=lf
 *.md text eol=lf whitespace=-blank-at-eol

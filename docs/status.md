@@ -13,9 +13,44 @@ The full reference patch conflicts with 22 files on the pinned source. A smaller
 experimental port now targets the existing V1 plaintext worker backend: user-owned
 provider grants/roles, separate provider auth/catalog and persisted child routing.
 Cross-provider history forks and V2 child creation are rejected in that experiment.
-Neither experimental runtime has passed a build or a live mixed-worker test yet.
-Source checkouts/build outputs stay under ignored `.artifacts/`; the older reference
-runtime must not open the existing Hera home or migrate its history.
+Both experimental runtimes built on native Windows. The smaller 0.160.1 App Server
+port passed 101 model-provider tests, 27 focused role/grant tests, two mocked native integration tests (actual child
+provider routing/auth separation and revoked-grant rejection with zero child requests),
+and a no-inference profile/initialization smoke. The other 1,761 integration tests were
+filtered out, as were 2,528 other core unit tests; these are not a full native-suite
+pass. An initial `codex-agent-roles --lib` invocation exited 1 because that crate has
+no unit tests; the actual role tests above run in `codex-core`.
+Its first live attempt failed before spawning: the unoptimized crypto build could not
+decrypt the existing OS-backed auth store within age's calibrated work limit, and the
+parent received HTTP 401. A separate read-only diagnostic confirmed the decryption
+work-limit failure; the official runtime still reports ChatGPT ready. No credential
+was replaced or copied. Optimizing only age/scrypt/salsa20 fixed the local build:
+both the official and experimental App Servers reported ChatGPT ready. The optimized
+Windows executable SHA-256 is
+`50372c5d5b54d1597081a77d0b03fe73796f6091ace95bc70dc996081f9b65aa`.
+
+The experimental runtime then passed these actual Windows live checks (exit 0):
+
+- Astra/high parent -> Go `deepseek-v4.1-flash` child; native sentinel read,
+  same-child follow-up, and marker returned to the parent.
+- Cold process restart, same parent/child IDs and Go provider restored; the child
+  recalled the marker without another file read.
+- Actual child write command denied by the read-only sandbox, sentinel unchanged,
+  and a second root spawn rejected with native `agent thread limit reached` output.
+- An actual child sleep command interrupted through Hera's existing owned-tree
+  cancellation; no active turns/background commands remained and an unrelated
+  test-owned process survived.
+
+Parent: `01a114aa-825f-7321-b763-733282f5abf8`; child:
+`01a114aa-c4ab-76b0-96ce-b9d48db4cedb`. These are experimental native cooperation
+checks, not product external-mode or main-only-apply acceptance. Provider failure/quota
+coverage, remaining safety checks, product/schema/fingerprint integration and patched
+Windows/macOS distribution qualification are still outstanding.
+Source checkouts/build outputs stay under ignored `.artifacts/`; the source-only patch
+and pinned reproduction manifest are under `experiments/codex-provider-routing` and
+excluded from the npm package. A manually dispatched Windows/macOS build/smoke workflow
+is prepared; its existence is not a passing result. The older reference runtime did
+not open the existing Hera home or migrate its history.
 
 CI run [37565451567](https://github.com/NotNull92/heraAgent/actions/runs/37565451567)
 at `7a8f2f3` passed macOS offline checks, failed the Windows picker test and skipped
@@ -24,8 +59,17 @@ input subscription. The test now uses React `act` around rendering and keyboard
 transitions. Windows focused picker and typecheck passed (exit 0). Two full-suite
 runs during the Rust build each timed out in five tests (43/48 passed, exit 1),
 including unchanged file-sync tests; these are recorded failures, not a full pass.
-Full local checks must be repeated after build contention ends. macOS live/manual
-checks remain NOT_RUN. No login material enters these checkouts or tracked files.
+A later serial run with a 60-second per-test bound passed 48/48 (exit 0); this does
+not erase those default-timeout failures. Main `bb4dd24551955b1a8860a485e93e339276851483`
+was privately pushed and its remote SHA verified. CI run
+[37567629845](https://github.com/NotNull92/heraAgent/actions/runs/37567629845) passed
+all four jobs: Windows/macOS offline checks with normal timeouts and both installed
+archive checks. The exact CI archive SHA-256 is
+`81c5ce1ae8b12ac67249246cb2c71ba0e11e5cae9bfca62d6c1ae836f1799b95`;
+those bytes also passed local Windows clean-prefix install, native initialization,
+credential persistence, reinstall and launcher smoke (exit 0). macOS native-patch
+build/live/manual checks remain NOT_RUN. No login material enters these checkouts or
+tracked files.
 
 The earlier sections below are historical. The real Go key is now present in the
 OS credential store; a fresh process reports source=keyring. No key value was printed,

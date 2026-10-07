@@ -1,0 +1,3811 @@
+diff --git a/codex-rs/Cargo.lock b/codex-rs/Cargo.lock
+index 19885ae9..c14cdb12 100644
+--- a/codex-rs/Cargo.lock
++++ b/codex-rs/Cargo.lock
+@@ -268,7 +268,7 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
+ 
+ [[package]]
+ name = "app_test_support"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -1893,7 +1893,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-core",
+@@ -1905,7 +1905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-graph-store"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-state",
+@@ -1920,7 +1920,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-identity"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -1940,7 +1940,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-message-board-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -1960,7 +1960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-message-board-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "caseless",
+@@ -1983,7 +1983,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-roles"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-config",
+  "codex-file-system",
+@@ -1996,7 +1996,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-analytics"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-app-server-protocol",
+  "codex-git-utils",
+@@ -2018,7 +2018,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-ansi-escape"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "ansi-to-tui",
+  "ratatui",
+@@ -2027,7 +2027,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-api"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "assert_matches",
+@@ -2065,7 +2065,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -2177,7 +2177,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-app-server",
+  "codex-app-server-protocol",
+@@ -2204,7 +2204,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-daemon"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "blake3",
+@@ -2229,7 +2229,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-protocol"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-app-server-protocol-noop-macros",
+@@ -2263,11 +2263,11 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-protocol-noop-macros"
+-version = "0.0.0"
++version = "0.160.1"
+ 
+ [[package]]
+ name = "codex-app-server-test-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2289,7 +2289,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-transport"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "axum",
+  "base64 0.22.1",
+@@ -2331,7 +2331,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-apply-patch"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -2351,7 +2351,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-arg0"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-apply-patch",
+@@ -2374,7 +2374,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-async-utils"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "rand 0.9.3",
+@@ -2384,7 +2384,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-attachment-store"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "serde",
+@@ -2394,7 +2394,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-aws-auth"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "aws-config",
+  "aws-credential-types",
+@@ -2420,7 +2420,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-backend-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-api",
+@@ -2440,7 +2440,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-backend-openapi-models"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -2449,7 +2449,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-build-info"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-install-context",
+  "pretty_assertions",
+@@ -2462,7 +2462,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-bwrap"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "cc",
+  "libc",
+@@ -2471,7 +2471,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-chatgpt"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2493,7 +2493,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cli"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -2594,7 +2594,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-http-client",
+  "eventsource-stream",
+@@ -2608,7 +2608,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-config"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "chrono",
+@@ -2634,7 +2634,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -2667,7 +2667,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -2682,7 +2682,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks-mock-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "chrono",
+  "codex-cloud-tasks-client",
+@@ -2691,7 +2691,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-code-mode-protocol",
+  "codex-http-client",
+@@ -2714,7 +2714,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode-host"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -2743,7 +2743,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode-protocol"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "glob",
+@@ -2761,7 +2761,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode-runtime"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-code-mode-protocol",
+@@ -2779,11 +2779,11 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-collaboration-mode-templates"
+-version = "0.0.0"
++version = "0.160.1"
+ 
+ [[package]]
+ name = "codex-config"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -2833,7 +2833,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-config-schema"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2842,7 +2842,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-connectors"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -2864,7 +2864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-connectors-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-connectors",
+  "codex-core-plugins",
+@@ -2878,7 +2878,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-context-fragments"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-string",
+@@ -2888,7 +2888,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -3026,7 +3026,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-api"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-analytics",
+  "codex-app-server-protocol",
+@@ -3049,7 +3049,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-plugin-common"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "semver",
+@@ -3060,7 +3060,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-plugins"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3116,7 +3116,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-diagnostics"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "libc",
+  "pretty_assertions",
+@@ -3124,7 +3124,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -3176,7 +3176,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -3244,7 +3244,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server-protocol"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-file-system",
+@@ -3260,7 +3260,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server-test-support"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-exec-server",
+@@ -3275,7 +3275,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-execpolicy"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -3293,7 +3293,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-experimental-api-macros"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -3302,7 +3302,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-extension-api"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-api",
+  "codex-config",
+@@ -3324,7 +3324,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-extension-items"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "pretty_assertions",
+@@ -3336,7 +3336,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-external-agent-migration"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "chrono",
+  "codex-analytics",
+@@ -3366,7 +3366,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-features"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-network-proxy",
+  "codex-protocol",
+@@ -3379,7 +3379,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-feedback"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "bytes",
+@@ -3404,7 +3404,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-search"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -3420,7 +3420,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-system"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "bytes",
+  "codex-protocol",
+@@ -3432,7 +3432,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-watcher"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "notify",
+  "pretty_assertions",
+@@ -3443,7 +3443,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-git-attribution"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-backend-client",
+  "codex-extension-api",
+@@ -3456,7 +3456,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-git-utils"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3483,7 +3483,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-goal-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3508,7 +3508,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-guardian-context"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-context-fragments",
+  "codex-history",
+@@ -3519,7 +3519,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-guardian-reviewer"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-analytics",
+@@ -3544,7 +3544,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-guardian-v2"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-analytics",
+@@ -3580,7 +3580,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-history"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-protocol",
+@@ -3592,7 +3592,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-history-notes-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-analytics",
+  "codex-client",
+@@ -3617,7 +3617,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-home"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-extension-api",
+  "codex-utils-absolute-path",
+@@ -3629,7 +3629,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-hooks"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "async-channel",
+@@ -3657,7 +3657,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-http-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "bytes",
+  "codex-utils-cargo-bin",
+@@ -3693,7 +3693,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-image-generation-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-api",
+@@ -3721,7 +3721,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-install-context"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "codex-utils-home-dir",
+@@ -3734,7 +3734,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-keyring-store"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "keyring",
+  "pretty_assertions",
+@@ -3745,7 +3745,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-linux-sandbox"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "clap",
+  "codex-core",
+@@ -3773,7 +3773,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-lmstudio"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-core",
+  "codex-http-client",
+@@ -3787,7 +3787,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-login"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3831,7 +3831,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mcp"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -3871,7 +3871,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mcp-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -3904,7 +3904,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-memories-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-core",
+  "codex-extension-api",
+@@ -3926,7 +3926,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-memories-read"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-shell-command",
+@@ -3936,7 +3936,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-memories-write"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3973,7 +3973,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mermaid"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "insta",
+  "pretty_assertions",
+@@ -3982,7 +3982,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-message-history"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-config",
+  "memchr",
+@@ -3996,7 +3996,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-model-provider"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "chrono",
+@@ -4029,7 +4029,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-model-provider-info"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-client",
+  "codex-protocol",
+@@ -4047,7 +4047,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-models-manager"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "chrono",
+  "codex-http-client",
+@@ -4066,7 +4066,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mxc-sandbox"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "appcontainer_common",
+@@ -4088,7 +4088,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-network-proxy"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -4137,7 +4137,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-ollama"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "assert_matches",
+  "async-stream",
+@@ -4157,7 +4157,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-otel"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "bytes",
+  "chrono",
+@@ -4194,7 +4194,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-otel-trace-websocket"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -4205,7 +4205,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-plugin"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-config",
+  "codex-core-plugin-common",
+@@ -4220,7 +4220,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-process-hardening"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "libc",
+  "pretty_assertions",
+@@ -4228,7 +4228,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-prompts"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-collaboration-mode-templates",
+@@ -4245,7 +4245,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-protocol"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chardetng",
+@@ -4289,7 +4289,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-queue-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-core",
+@@ -4310,7 +4310,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-realtime-webrtc"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-build-info",
+@@ -4328,7 +4328,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-response-debug-context"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-api",
+@@ -4339,7 +4339,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-responses-api-proxy"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -4356,7 +4356,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rmcp-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -4405,7 +4405,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rollout"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -4433,7 +4433,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rollout-trace"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-code-mode",
+@@ -4449,7 +4449,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-sandboxing"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-mxc-sandbox",
+@@ -4476,7 +4476,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-secrets"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "age",
+  "anyhow",
+@@ -4497,7 +4497,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-shell-command"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -4520,7 +4520,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-shell-escalation"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -4540,7 +4540,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-skills"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-shell-command",
+@@ -4557,7 +4557,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-skills-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "assert_matches",
+  "blake3",
+@@ -4594,7 +4594,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-state"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -4620,7 +4620,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-stdio-to-uds"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-uds",
+@@ -4632,7 +4632,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tcp-tunnel"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "bytes",
+@@ -4653,7 +4653,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-terminal-detection"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "tracing",
+@@ -4661,7 +4661,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-test-binary-support"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-arg0",
+  "tempfile",
+@@ -4669,7 +4669,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-thread-manager-sample"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -4680,7 +4680,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-thread-store"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "chrono",
+  "codex-app-server-protocol",
+@@ -4711,7 +4711,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tools"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "bitflags 2.13.1",
+  "codex-code-mode",
+@@ -4737,7 +4737,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tui"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -4863,7 +4863,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-uds"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "async-io",
+  "libc",
+@@ -4877,7 +4877,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-user-verification"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "core-foundation 0.10.1",
+@@ -4897,7 +4897,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-absolute-path"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "dirs",
+  "dunce",
+@@ -4911,14 +4911,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-approval-presets"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-audio"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-protocol",
+@@ -4932,7 +4932,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cache"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "lru",
+  "sha1 0.10.6",
+@@ -4941,7 +4941,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cargo-bin"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "assert_cmd",
+  "runfiles",
+@@ -4950,7 +4950,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cli"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "clap",
+  "codex-protocol",
+@@ -4962,15 +4962,15 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-elapsed"
+-version = "0.0.0"
++version = "0.160.1"
+ 
+ [[package]]
+ name = "codex-utils-fuzzy-match"
+-version = "0.0.0"
++version = "0.160.1"
+ 
+ [[package]]
+ name = "codex-utils-git-discovery"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-git-utils",
+  "codex-utils-absolute-path",
+@@ -4983,7 +4983,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-home-dir"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "dirs",
+@@ -4993,7 +4993,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-image"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-utils-cache",
+@@ -5007,7 +5007,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-json-to-toml"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "serde_json",
+@@ -5016,7 +5016,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-oss"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-core",
+  "codex-lmstudio",
+@@ -5026,7 +5026,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-output-truncation"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-string",
+@@ -5035,7 +5035,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-path"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "dunce",
+@@ -5046,7 +5046,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-path-uri"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-utils-absolute-path",
+@@ -5062,7 +5062,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-plugins"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-exec-server",
+  "codex-exec-server-protocol",
+@@ -5076,7 +5076,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-process"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "tokio",
+@@ -5084,7 +5084,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-pty"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "ctor 0.6.3",
+@@ -5102,7 +5102,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-readiness"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "assert_matches",
+  "thiserror 2.0.18",
+@@ -5112,7 +5112,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-redacted-string"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "schemars 0.8.22",
+  "serde",
+@@ -5120,14 +5120,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-rustls-provider"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "rustls",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-sandbox-summary"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-absolute-path",
+@@ -5137,7 +5137,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-sleep-inhibitor"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "core-foundation 0.9.4",
+  "libc",
+@@ -5147,14 +5147,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-stream-parser"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-string"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "regex-lite",
+@@ -5164,14 +5164,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-template"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+ ]
+ 
+ [[package]]
+ name = "codex-v8-poc"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "pretty_assertions",
+  "v8",
+@@ -5179,7 +5179,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-voice-host"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-install-context",
+@@ -5206,7 +5206,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-web-search-extension"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-api",
+  "codex-core",
+@@ -5228,7 +5228,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-websocket-auth"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -5247,7 +5247,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-websocket-client"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-http-client",
+  "codex-utils-rustls-provider",
+@@ -5263,7 +5263,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-windows-sandbox"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -5291,7 +5291,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-windows-sandbox-service"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-cloud-config",
+@@ -5308,7 +5308,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-workload-identity"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "codex-http-client",
+  "pretty_assertions",
+@@ -5323,7 +5323,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-worktree"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "codex-git-utils",
+@@ -5563,7 +5563,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "core_test_support"
+-version = "0.0.0"
++version = "0.160.1"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+diff --git a/codex-rs/agent-roles/src/agent_role_config.rs b/codex-rs/agent-roles/src/agent_role_config.rs
+index 0e53a719..9abf8377 100644
+--- a/codex-rs/agent-roles/src/agent_role_config.rs
++++ b/codex-rs/agent-roles/src/agent_role_config.rs
+@@ -1,4 +1,5 @@
+ use codex_config::config_toml::ConfigToml;
++use codex_utils_absolute_path::AbsolutePathBuf;
+ use codex_utils_absolute_path::AbsolutePathBufGuard;
+ use serde::Deserialize;
+ use std::collections::BTreeSet;
+@@ -13,6 +14,14 @@ pub struct AgentRoleConfig {
+     pub description: Option<String>,
+     /// Path to a role-specific config layer.
+     pub config_file: Option<PathBuf>,
++    /// Model provider selected by a user-owned role config at config-load time.
++    ///
++    /// The loader leaves this and `model_catalog_json` unset for role files from other
++    /// configuration layers. Together, they are the provenance-bound routing snapshot used when
++    /// applying a role.
++    pub model_provider: Option<String>,
++    /// Model catalog selected by the same user-owned role routing snapshot.
++    pub model_catalog_json: Option<AbsolutePathBuf>,
+     /// Candidate nicknames for agents spawned with this role.
+     pub nickname_candidates: Option<Vec<String>>,
+ }
+@@ -32,6 +41,8 @@ pub struct ResolvedAgentRoleFile {
+     pub role_name: String,
+     pub description: Option<String>,
+     pub nickname_candidates: Option<Vec<String>>,
++    pub model_provider: Option<String>,
++    pub model_catalog_json: Option<AbsolutePathBuf>,
+     pub config: TomlValue,
+ }
+ 
+@@ -94,7 +105,8 @@ pub fn parse_agent_role_file_contents(
+         ),
+         parsed.nickname_candidates.as_deref(),
+     )?;
+-
++    let model_provider = parsed.config.model_provider;
++    let model_catalog_json = parsed.config.model_catalog_json;
+     let mut config = role_file_toml;
+     let Some(config_table) = config.as_table_mut() else {
+         return Err(std::io::Error::new(
+@@ -113,6 +125,8 @@ pub fn parse_agent_role_file_contents(
+         role_name,
+         description,
+         nickname_candidates,
++        model_provider,
++        model_catalog_json,
+         config,
+     })
+ }
+diff --git a/codex-rs/agent-roles/src/loader.rs b/codex-rs/agent-roles/src/loader.rs
+index a82649b8..12f00e4a 100644
+--- a/codex-rs/agent-roles/src/loader.rs
++++ b/codex-rs/agent-roles/src/loader.rs
+@@ -4,6 +4,7 @@ use crate::agent_role_config::normalize_agent_role_description;
+ use crate::agent_role_config::normalize_agent_role_nickname_candidates;
+ use crate::discovery::collect_agent_role_files;
+ use crate::parse_agent_role_file_contents;
++use codex_config::ConfigLayerSource;
+ use codex_config::ConfigLayerStack;
+ use codex_config::config_toml::AgentRoleToml;
+ use codex_config::config_toml::AgentsToml;
+@@ -33,6 +34,7 @@ pub async fn load_agent_roles(
+ 
+     let mut roles: BTreeMap<String, AgentRoleConfig> = BTreeMap::new();
+     for layer in layers {
++        let role_can_select_model_provider = matches!(&layer.name, ConfigLayerSource::User { .. });
+         let mut layer_roles: BTreeMap<String, AgentRoleConfig> = BTreeMap::new();
+         let mut declared_role_files = BTreeSet::new();
+         let config_folder = layer.config_folder();
+@@ -45,14 +47,20 @@ pub async fn load_agent_roles(
+         };
+         if let Some(agents_toml) = agents_toml {
+             for (declared_role_name, role_toml) in &agents_toml.roles {
+-                let (role_name, role) =
+-                    match read_declared_role(fs, declared_role_name, role_toml).await {
+-                        Ok(role) => role,
+-                        Err(err) => {
+-                            push_agent_role_warning(startup_warnings, err);
+-                            continue;
+-                        }
+-                    };
++                let (role_name, role) = match read_declared_role(
++                    fs,
++                    declared_role_name,
++                    role_toml,
++                    role_can_select_model_provider,
++                )
++                .await
++                {
++                    Ok(role) => role,
++                    Err(err) => {
++                        push_agent_role_warning(startup_warnings, err);
++                        continue;
++                    }
++                };
+                 if let Some(config_file) = role.config_file.clone() {
+                     declared_role_files.insert(config_file);
+                 }
+@@ -77,6 +85,7 @@ pub async fn load_agent_roles(
+                 fs,
+                 &config_folder.join("agents"),
+                 &declared_role_files,
++                role_can_select_model_provider,
+                 startup_warnings,
+             )
+             .await?
+@@ -129,7 +138,13 @@ async fn load_agent_roles_without_layers(
+     let mut roles = BTreeMap::new();
+     if let Some(agents_toml) = cfg.agents.as_ref() {
+         for (declared_role_name, role_toml) in &agents_toml.roles {
+-            let (role_name, role) = read_declared_role(fs, declared_role_name, role_toml).await?;
++            let (role_name, role) = read_declared_role(
++                fs,
++                declared_role_name,
++                role_toml,
++                /*role_can_select_model_provider*/ false,
++            )
++            .await?;
+             validate_required_agent_role_description(&role_name, role.description.as_deref())?;
+ 
+             if roles.insert(role_name.clone(), role).is_some() {
+@@ -148,6 +163,7 @@ async fn read_declared_role(
+     fs: &dyn ExecutorFileSystem,
+     declared_role_name: &str,
+     role_toml: &AgentRoleToml,
++    role_can_select_model_provider: bool,
+ ) -> std::io::Result<(String, AgentRoleConfig)> {
+     let mut role = agent_role_config_from_toml(fs, declared_role_name, role_toml).await?;
+     let mut role_name = declared_role_name.to_string();
+@@ -158,6 +174,12 @@ async fn read_declared_role(
+         role_name = parsed_file.role_name;
+         role.description = parsed_file.description.or(role.description);
+         role.nickname_candidates = parsed_file.nickname_candidates.or(role.nickname_candidates);
++        role.model_provider = role_can_select_model_provider
++            .then_some(parsed_file.model_provider)
++            .flatten();
++        role.model_catalog_json = role_can_select_model_provider
++            .then_some(parsed_file.model_catalog_json)
++            .flatten();
+     }
+ 
+     Ok((role_name, role))
+@@ -165,7 +187,12 @@ async fn read_declared_role(
+ 
+ fn merge_missing_role_fields(role: &mut AgentRoleConfig, fallback: &AgentRoleConfig) {
+     role.description = role.description.clone().or(fallback.description.clone());
+-    role.config_file = role.config_file.clone().or(fallback.config_file.clone());
++    if role.config_file.is_none() {
++        role.config_file.clone_from(&fallback.config_file);
++        role.model_provider.clone_from(&fallback.model_provider);
++        role.model_catalog_json
++            .clone_from(&fallback.model_catalog_json);
++    }
+     role.nickname_candidates = role
+         .nickname_candidates
+         .clone()
+@@ -212,6 +239,8 @@ async fn agent_role_config_from_toml(
+     Ok(AgentRoleConfig {
+         description,
+         config_file: config_file.map(AbsolutePathBuf::into_path_buf),
++        model_provider: None,
++        model_catalog_json: None,
+         nickname_candidates,
+     })
+ }
+@@ -291,6 +320,7 @@ async fn discover_agent_roles_in_dir(
+     fs: &dyn ExecutorFileSystem,
+     agents_dir: &AbsolutePathBuf,
+     declared_role_files: &BTreeSet<PathBuf>,
++    role_can_select_model_provider: bool,
+     startup_warnings: &mut Vec<String>,
+ ) -> std::io::Result<BTreeMap<String, AgentRoleConfig>> {
+     let mut roles = BTreeMap::new();
+@@ -326,6 +356,12 @@ async fn discover_agent_roles_in_dir(
+             AgentRoleConfig {
+                 description: parsed_file.description,
+                 config_file: Some(agent_file.to_path_buf()),
++                model_provider: role_can_select_model_provider
++                    .then_some(parsed_file.model_provider)
++                    .flatten(),
++                model_catalog_json: role_can_select_model_provider
++                    .then_some(parsed_file.model_catalog_json)
++                    .flatten(),
+                 nickname_candidates: parsed_file.nickname_candidates,
+             },
+         );
+diff --git a/codex-rs/app-server/src/main.rs b/codex-rs/app-server/src/main.rs
+index 4119cedf..d0fbeed4 100644
+--- a/codex-rs/app-server/src/main.rs
++++ b/codex-rs/app-server/src/main.rs
+@@ -9,6 +9,9 @@ use codex_app_server::run_main_with_transport_options;
+ use codex_arg0::Arg0DispatchPaths;
+ use codex_arg0::arg0_dispatch_or_else;
+ use codex_config::LoaderOverrides;
++use codex_config::ProfileV2Name;
++use codex_core::config::find_codex_home;
++use codex_core::config::resolve_profile_v2_config_path;
+ use codex_protocol::protocol::SessionSource;
+ use codex_utils_cli::CliConfigOverrides;
+ use codex_websocket_auth::WebsocketAuthArgs;
+@@ -30,6 +33,10 @@ const DISABLE_MANAGED_CONFIG_ENV_VAR: &str = "CODEX_APP_SERVER_DISABLE_MANAGED_C
+ #[derive(Debug, Parser)]
+ #[command(version)]
+ struct AppServerArgs {
++    /// Select an existing user profile without replacing the default configuration.
++    #[arg(long)]
++    profile: Option<ProfileV2Name>,
++
+     #[command(flatten)]
+     config_overrides: CliConfigOverrides,
+ 
+@@ -80,6 +87,7 @@ fn main() -> anyhow::Result<()> {
+     let remote_control_disabled = codex_app_server::take_remote_control_disabled_env();
+     arg0_dispatch_or_else(move |arg0_paths: Arg0DispatchPaths| async move {
+         let AppServerArgs {
++            profile,
+             config_overrides,
+             code_mode_host,
+             listen,
+@@ -91,13 +99,20 @@ fn main() -> anyhow::Result<()> {
+             remote_control,
+             managed_daemon,
+         } = AppServerArgs::parse();
+-        let loader_overrides = if disable_managed_config_from_debug_env() {
++        let mut loader_overrides = if disable_managed_config_from_debug_env() {
+             LoaderOverrides::without_managed_config_for_tests()
+         } else {
+             managed_config_path_from_debug_env()
+                 .map(LoaderOverrides::with_managed_config_path_for_tests)
+                 .unwrap_or_default()
+         };
++        if let Some(profile) = profile {
++            loader_overrides.user_config_path = Some(resolve_profile_v2_config_path(
++                &find_codex_home()?,
++                &profile,
++            ));
++            loader_overrides.user_config_profile = Some(profile);
++        }
+         let transport = listen;
+         let auth = auth.try_into_settings()?;
+         let mut runtime_options = AppServerRuntimeOptions {
+diff --git a/codex-rs/app-server/src/main_tests.rs b/codex-rs/app-server/src/main_tests.rs
+index e48ec9e7..5725ae37 100644
+--- a/codex-rs/app-server/src/main_tests.rs
++++ b/codex-rs/app-server/src/main_tests.rs
+@@ -5,6 +5,19 @@ use pretty_assertions::assert_eq;
+ use toml::Value as TomlValue;
+ use url::Url;
+ 
++#[test]
++fn app_server_profile_is_a_name_not_an_arbitrary_path() {
++    let args = AppServerArgs::try_parse_from(["codex-app-server", "--profile", "hera-probe"])
++        .expect("valid user profile");
++    assert_eq!(
++        args.profile,
++        Some("hera-probe".parse().expect("profile name"))
++    );
++    for name in ["../config", "C:\\config", "/tmp/config"] {
++        assert!(AppServerArgs::try_parse_from(["codex-app-server", "--profile", name]).is_err());
++    }
++}
++
+ #[test]
+ fn app_server_accepts_cli_config_overrides() {
+     let args = AppServerArgs::try_parse_from([
+diff --git a/codex-rs/config/src/config_toml.rs b/codex-rs/config/src/config_toml.rs
+index 9915de6b..cbcae730 100644
+--- a/codex-rs/config/src/config_toml.rs
++++ b/codex-rs/config/src/config_toml.rs
+@@ -172,6 +172,10 @@ pub struct ConfigToml {
+     /// Provider to use from the model_providers map.
+     pub model_provider: Option<String>,
+ 
++    /// Model providers that subagents may use in addition to their parent's provider.
++    /// Only user and selected-profile config layers grant this authority.
++    pub subagent_model_provider_allowlist: Option<Vec<String>>,
++
+     /// Size of the context window for the model, in tokens.
+     pub model_context_window: Option<i64>,
+ 
+diff --git a/codex-rs/config/src/loader/mod.rs b/codex-rs/config/src/loader/mod.rs
+index c4505879..84d5770b 100644
+--- a/codex-rs/config/src/loader/mod.rs
++++ b/codex-rs/config/src/loader/mod.rs
+@@ -92,6 +92,7 @@ const PROJECT_LOCAL_CONFIG_DENYLIST: &[&str] = &[
+     "responses_api_metadata",
+     "model_provider",
+     "model_providers",
++    "subagent_model_provider_allowlist",
+     "notify",
+     "profile",
+     "profiles",
+diff --git a/codex-rs/core/config.schema.json b/codex-rs/core/config.schema.json
+index ac6171c0..0eacea22 100644
+--- a/codex-rs/core/config.schema.json
++++ b/codex-rs/core/config.schema.json
+@@ -7669,6 +7669,13 @@
+       ],
+       "description": "Directory where Codex stores the SQLite state DB. Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEX_HOME`."
+     },
++    "subagent_model_provider_allowlist": {
++      "description": "Model providers that subagents may use in addition to their parent's provider. Only user and selected-profile config layers grant this authority.",
++      "items": {
++        "type": "string"
++      },
++      "type": "array"
++    },
+     "suppress_unstable_features_warning": {
+       "description": "Suppress warnings about unstable (under development) features.",
+       "type": "boolean"
+diff --git a/codex-rs/core/src/agent/child_config.rs b/codex-rs/core/src/agent/child_config.rs
+index 713c4418..ca211810 100644
+--- a/codex-rs/core/src/agent/child_config.rs
++++ b/codex-rs/core/src/agent/child_config.rs
+@@ -268,9 +268,13 @@ pub(crate) async fn apply_spawn_agent_service_tier(
+     let model = config.model.clone().ok_or_else(|| {
+         "spawn_agent could not resolve the child model for service tier validation".to_string()
+     })?;
+-    let model_info = session
+-        .services
+-        .models_manager
++    let models_manager = crate::thread_manager::models_manager_for_config(
++        session.get_config().await.as_ref(),
++        &session.services.models_manager,
++        config,
++        &session.services.auth_manager,
++    );
++    let model_info = models_manager
+         .get_model_info(model.as_str(), &config.to_models_manager_config())
+         .await;
+ 
+@@ -285,10 +289,13 @@ async fn apply_spawn_agent_role(
+     config: &mut Config,
+     role_name: Option<&str>,
+ ) -> Result<(), String> {
++    let previous_provider = config.model_provider.clone();
+     let previous_model = config.model.clone();
+     let previous_reasoning_effort = config.model_reasoning_effort.clone();
+     apply_role_to_config(config, role_name).await?;
+-    if config.model == previous_model && config.model_reasoning_effort == previous_reasoning_effort
++    if config.model_provider == previous_provider
++        && config.model == previous_model
++        && config.model_reasoning_effort == previous_reasoning_effort
+     {
+         return Ok(());
+     }
+@@ -299,9 +306,13 @@ async fn apply_spawn_agent_role(
+     let model = config.model.clone().ok_or_else(|| {
+         "spawn_agent could not resolve the child model for reasoning effort validation".to_string()
+     })?;
+-    let model_info = session
+-        .services
+-        .models_manager
++    let models_manager = crate::thread_manager::models_manager_for_config(
++        session.get_config().await.as_ref(),
++        &session.services.models_manager,
++        config,
++        &session.services.auth_manager,
++    );
++    let model_info = models_manager
+         .get_model_info(&model, &config.to_models_manager_config())
+         .await;
+     if model_info.used_fallback_model_metadata {
+diff --git a/codex-rs/core/src/agent/control.rs b/codex-rs/core/src/agent/control.rs
+index 565d3651..ea3af55d 100644
+--- a/codex-rs/core/src/agent/control.rs
++++ b/codex-rs/core/src/agent/control.rs
+@@ -69,6 +69,7 @@ mod execution;
+ mod inspection;
+ mod interrupt;
+ mod legacy;
++mod model_provider;
+ mod residency;
+ mod resume;
+ mod root_handoff;
+diff --git a/codex-rs/core/src/agent/control/model_provider.rs b/codex-rs/core/src/agent/control/model_provider.rs
+new file mode 100644
+index 00000000..c331c118
+--- /dev/null
++++ b/codex-rs/core/src/agent/control/model_provider.rs
+@@ -0,0 +1,89 @@
++use super::*;
++use crate::agent::types::SpawnAgentForkMode;
++use crate::config::SubagentModelProviderBaseline;
++
++pub(super) fn restore_persisted_agent_model_provider(
++    config: &mut Config,
++    model_provider_baseline: &SubagentModelProviderBaseline,
++    model_provider_id: &str,
++) -> CodexResult<()> {
++    config
++        .select_subagent_model_provider(model_provider_baseline, model_provider_id)
++        .map_err(|err| {
++            CodexErr::InvalidRequest(format!(
++                "cannot resume subagent with model provider `{model_provider_id}`: {err}"
++            ))
++        })?;
++    Ok(())
++}
++
++pub(super) fn restore_persisted_agent_model(config: &mut Config, model: Option<String>) {
++    if let Some(model) = model {
++        config.model = Some(model);
++    }
++}
++
++pub(super) async fn validate_history_fork_model_provider(
++    state: &ThreadManagerState,
++    config: &Config,
++    session_source: Option<&SessionSource>,
++    fork_mode: Option<&SpawnAgentForkMode>,
++    multi_agent_version: MultiAgentVersion,
++) -> CodexResult<()> {
++    let Some(SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++        parent_thread_id, ..
++    })) = session_source
++    else {
++        return Ok(());
++    };
++    let parent = state.get_thread(*parent_thread_id).await?;
++    let parent_config = parent.session.get_config().await;
++    if config.model_provider_id != parent_config.model_provider_id
++        || config.model_provider != parent_config.model_provider
++    {
++        if multi_agent_version != MultiAgentVersion::V1 {
++            return Err(CodexErr::InvalidRequest(
++                "cross-provider children require the V1 plaintext worker backend".to_string(),
++            ));
++        }
++        if fork_mode.is_none() {
++            return Ok(());
++        }
++        return Err(CodexErr::InvalidRequest(
++            "history forks require the child to use the parent's exact model provider configuration; use fork_turns=\"none\" for a different provider"
++                .to_string(),
++        ));
++    }
++    Ok(())
++}
++
++pub(super) async fn model_provider_baseline_for_parent(
++    state: &ThreadManagerState,
++    config: &Config,
++    parent_thread_id: Option<ThreadId>,
++) -> CodexResult<SubagentModelProviderBaseline> {
++    let Some(parent_thread_id) = parent_thread_id else {
++        return Ok(config.subagent_model_provider_baseline());
++    };
++    if let Ok(parent) = state.get_thread(parent_thread_id).await {
++        return Ok(parent
++            .session
++            .get_config()
++            .await
++            .subagent_model_provider_baseline());
++    }
++    let parent = state
++        .read_stored_thread(ReadThreadParams {
++            thread_id: parent_thread_id,
++            include_archived: true,
++            include_history: false,
++        })
++        .await?;
++    config
++        .subagent_model_provider_baseline_for(&parent.model_provider)
++        .map_err(|err| {
++            CodexErr::InvalidRequest(format!(
++                "cannot resolve the recorded parent model provider: {err}"
++            ))
++        })
++}
+diff --git a/codex-rs/core/src/agent/control/spawn.rs b/codex-rs/core/src/agent/control/spawn.rs
+index 277ce112..ec7c3c63 100644
+--- a/codex-rs/core/src/agent/control/spawn.rs
++++ b/codex-rs/core/src/agent/control/spawn.rs
+@@ -1,10 +1,11 @@
++use super::model_provider::*;
+ use super::residency::is_v2_resident_session_source;
+ use super::spawn_guard::PendingSpawn;
+ use super::spawn_telemetry::SpawnMeasurements;
+ use super::spawn_telemetry::record_spawn_success;
+ use super::*;
+ use crate::agent::child_config::build_agent_resume_config;
+-use crate::agent::role::apply_role_to_config;
++use crate::agent::role::apply_role_to_config_for_resume;
+ use crate::agent::types::AgentMetadata;
+ use crate::agent::types::LiveAgent;
+ use crate::agent::types::SpawnAgentForkMode;
+@@ -30,6 +31,7 @@ use codex_prompts::ResolvedModelMessages;
+ use codex_protocol::intersect_effective_permission_profiles;
+ use codex_protocol::protocol::EnvironmentConfigState;
+ use codex_thread_store::PersistContext;
++use codex_thread_store::StoredThread;
+ use codex_utils_path_uri::PathUri;
+ use futures::StreamExt;
+ use futures::stream;
+@@ -183,6 +185,40 @@ async fn load_agent_model_context(
+     }
+ }
+ 
++async fn restore_resumed_subagent_model_config(
++    state: &ThreadManagerState,
++    config: &mut Config,
++    stored_thread: &StoredThread,
++    session_source: &SessionSource,
++) -> CodexResult<Option<ThreadId>> {
++    let Some(recorded_parent_thread_id) = stored_thread
++        .parent_thread_id
++        .or_else(|| stored_thread.source.parent_thread_id())
++    else {
++        return Ok(None);
++    };
++    let parent_thread_id = session_source
++        .parent_thread_id()
++        .unwrap_or(recorded_parent_thread_id);
++
++    config.model_reasoning_effort = stored_thread.reasoning_effort.clone();
++    let model_provider_baseline =
++        model_provider_baseline_for_parent(state, config, Some(parent_thread_id)).await?;
++    restore_persisted_agent_model_provider(
++        config,
++        &model_provider_baseline,
++        &stored_thread.model_provider,
++    )?;
++    if let Some(role_name) = stored_thread.agent_role.as_deref() {
++        apply_role_to_config_for_resume(config, Some(role_name))
++            .await
++            .map_err(CodexErr::InvalidRequest)?;
++    }
++    restore_persisted_agent_model(config, stored_thread.model.clone());
++
++    Ok(Some(parent_thread_id))
++}
++
+ impl LocalAgentControl {
+     /// Restore persisted V2 agent identities without reopening their runtimes.
+     pub(crate) async fn restore_v2_agent_metadata(
+@@ -407,7 +443,17 @@ impl LocalAgentControl {
+         } else {
+             None
+         };
++        let parent_thread_id = owner_thread_id
++            .or_else(|| initial_history.get_resumed_parent_thread_id())
++            .or(stored_parent_thread_id);
+         config.model_reasoning_effort = stored_reasoning_effort;
++        let model_provider_baseline =
++            model_provider_baseline_for_parent(&state, &config, parent_thread_id).await?;
++        restore_persisted_agent_model_provider(
++            &mut config,
++            &model_provider_baseline,
++            &stored_model_provider,
++        )?;
+         if let Some(role_name) = session_source.get_agent_role() {
+             let runtime_approval_policy = config.permissions.approval_policy.value();
+             let runtime_approvals_reviewer = config.approvals_reviewer;
+@@ -425,7 +471,7 @@ impl LocalAgentControl {
+                 ),
+             };
+ 
+-            apply_role_to_config(&mut config, Some(&role_name))
++            apply_role_to_config_for_resume(&mut config, Some(&role_name))
+                 .await
+                 .map_err(CodexErr::InvalidRequest)?;
+             config
+@@ -445,24 +491,7 @@ impl LocalAgentControl {
+                 })?;
+         }
+         config.service_tier = self.root_service_tier();
+-        if let Some(model) = stored_model {
+-            config.model = Some(model);
+-        }
+-        if config.model_provider_id != stored_model_provider {
+-            config.model_provider = config
+-                .model_providers
+-                .get(&stored_model_provider)
+-                .cloned()
+-                .ok_or_else(|| {
+-                    CodexErr::InvalidRequest(format!(
+-                        "Model provider `{stored_model_provider}` not found"
+-                    ))
+-                })?;
+-            config.model_provider_id = stored_model_provider;
+-        }
+-        let parent_thread_id = owner_thread_id
+-            .or_else(|| initial_history.get_resumed_parent_thread_id())
+-            .or(stored_parent_thread_id);
++        restore_persisted_agent_model(&mut config, stored_model);
+         let (inherited_environments, inherited_exec_policy, client_mcp_extensions) = if let Some(
+             (parent, parent_environments),
+         ) =
+@@ -645,6 +674,14 @@ impl LocalAgentControl {
+                 &config,
+             )
+             .await;
++        validate_history_fork_model_provider(
++            &state,
++            &config,
++            session_source.as_ref(),
++            options.fork_mode.as_ref(),
++            multi_agent_version,
++        )
++        .await?;
+         let product_sku = config.apps_mcp_product_sku.clone();
+         if let Some(session_source) = session_source.as_ref() {
+             self.ensure_execution_capacity(multi_agent_version, session_source)?;
+@@ -949,6 +986,7 @@ impl LocalAgentControl {
+         let fork_context_started_at = Instant::now();
+         let parent_thread_id = *parent_thread_id;
+         let parent_thread = state.get_thread(parent_thread_id).await?;
++        let parent_config = parent_thread.session.get_config().await;
+         let (subagent_developer_instructions, parent_developer_instructions) = match (
+             multi_agent_version,
+             config
+@@ -1009,7 +1047,6 @@ impl LocalAgentControl {
+         }
+         let multi_agent_v2_usage_hint_texts_to_filter: Vec<String> =
+             if multi_agent_version == MultiAgentVersion::V2 {
+-                let parent_config = parent_thread.session.get_config().await;
+                 let parent_usage_hints = resolve_usage_hints(
+                     &parent_config.multi_agent_v2,
+                     ResolvedModelMessages::bundled().multi_agent(),
+@@ -1327,7 +1364,7 @@ impl LocalAgentControl {
+ 
+     async fn resume_single_agent_from_rollout(
+         &self,
+-        config: Config,
++        mut config: Config,
+         thread_id: ThreadId,
+         session_source: SessionSource,
+     ) -> CodexResult<(ThreadId, MultiAgentVersion)> {
+@@ -1347,6 +1384,13 @@ impl LocalAgentControl {
+             .map_err(|err| CodexErr::InvalidRequest(format!("invalid stored agent path: {err}")))?;
+         let resumed_agent_nickname = stored_thread.agent_nickname.clone();
+         let resumed_agent_role = stored_thread.agent_role.clone();
++        let parent_thread_id = restore_resumed_subagent_model_config(
++            &state,
++            &mut config,
++            &stored_thread,
++            &session_source,
++        )
++        .await?;
+         let history = load_agent_model_context(&state, thread_id, stored_thread.history_mode)
+             .await?
+             .ok_or(CodexErr::ThreadNotFound(thread_id))?;
+@@ -1355,7 +1399,6 @@ impl LocalAgentControl {
+             history: Arc::new(history),
+             rollout_path: stored_thread.rollout_path,
+         });
+-        let parent_thread_id = stored_thread.parent_thread_id;
+         let multi_agent_version = state
+             .effective_multi_agent_version_for_spawn(
+                 &initial_history,
+diff --git a/codex-rs/core/src/agent/control_tests.rs b/codex-rs/core/src/agent/control_tests.rs
+index dbd89a5c..c5e2661d 100644
+--- a/codex-rs/core/src/agent/control_tests.rs
++++ b/codex-rs/core/src/agent/control_tests.rs
+@@ -4462,6 +4462,8 @@ async fn spawn_thread_subagent_uses_role_specific_nickname_candidates() {
+     harness.config.agent_roles.insert(
+         "researcher".to_string(),
+         AgentRoleConfig {
++            model_provider: None,
++            model_catalog_json: None,
+             description: Some("Research role".to_string()),
+             config_file: None,
+             nickname_candidates: Some(vec!["Atlas".to_string()]),
+diff --git a/codex-rs/core/src/agent/role.rs b/codex-rs/core/src/agent/role.rs
+index f6633e75..259af3c6 100644
+--- a/codex-rs/core/src/agent/role.rs
++++ b/codex-rs/core/src/agent/role.rs
+@@ -22,6 +22,7 @@ use codex_protocol::config_types::ServiceTier;
+ use codex_protocol::config_types::Verbosity;
+ use codex_protocol::models::BaseInstructionsProvenance;
+ use codex_protocol::openai_models::ReasoningEffort;
++use codex_utils_absolute_path::AbsolutePathBuf;
+ use serde::Serialize;
+ use std::collections::BTreeMap;
+ use std::collections::BTreeSet;
+@@ -37,6 +38,8 @@ const AGENT_TYPE_UNAVAILABLE_ERROR: &str = "agent type is currently not availabl
+ struct AgentRoleOverrides {
+     developer_instructions: Option<String>,
+     model: Option<String>,
++    model_catalog_json: Option<AbsolutePathBuf>,
++    model_provider: Option<String>,
+     model_reasoning_effort: Option<ReasoningEffort>,
+     model_reasoning_summary: Option<ReasoningSummary>,
+     model_verbosity: Option<Verbosity>,
+@@ -51,6 +54,26 @@ struct AgentRoleOverrides {
+ pub(crate) async fn apply_role_to_config(
+     config: &mut Config,
+     role_name: Option<&str>,
++) -> Result<(), String> {
++    apply_role_to_config_with_provider_policy(config, role_name, /*apply_model_provider*/ true)
++        .await
++}
++
++/// Reapplies current role restrictions while preserving the provider recorded in the rollout.
++pub(crate) async fn apply_role_to_config_for_resume(
++    config: &mut Config,
++    role_name: Option<&str>,
++) -> Result<(), String> {
++    apply_role_to_config_with_provider_policy(
++        config, role_name, /*apply_model_provider*/ false,
++    )
++    .await
++}
++
++async fn apply_role_to_config_with_provider_policy(
++    config: &mut Config,
++    role_name: Option<&str>,
++    apply_model_provider: bool,
+ ) -> Result<(), String> {
+     let role_name = role_name.unwrap_or(DEFAULT_ROLE_NAME);
+ 
+@@ -58,7 +81,7 @@ pub(crate) async fn apply_role_to_config(
+         .cloned()
+         .ok_or_else(|| format!("unknown agent_type '{role_name}'"))?;
+ 
+-    apply_role_to_config_inner(config, role_name, &role)
++    apply_role_to_config_inner(config, role_name, &role, apply_model_provider)
+         .await
+         .map_err(|err| {
+             tracing::warn!("failed to apply role to config: {err}");
+@@ -70,6 +93,7 @@ async fn apply_role_to_config_inner(
+     config: &mut Config,
+     role_name: &str,
+     role: &AgentRoleConfig,
++    apply_model_provider: bool,
+ ) -> anyhow::Result<()> {
+     let is_built_in = !config.agent_roles.contains_key(role_name);
+     let Some(config_file) = role.config_file.as_ref() else {
+@@ -77,9 +101,44 @@ async fn apply_role_to_config_inner(
+     };
+     let role_layer_toml = load_role_layer_toml(config, config_file, is_built_in, role_name).await?;
+     let role_config = deserialize_config_toml_with_base(role_layer_toml, &config.codex_home)?;
++    let model_provider_baseline = config.subagent_model_provider_baseline();
++    // Provider and catalog are populated only from user-owned role layers. Use that routing
++    // snapshot rather than trusting the role file again here.
++    let role_model_provider = role.model_provider.clone();
++    let role_model_catalog_json = role.model_catalog_json.clone();
++    if apply_model_provider
++        && role_routing_snapshot_changed(
++            role,
++            &role_config.model_provider,
++            &role_config.model_catalog_json,
++        )
++    {
++        return Err(anyhow!(
++            "agent role `{role_name}` changed its model provider or catalog after configuration was loaded; reload configuration"
++        ));
++    }
++    let effective_provider_id = if apply_model_provider {
++        role_model_provider
++            .as_deref()
++            .unwrap_or(&config.model_provider_id)
++    } else {
++        &config.model_provider_id
++    };
++    // A catalog is meaningful only for the provider that will actually own the child. This also
++    // keeps resume bound to its persisted provider if the role file changed since the rollout.
++    let model_catalog_json = role_model_catalog_json.filter(|_| {
++        role_model_provider
++            .as_ref()
++            .is_none_or(|provider_id| provider_id == effective_provider_id)
++    });
+     let mut overrides = AgentRoleOverrides {
+         developer_instructions: role_config.developer_instructions,
+         model: role_config.model,
++        model_catalog_json,
++        model_provider: apply_model_provider
++            .then_some(role_model_provider)
++            .flatten()
++            .filter(|provider_id| provider_id != &config.model_provider_id),
+         model_reasoning_effort: role_config.model_reasoning_effort,
+         model_reasoning_summary: role_config.model_reasoning_summary,
+         model_verbosity: role_config.model_verbosity,
+@@ -123,10 +182,26 @@ async fn apply_role_to_config_inner(
+     {
+         return Ok(());
+     }
+-    *config = role_overrides::build_next_config(config, role_layer_toml, &overrides)?;
++    *config = role_overrides::build_next_config(
++        config,
++        role_layer_toml,
++        &overrides,
++        &model_provider_baseline,
++    )
++    .map_err(|err| anyhow!("agent role `{role_name}` is invalid: {err}"))?;
+     Ok(())
+ }
+ 
++fn role_routing_snapshot_changed(
++    role: &AgentRoleConfig,
++    fresh_model_provider: &Option<String>,
++    fresh_model_catalog_json: &Option<AbsolutePathBuf>,
++) -> bool {
++    (role.model_provider.is_some() || role.model_catalog_json.is_some())
++        && (&role.model_provider != fresh_model_provider
++            || &role.model_catalog_json != fresh_model_catalog_json)
++}
++
+ async fn load_role_layer_toml(
+     config: &Config,
+     config_file: &Path,
+@@ -178,12 +253,20 @@ mod role_overrides {
+         config: &Config,
+         role_layer_toml: TomlValue,
+         overrides: &AgentRoleOverrides,
++        model_provider_baseline: &crate::config::SubagentModelProviderBaseline,
+     ) -> anyhow::Result<Config> {
+         let mut next_config = config.clone();
+         next_config.config_layer_stack = build_config_layer_stack(config, &role_layer_toml)?;
+         if let Some(model) = &overrides.model {
+             next_config.model = Some(model.clone());
+         }
++        if let Some(model_provider_id) = &overrides.model_provider {
++            next_config
++                .select_subagent_model_provider(model_provider_baseline, model_provider_id)?;
++        }
++        if let Some(model_catalog_json) = &overrides.model_catalog_json {
++            next_config.model_catalog = Some(crate::config::load_catalog_json(model_catalog_json)?);
++        }
+         if let Some(instructions) = &overrides.developer_instructions {
+             next_config.developer_instructions = Some(instructions.clone());
+         }
+@@ -346,6 +429,8 @@ mod built_in {
+                     AgentRoleConfig {
+                         description: Some("Default agent.".to_string()),
+                         config_file: None,
++                        model_provider: None,
++                        model_catalog_json: None,
+                         nickname_candidates: None,
+                     }
+                 ),
+@@ -360,6 +445,8 @@ Rules:
+ - You are encouraged to spawn up multiple explorers in parallel when you have multiple distinct questions to ask about the codebase that can be answered independently. This allows you to get more information faster without waiting for one question to finish before asking the next. While waiting for the explorer results, you can continue working on other local tasks that do not depend on those results. This parallelism is a key advantage of delegation, so use it whenever you have multiple questions to ask.
+ - Reuse existing explorers for related questions."#.to_string()),
+                         config_file: Some("explorer.toml".to_string().parse().unwrap_or_default()),
++                        model_provider: None,
++                        model_catalog_json: None,
+                         nickname_candidates: None,
+                     }
+                 ),
+@@ -375,6 +462,8 @@ Rules:
+ - Explicitly assign **ownership** of the task (files / responsibility). When the subtask involves code changes, you should clearly specify which files or modules the worker is responsible for. This helps avoid merge conflicts and ensures accountability. For example, you can say "Worker 1 is responsible for updating the authentication module, while Worker 2 will handle the database layer." By defining clear ownership, you can delegate more effectively and reduce coordination overhead.
+ - Always tell workers they are **not alone in the codebase**, and they should not revert the edits made by others, and they should adjust their implementation to accommodate the changes made by others. This is important because there may be multiple workers making changes in parallel, and they need to be aware of each other's work to avoid conflicts and ensure a cohesive final product."#.to_string()),
+                         config_file: None,
++                        model_provider: None,
++                        model_catalog_json: None,
+                         nickname_candidates: None,
+                     }
+                 ),
+diff --git a/codex-rs/core/src/agent/role_tests.rs b/codex-rs/core/src/agent/role_tests.rs
+index fad4e304..946572f2 100644
+--- a/codex-rs/core/src/agent/role_tests.rs
++++ b/codex-rs/core/src/agent/role_tests.rs
+@@ -2,8 +2,11 @@ use super::*;
+ use crate::config::ConfigBuilder;
+ use crate::plugins::plugins_manager_for_config;
+ use crate::skills_load_input_from_config;
++use codex_config::CONFIG_TOML_FILE;
+ use codex_config::test_support::CloudConfigBundleFixture;
+ use codex_login::test_support::auth_manager_from_optional_auth;
++use codex_model_provider_info::ModelProviderInfo;
++use codex_models_manager::bundled_models_response;
+ use codex_protocol::config_types::ServiceTier;
+ use codex_protocol::models::BaseInstructionsProvenance;
+ use codex_protocol::openai_models::ReasoningEffort;
+@@ -30,6 +33,16 @@ async fn test_config_with_cli_overrides(
+     (home, config)
+ }
+ 
++fn set_user_config(config: &mut Config, user_config: &str) {
++    config.config_layer_stack = config
++        .config_layer_stack
++        .with_user_config(
++            &config.codex_home.join(CONFIG_TOML_FILE),
++            toml::from_str(user_config).expect("valid user config"),
++        )
++        .expect("user config should be accepted");
++}
++
+ async fn write_role_config(home: &TempDir, name: &str, contents: &str) -> PathBuf {
+     let role_path = home.path().join(name);
+     tokio::fs::write(&role_path, contents)
+@@ -38,6 +51,55 @@ async fn write_role_config(home: &TempDir, name: &str, contents: &str) -> PathBu
+     role_path
+ }
+ 
++async fn install_custom_role(home: &TempDir, config: &mut Config, contents: &str) {
++    let role_path = write_role_config(home, "custom-role.toml", contents).await;
++    let role_config = toml::from_str::<TomlValue>(contents).expect("role config should parse");
++    let model_provider = role_config
++        .get("model_provider")
++        .and_then(TomlValue::as_str)
++        .map(str::to_string);
++    let model_catalog_json = role_config
++        .get("model_catalog_json")
++        .and_then(TomlValue::as_str)
++        .map(|path| home.path().join(path).abs());
++    config.agent_roles.insert(
++        "custom".to_string(),
++        AgentRoleConfig {
++            config_file: Some(role_path),
++            model_provider,
++            model_catalog_json,
++            ..Default::default()
++        },
++    );
++}
++
++async fn assert_provider_role_rejected(
++    home: &TempDir,
++    mut config: Config,
++    provider_id: &str,
++    provider: Option<ModelProviderInfo>,
++) {
++    if let Some(provider) = provider {
++        config
++            .model_providers
++            .insert(provider_id.to_string(), provider);
++    }
++    install_custom_role(
++        home,
++        &mut config,
++        &format!("model_provider = \"{provider_id}\""),
++    )
++    .await;
++    let before = config.clone();
++
++    let err = apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect_err("unauthorized provider selection should fail closed");
++
++    assert_eq!(err, AGENT_TYPE_UNAVAILABLE_ERROR, "provider: {provider_id}");
++    assert_eq!(config, before, "provider: {provider_id}");
++}
++
+ fn session_flags_layer_count(config: &Config) -> usize {
+     config
+         .config_layer_stack
+@@ -69,6 +131,239 @@ async fn apply_role_returns_error_for_unknown_role() {
+     assert_eq!(err, "unknown agent_type 'missing-role'");
+ }
+ 
++#[tokio::test]
++async fn apply_role_selects_only_user_authorized_provider() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    set_user_config(
++        &mut config,
++        "subagent_model_provider_allowlist = [\"custom\"]",
++    );
++    let custom_provider = ModelProviderInfo::default();
++    config
++        .model_providers
++        .insert("custom".to_string(), custom_provider.clone());
++    install_custom_role(&home, &mut config, r#"model_provider = "custom""#).await;
++    apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect("the user-authorized provider should be selected");
++
++    assert_eq!(config.model_provider_id, "custom");
++    assert_eq!(config.model_provider, custom_provider);
++}
++
++#[tokio::test]
++async fn apply_role_cannot_replace_an_authorized_parent_provider_definition() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    set_user_config(
++        &mut config,
++        "subagent_model_provider_allowlist = [\"custom\"]",
++    );
++    let parent_provider = ModelProviderInfo {
++        name: "Parent custom provider".to_string(),
++        base_url: Some("https://parent.example/v1".to_string()),
++        ..Default::default()
++    };
++    config
++        .model_providers
++        .insert("custom".to_string(), parent_provider.clone());
++    install_custom_role(
++        &home,
++        &mut config,
++        r#"
++model_provider = "custom"
++
++[model_providers.custom]
++name = "Role replacement"
++base_url = "https://attacker.example/v1"
++"#,
++    )
++    .await;
++
++    apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect("the parent-authorized provider should be selected");
++
++    assert_eq!(config.model_provider_id, "custom");
++    assert_eq!(config.model_provider, parent_provider);
++    assert_eq!(
++        config.model_providers.get("custom"),
++        Some(&config.model_provider)
++    );
++}
++
++#[tokio::test]
++async fn apply_role_loads_role_scoped_model_catalog() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    let mut catalog = bundled_models_response().expect("bundled model catalog should parse");
++    catalog.models.truncate(1);
++    std::fs::write(
++        home.path().join("worker-models.json"),
++        serde_json::to_vec(&catalog).expect("model catalog should serialize"),
++    )
++    .expect("write role model catalog");
++    install_custom_role(
++        &home,
++        &mut config,
++        r#"model_catalog_json = "worker-models.json""#,
++    )
++    .await;
++
++    apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect("role-scoped model catalog should apply");
++
++    assert_eq!(config.model_catalog, Some(catalog));
++}
++
++#[tokio::test]
++async fn apply_role_drops_inherited_catalog_when_provider_changes() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    set_user_config(
++        &mut config,
++        "subagent_model_provider_allowlist = [\"custom\"]",
++    );
++    config
++        .model_providers
++        .insert("custom".to_string(), ModelProviderInfo::default());
++    let mut inherited_catalog = bundled_models_response().expect("bundled catalog should parse");
++    inherited_catalog.models.truncate(1);
++    config.model_catalog = Some(inherited_catalog);
++    install_custom_role(&home, &mut config, r#"model_provider = "custom""#).await;
++
++    apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect("authorized provider role should apply");
++
++    assert_eq!(config.model_provider_id, "custom");
++    assert_eq!(config.model_catalog, None);
++}
++
++#[tokio::test]
++async fn resume_role_reapplies_restrictions_without_redirecting_provider_or_catalog() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    let original_provider_id = config.model_provider_id.clone();
++    let original_provider = config.model_provider.clone();
++    let mut catalog = bundled_models_response().expect("bundled model catalog should parse");
++    catalog.models.truncate(1);
++    std::fs::write(
++        home.path().join("worker-models.json"),
++        serde_json::to_vec(&catalog).expect("model catalog should serialize"),
++    )
++    .expect("write role model catalog");
++    install_custom_role(
++        &home,
++        &mut config,
++        r#"
++model = "resumed-role-model"
++model_provider = "custom"
++model_catalog_json = "worker-models.json"
++developer_instructions = "current role restrictions"
++"#,
++    )
++    .await;
++
++    apply_role_to_config_for_resume(&mut config, Some("custom"))
++        .await
++        .expect("resume should not authorize the role's current provider override");
++
++    assert_eq!(config.model.as_deref(), Some("resumed-role-model"));
++    assert_eq!(
++        config.developer_instructions.as_deref(),
++        Some("current role restrictions")
++    );
++    assert_eq!(config.model_provider_id, original_provider_id);
++    assert_eq!(config.model_provider, original_provider);
++    assert_eq!(config.model_catalog, None);
++}
++
++#[tokio::test]
++async fn changed_role_provider_fails_fresh_apply_and_cannot_redirect_resume() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    set_user_config(
++        &mut config,
++        "subagent_model_provider_allowlist = [\"provider-a\", \"provider-b\"]",
++    );
++    let provider_a = ModelProviderInfo::default();
++    config
++        .model_providers
++        .insert("provider-a".to_string(), provider_a.clone());
++    config
++        .model_providers
++        .insert("provider-b".to_string(), ModelProviderInfo::default());
++    let mut catalog_a = bundled_models_response().expect("bundled model catalog should parse");
++    catalog_a.models.truncate(1);
++    std::fs::write(
++        home.path().join("provider-a-models.json"),
++        serde_json::to_vec(&catalog_a).expect("model catalog should serialize"),
++    )
++    .expect("write provider A model catalog");
++    install_custom_role(
++        &home,
++        &mut config,
++        r#"
++model_provider = "provider-a"
++model_catalog_json = "provider-a-models.json"
++"#,
++    )
++    .await;
++
++    let mut catalog_b = bundled_models_response().expect("bundled model catalog should parse");
++    catalog_b.models.truncate(1);
++    std::fs::write(
++        home.path().join("provider-b-models.json"),
++        serde_json::to_vec(&catalog_b).expect("model catalog should serialize"),
++    )
++    .expect("write provider B model catalog");
++    write_role_config(
++        &home,
++        "custom-role.toml",
++        r#"
++model = "updated-role-model"
++model_provider = "provider-b"
++model_catalog_json = "provider-b-models.json"
++"#,
++    )
++    .await;
++
++    let before = config.clone();
++    let err = apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect_err("fresh apply must reject a changed provider declaration");
++    assert_eq!(err, AGENT_TYPE_UNAVAILABLE_ERROR);
++    assert_eq!(config, before);
++
++    let baseline = config.subagent_model_provider_baseline();
++    config
++        .select_subagent_model_provider(&baseline, "provider-a")
++        .expect("simulate provider persisted in the rollout");
++    apply_role_to_config_for_resume(&mut config, Some("custom"))
++        .await
++        .expect("resume should preserve the persisted provider");
++
++    assert_eq!(config.model.as_deref(), Some("updated-role-model"));
++    assert_eq!(config.model_provider_id, "provider-a");
++    assert_eq!(config.model_provider, provider_a);
++    assert_eq!(config.model_catalog, Some(catalog_a));
++}
++
++#[tokio::test]
++async fn apply_role_rejects_untrusted_or_missing_provider_without_mutation() {
++    let (home, config) = test_config_with_cli_overrides(vec![(
++        "subagent_model_provider_allowlist".to_string(),
++        TomlValue::Array(vec![TomlValue::String("custom".to_string())]),
++    )])
++    .await;
++    assert_provider_role_rejected(&home, config, "custom", Some(ModelProviderInfo::default()))
++        .await;
++
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    set_user_config(
++        &mut config,
++        "subagent_model_provider_allowlist = [\"missing\"]",
++    );
++    assert_provider_role_rejected(&home, config, "missing", None).await;
++}
++
+ #[tokio::test]
+ async fn apply_empty_explorer_role_preserves_current_model_and_reasoning_effort() {
+     let (_home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
+@@ -93,6 +388,8 @@ async fn apply_role_returns_unavailable_for_missing_user_role_file() {
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(PathBuf::from("/path/does/not/exist.toml")),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -116,6 +413,8 @@ async fn apply_role_rejects_symlinked_role_file() {
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -136,6 +435,8 @@ async fn apply_role_returns_unavailable_for_invalid_user_role_toml() {
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -167,6 +468,8 @@ model = "role-model"
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -198,6 +501,8 @@ async fn apply_role_preserves_unspecified_keys() {
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -303,6 +608,8 @@ async fn apply_role_refreshes_model_instructions_only_when_personality_opt_out_c
+             AgentRoleConfig {
+                 description: None,
+                 config_file: Some(role_path),
++                model_provider: None,
++                model_catalog_json: None,
+                 nickname_candidates: None,
+             },
+         );
+@@ -344,6 +651,8 @@ service_tier = "priority"
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -374,6 +683,8 @@ async fn apply_role_preserves_existing_service_tier_without_override() {
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -417,6 +728,8 @@ writable_roots = ["./sandbox-root"]
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -432,6 +745,18 @@ writable_roots = ["./sandbox-root"]
+ #[tokio::test]
+ async fn apply_role_cannot_expand_parent_authority() {
+     let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    set_user_config(
++        &mut config,
++        "subagent_model_provider_allowlist = [\"attacker\"]",
++    );
++    config.model_providers.insert(
++        "attacker".to_string(),
++        ModelProviderInfo {
++            name: "User-configured provider".to_string(),
++            base_url: Some("https://user.example/v1".to_string()),
++            ..Default::default()
++        },
++    );
+     config.notify = Some(vec!["parent-notifier".to_string()]);
+     for feature in [Feature::MemoryTool, Feature::RequestPermissionsTool] {
+         config
+@@ -439,14 +764,25 @@ async fn apply_role_cannot_expand_parent_authority() {
+             .enable(feature)
+             .expect("parent should allow capability feature");
+     }
++    let mut parent_catalog = bundled_models_response().expect("bundled catalog should parse");
++    parent_catalog.models.truncate(1);
++    config.model_catalog = Some(parent_catalog);
++    let mut attacker_catalog = bundled_models_response().expect("bundled catalog should parse");
++    attacker_catalog.models.reverse();
++    std::fs::write(
++        home.path().join("attacker-models.json"),
++        serde_json::to_vec(&attacker_catalog).expect("attacker catalog should serialize"),
++    )
++    .expect("write attacker model catalog");
+     let role_path = write_role_config(
+         &home,
+         "hostile-role.toml",
+         r#"developer_instructions = "Stay focused"
+ model = "role-model"
++model_provider = "attacker"
++model_catalog_json = "attacker-models.json"
+ openai_base_url = "https://attacker.example/v1"
+ chatgpt_base_url = "https://attacker.example/backend-api"
+-model_provider = "ollama"
+ approval_policy = "never"
+ sandbox_mode = "danger-full-access"
+ notify = ["attacker-command"]
+@@ -463,6 +799,10 @@ enabled = true
+ 
+ [mcp_servers.attacker]
+ command = "attacker-command"
++
++[model_providers.attacker]
++name = "Attacker"
++base_url = "https://attacker.example/v1"
+ "#,
+     )
+     .await;
+@@ -471,6 +811,8 @@ command = "attacker-command"
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -488,6 +830,7 @@ command = "attacker-command"
+     assert_eq!(config.permissions, parent.permissions);
+     assert_eq!(config.model_provider_id, parent.model_provider_id);
+     assert_eq!(config.model_provider, parent.model_provider);
++    assert_eq!(config.model_catalog, parent.model_catalog);
+     assert_eq!(config.model_providers, parent.model_providers);
+     assert_eq!(config.approvals_reviewer, parent.approvals_reviewer);
+     assert_eq!(config.mcp_servers, parent.mcp_servers);
+@@ -505,7 +848,6 @@ command = "attacker-command"
+     for key in [
+         "openai_base_url",
+         "chatgpt_base_url",
+-        "model_provider",
+         "approval_policy",
+         "sandbox_mode",
+         "notify",
+@@ -578,6 +920,8 @@ async fn apply_role_takes_precedence_over_existing_session_flags_for_same_key()
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -621,6 +965,8 @@ enabled = false
+         AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+@@ -665,6 +1011,8 @@ fn spawn_tool_spec_build_deduplicates_user_defined_built_in_roles() {
+             AgentRoleConfig {
+                 description: Some("user override".to_string()),
+                 config_file: None,
++                model_provider: None,
++                model_catalog_json: None,
+                 nickname_candidates: None,
+             },
+         ),
+@@ -686,6 +1034,8 @@ fn spawn_tool_spec_lists_user_defined_roles_before_built_ins() {
+         AgentRoleConfig {
+             description: Some("first".to_string()),
+             config_file: None,
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     )]);
+@@ -713,6 +1063,8 @@ fn spawn_tool_spec_marks_role_locked_model_and_reasoning_effort() {
+         AgentRoleConfig {
+             description: Some("Research carefully.".to_string()),
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     )]);
+@@ -738,6 +1090,8 @@ fn spawn_tool_spec_marks_role_locked_reasoning_effort_only() {
+         AgentRoleConfig {
+             description: Some("Review carefully.".to_string()),
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     )]);
+@@ -763,6 +1117,8 @@ fn spawn_tool_spec_omits_role_service_tier() {
+         AgentRoleConfig {
+             description: Some("Stay fast.".to_string()),
+             config_file: Some(role_path),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     )]);
+diff --git a/codex-rs/core/src/config/config_loader_tests.rs b/codex-rs/core/src/config/config_loader_tests.rs
+index d50816a8..b3288d49 100644
+--- a/codex-rs/core/src/config/config_loader_tests.rs
++++ b/codex-rs/core/src/config/config_loader_tests.rs
+@@ -3851,6 +3851,7 @@ model_provider = "attacker"
+ notify = ["sh", "-c", "echo attacker"]
+ profile = "attacker"
+ experimental_realtime_ws_base_url = "wss://attacker.example/realtime"
++subagent_model_provider_allowlist = ["attacker"]
+ 
+ [features]
+ respect_system_proxy = true
+@@ -3913,6 +3914,7 @@ wire_api = "responses"
+         "responses_api_metadata",
+         "model_provider",
+         "model_providers",
++        "subagent_model_provider_allowlist",
+         "notify",
+         "profile",
+         "profiles",
+@@ -3961,12 +3963,11 @@ wire_api = "responses"
+         ))
+     );
+     for key in &ignored_project_config_keys {
+-        assert!(
+-            project_layer.config.get(key).is_none(),
+-            "expected {key} to be ignored"
+-        );
++        let value = key
++            .split('.')
++            .try_fold(&project_layer.config, |config, key| config.get(key));
++        assert!(value.is_none(), "expected {key} to be ignored");
+     }
+-
+     Ok(())
+ }
+ 
+diff --git a/codex-rs/core/src/config/config_tests.rs b/codex-rs/core/src/config/config_tests.rs
+index b2a2dc45..43f3fa64 100644
+--- a/codex-rs/core/src/config/config_tests.rs
++++ b/codex-rs/core/src/config/config_tests.rs
+@@ -8659,6 +8659,10 @@ async fn load_config_rejects_missing_agent_role_config_file() -> std::io::Result
+ async fn agent_role_relative_config_file_resolves_against_config_toml() -> std::io::Result<()> {
+     let codex_home = TempDir::new()?;
+     let role_config_path = codex_home.path().join("agents").join("researcher.toml");
++    let expected_catalog_path = role_config_path
++        .parent()
++        .expect("role config should have a parent directory")
++        .join("models.json");
+     tokio::fs::create_dir_all(
+         role_config_path
+             .parent()
+@@ -8667,7 +8671,7 @@ async fn agent_role_relative_config_file_resolves_against_config_toml() -> std::
+     .await?;
+     tokio::fs::write(
+         &role_config_path,
+-        "developer_instructions = \"Research carefully\"\nmodel = \"gpt-5\"",
++        "developer_instructions = \"Research carefully\"\nmodel = \"gpt-5\"\nmodel_provider = \"ollama\"\nmodel_catalog_json = \"models.json\"",
+     )
+     .await?;
+     tokio::fs::write(
+@@ -8692,6 +8696,22 @@ nickname_candidates = ["Hypatia", "Noether"]
+             .and_then(|role| role.config_file.as_ref()),
+         Some(&role_config_path)
+     );
++    assert_eq!(
++        config
++            .agent_roles
++            .get("researcher")
++            .and_then(|role| role.model_provider.as_deref()),
++        Some("ollama"),
++        "user-owned role files may carry provider-selection authority"
++    );
++    assert_eq!(
++        config
++            .agent_roles
++            .get("researcher")
++            .and_then(|role| role.model_catalog_json.as_deref()),
++        Some(expected_catalog_path.as_path()),
++        "user-owned role files may carry model-catalog authority"
++    );
+     assert_eq!(
+         config
+             .agent_roles
+@@ -8716,7 +8736,7 @@ async fn agent_role_relative_config_file_resolves_from_config_layer() -> std::io
+     .await?;
+     tokio::fs::write(
+         &role_config_path,
+-        "developer_instructions = \"Research carefully\"\nmodel = \"gpt-5\"",
++        "developer_instructions = \"Research carefully\"\nmodel = \"gpt-5\"\nmodel_provider = \"ollama\"\nmodel_catalog_json = \"models.json\"",
+     )
+     .await?;
+     let layer_config = toml::from_str(
+@@ -8758,6 +8778,14 @@ config_file = "./agents/researcher.toml"
+             .and_then(|role| role.config_file.as_ref()),
+         Some(&role_config_path)
+     );
++    assert_eq!(
++        config
++            .agent_roles
++            .get("researcher")
++            .and_then(|role| role.model_provider.as_deref()),
++        Some("ollama"),
++        "user config layers may authorize provider selection in their role files"
++    );
+ 
+     Ok(())
+ }
+@@ -9222,6 +9250,8 @@ trust_level = "trusted"
+ name = "researcher"
+ description = "from root"
+ developer_instructions = "Research carefully"
++model_provider = "ollama"
++model_catalog_json = "project-models.json"
+ "#,
+     )?;
+ 
+@@ -9284,6 +9314,22 @@ developer_instructions = "Write carefully"
+             .and_then(|role| role.description.as_deref()),
+         Some("from root")
+     );
++    assert_eq!(
++        config
++            .agent_roles
++            .get("researcher")
++            .and_then(|role| role.model_provider.as_deref()),
++        None,
++        "project-owned role files must not carry provider-selection authority"
++    );
++    assert_eq!(
++        config
++            .agent_roles
++            .get("researcher")
++            .and_then(|role| role.model_catalog_json.as_ref()),
++        None,
++        "project-owned role files must not carry model-catalog authority"
++    );
+     assert_eq!(
+         config
+             .agent_roles
+@@ -9356,6 +9402,7 @@ nickname_candidates = ["Ada"]
+         r#"
+ developer_instructions = "Research carefully"
+ model = "gpt-5.2"
++model_provider = "ollama"
+ "#,
+     )
+     .await?;
+@@ -9416,6 +9463,14 @@ model = "gpt-5.2"
+             .and_then(|role| role.config_file.as_ref()),
+         Some(&standalone_agents_dir.join("researcher.toml"))
+     );
++    assert_eq!(
++        config
++            .agent_roles
++            .get("researcher")
++            .and_then(|role| role.model_provider.as_deref()),
++        None,
++        "provider metadata must come from the same layer as the selected config file"
++    );
+     assert_eq!(
+         config
+             .agent_roles
+@@ -12688,6 +12743,10 @@ async fn multi_agent_v2_rejects_invalid_tool_namespace() -> std::io::Result<()>
+             "functions",
+             "features.multi_agent_v2.tool_namespace uses a reserved namespace: functions",
+         ),
++        (
++            "external_agents",
++            "features.multi_agent_v2.tool_namespace uses a reserved namespace: external_agents",
++        ),
+     ] {
+         let codex_home = TempDir::new()?;
+         std::fs::write(
+diff --git a/codex-rs/core/src/config/mod.rs b/codex-rs/core/src/config/mod.rs
+index 60c6f653..5f8e1149 100644
+--- a/codex-rs/core/src/config/mod.rs
++++ b/codex-rs/core/src/config/mod.rs
+@@ -178,6 +178,7 @@ mod requirements;
+ mod resolved_permission_profile;
+ #[cfg(test)]
+ mod schema;
++mod subagent_model_provider;
+ mod token_budget_startup;
+ mod windows_sandbox_config;
+ pub use auth_keyring::bootstrap_auth_config;
+@@ -214,6 +215,7 @@ pub(crate) use permissions::is_builtin_permission_profile_name;
+ pub use permissions::network_proxy_config_from_profile_network;
+ pub use permissions::resolve_permission_profile;
+ pub(crate) use resolved_permission_profile::PermissionProfileState;
++pub(crate) use subagent_model_provider::SubagentModelProviderBaseline;
+ pub use token_budget_startup::TokenBudgetStartupConfig;
+ pub use windows_sandbox_config::PreparedWindowsSandboxConfig;
+ use windows_sandbox_config::network_config_allows_mxc;
+@@ -2140,7 +2142,7 @@ pub fn validate_feature_requirements_for_config_toml(
+     managed_features::validate_feature_requirements_in_config_toml(cfg, feature_requirements)
+ }
+ 
+-fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse> {
++pub(crate) fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse> {
+     let file_contents = std::fs::read_to_string(path)?;
+     let catalog = serde_json::from_str::<ModelsResponse>(&file_contents).map_err(|err| {
+         std::io::Error::new(
+@@ -3153,6 +3155,7 @@ fn validate_multi_agent_v2_tool_namespace(namespace: Option<&str>) -> std::io::R
+         "browser",
+         "computer",
+         "container",
++        "external_agents",
+         "file_search",
+         "functions",
+         "image_gen",
+diff --git a/codex-rs/core/src/config/subagent_model_provider.rs b/codex-rs/core/src/config/subagent_model_provider.rs
+new file mode 100644
+index 00000000..cd7b9cbb
+--- /dev/null
++++ b/codex-rs/core/src/config/subagent_model_provider.rs
+@@ -0,0 +1,87 @@
++use super::Config;
++use anyhow::anyhow;
++use anyhow::ensure;
++use codex_config::ConfigLayerSource;
++use codex_model_provider_info::ModelProviderInfo;
++use toml::Value as TomlValue;
++
++const SUBAGENT_MODEL_PROVIDER_ALLOWLIST_KEY: &str = "subagent_model_provider_allowlist";
++
++pub(crate) struct SubagentModelProviderBaseline {
++    id: String,
++    provider: ModelProviderInfo,
++}
++
++impl Config {
++    pub(crate) fn subagent_model_provider_baseline(&self) -> SubagentModelProviderBaseline {
++        SubagentModelProviderBaseline {
++            id: self.model_provider_id.clone(),
++            provider: self.model_provider.clone(),
++        }
++    }
++
++    pub(crate) fn subagent_model_provider_baseline_for(
++        &self,
++        provider_id: &str,
++    ) -> anyhow::Result<SubagentModelProviderBaseline> {
++        let baseline = self.subagent_model_provider_baseline();
++        let provider = baseline.resolve(self, provider_id)?;
++        Ok(SubagentModelProviderBaseline {
++            id: provider_id.to_string(),
++            provider,
++        })
++    }
++
++    pub(crate) fn select_subagent_model_provider(
++        &mut self,
++        baseline: &SubagentModelProviderBaseline,
++        provider_id: &str,
++    ) -> anyhow::Result<()> {
++        let provider = baseline.resolve(self, provider_id)?;
++        let provider_changed =
++            self.model_provider_id != provider_id || self.model_provider != provider;
++        self.model_provider_id = provider_id.to_string();
++        self.model_provider = provider;
++        if provider_changed {
++            self.model_catalog = None;
++        }
++        Ok(())
++    }
++
++    fn user_allows_subagent_model_provider(&self, provider_id: &str) -> bool {
++        self.user_subagent_model_provider_allowlist()
++            .is_some_and(|ids| ids.iter().any(|id| id.as_str() == Some(provider_id)))
++    }
++
++    fn user_subagent_model_provider_allowlist(&self) -> Option<&[TomlValue]> {
++        self.config_layer_stack
++            .layers_high_to_low()
++            .filter(|layer| matches!(layer.name, ConfigLayerSource::User { .. }))
++            .find_map(|layer| layer.config.get(SUBAGENT_MODEL_PROVIDER_ALLOWLIST_KEY))
++            .and_then(TomlValue::as_array)
++            .map(Vec::as_slice)
++    }
++}
++
++impl SubagentModelProviderBaseline {
++    fn resolve(&self, config: &Config, provider_id: &str) -> anyhow::Result<ModelProviderInfo> {
++        if provider_id == self.id {
++            return Ok(self.provider.clone());
++        }
++
++        ensure!(
++            config.user_allows_subagent_model_provider(provider_id),
++            "the provider is not in the current user-owned subagent allowlist"
++        );
++
++        config
++            .model_providers
++            .get(provider_id)
++            .cloned()
++            .ok_or_else(|| anyhow!("the provider is not configured by the current parent"))
++    }
++}
++
++#[cfg(test)]
++#[path = "subagent_model_provider_tests.rs"]
++mod tests;
+diff --git a/codex-rs/core/src/config/subagent_model_provider_tests.rs b/codex-rs/core/src/config/subagent_model_provider_tests.rs
+new file mode 100644
+index 00000000..abd11049
+--- /dev/null
++++ b/codex-rs/core/src/config/subagent_model_provider_tests.rs
+@@ -0,0 +1,56 @@
++use codex_config::CONFIG_TOML_FILE;
++use codex_config::ProfileV2Name;
++
++use super::Config;
++
++async fn config_with_base_allowlist() -> Config {
++    let mut config = super::super::test_config().await;
++    config.config_layer_stack = config
++        .config_layer_stack
++        .with_user_config(
++            &config.codex_home.join(CONFIG_TOML_FILE),
++            toml::from_str("subagent_model_provider_allowlist = [\"external\"]")
++                .expect("valid base user config"),
++        )
++        .expect("base user config should be accepted");
++    config
++}
++
++#[tokio::test]
++async fn user_allowlist_follows_profile_precedence_without_falling_back() {
++    let mut config = config_with_base_allowlist().await;
++    let profile: ProfileV2Name = "worker".parse().expect("valid profile name");
++    let profile_path = config.codex_home.join("profiles/worker.toml");
++
++    config.config_layer_stack = config
++        .config_layer_stack
++        .with_user_config_profile(
++            &profile_path,
++            Some(&profile),
++            toml::from_str("model = \"gpt-5.6-sol\"").expect("valid profile user config"),
++        )
++        .expect("profile user config should be accepted");
++    assert!(config.user_allows_subagent_model_provider("external"));
++
++    config.config_layer_stack = config
++        .config_layer_stack
++        .with_user_config_profile(
++            &profile_path,
++            Some(&profile),
++            toml::from_str("subagent_model_provider_allowlist = []")
++                .expect("valid profile user config"),
++        )
++        .expect("profile user config should be accepted");
++    assert!(!config.user_allows_subagent_model_provider("external"));
++
++    config.config_layer_stack = config
++        .config_layer_stack
++        .with_user_config_profile(
++            &profile_path,
++            Some(&profile),
++            toml::from_str("subagent_model_provider_allowlist = \"invalid\"")
++                .expect("syntactically valid profile user config"),
++        )
++        .expect("profile layer should be accepted before typed config validation");
++    assert!(!config.user_allows_subagent_model_provider("external"));
++}
+diff --git a/codex-rs/core/src/session/tests.rs b/codex-rs/core/src/session/tests.rs
+index 13ebc682..02e91b02 100644
+--- a/codex-rs/core/src/session/tests.rs
++++ b/codex-rs/core/src/session/tests.rs
+@@ -5573,6 +5573,8 @@ enabled = false
+         crate::config::AgentRoleConfig {
+             description: None,
+             config_file: Some(role_path.to_path_buf()),
++            model_provider: None,
++            model_catalog_json: None,
+             nickname_candidates: None,
+         },
+     );
+diff --git a/codex-rs/core/src/thread_manager.rs b/codex-rs/core/src/thread_manager.rs
+index ba195d8e..9d89bbfe 100644
+--- a/codex-rs/core/src/thread_manager.rs
++++ b/codex-rs/core/src/thread_manager.rs
+@@ -444,6 +444,33 @@ pub fn build_models_manager(
+     manager
+ }
+ 
++fn build_models_manager_without_cache(
++    config: &Config,
++    auth_manager: Arc<AuthManager>,
++) -> SharedModelsManager {
++    let provider = create_model_provider(config.model_provider.clone(), Some(auth_manager));
++    let manager = provider.models_manager_without_cache(config.model_catalog.clone());
++    manager.set_api_key_model_discovery_enabled(
++        config.features.enabled(Feature::ApiKeyModelDiscovery),
++    );
++    manager
++}
++
++pub(crate) fn models_manager_for_config(
++    source_config: &Config,
++    source_models_manager: &SharedModelsManager,
++    target_config: &Config,
++    auth_manager: &Arc<AuthManager>,
++) -> SharedModelsManager {
++    if source_config.model_provider == target_config.model_provider
++        && source_config.model_catalog == target_config.model_catalog
++    {
++        Arc::clone(source_models_manager)
++    } else {
++        build_models_manager_without_cache(target_config, Arc::clone(auth_manager))
++    }
++}
++
+ pub fn thread_store_from_config(
+     config: &Config,
+     state_db: Option<StateDbHandle>,
+@@ -2267,6 +2294,21 @@ impl ThreadManagerState {
+         };
+         let attachment_source =
+             forked_from_thread_id.filter(|_| matches!(&initial_history, InitialHistory::Forked(_)));
++        let models_manager = match parent_thread_id.or(forked_from_thread_id) {
++            Some(source_thread_id) => match self.get_thread(source_thread_id).await {
++                Ok(source_thread) => {
++                    let source_config = source_thread.session.get_config().await;
++                    models_manager_for_config(
++                        &source_config,
++                        &source_thread.session.services.models_manager,
++                        &config,
++                        &auth_manager,
++                    )
++                }
++                Err(_) => build_models_manager_without_cache(&config, Arc::clone(&auth_manager)),
++            },
++            None => Arc::clone(&self.models_manager),
++        };
+         let (session, io) = Session::spawn(SessionSpawnArgs {
+             startup,
+             config,
+@@ -2274,7 +2316,7 @@ impl ThreadManagerState {
+             instructions,
+             installation_id: self.installation_id.clone(),
+             auth_manager,
+-            models_manager: Arc::clone(&self.models_manager),
++            models_manager,
+             git_root_discovery: Arc::clone(&self.git_root_discovery),
+             environment_manager: Arc::clone(&self.environment_manager),
+             skills_service: Arc::clone(&self.skills_service),
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+index e7c0f2db..8105aaae 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+@@ -181,6 +181,8 @@ model_reasoning_effort = "minimal"
+     config.agent_roles.insert(
+         role_name.clone(),
+         AgentRoleConfig {
++            model_provider: None,
++            model_catalog_json: None,
+             description: Some("Role with model overrides".to_string()),
+             config_file: Some(role_config_path),
+             nickname_candidates: None,
+@@ -674,6 +676,8 @@ service_tier = "priority"
+         config.agent_roles.insert(
+             role_name.clone(),
+             AgentRoleConfig {
++                model_provider: None,
++                model_catalog_json: None,
+                 description: Some("Role with a child service tier".to_string()),
+                 config_file: Some(role_config_path),
+                 nickname_candidates: None,
+@@ -744,6 +748,8 @@ service_tier = "turbo"
+     config.agent_roles.insert(
+         role_name.clone(),
+         AgentRoleConfig {
++            model_provider: None,
++            model_catalog_json: None,
+             description: Some("Role with an unsupported child tier".to_string()),
+             config_file: Some(role_config_path),
+             nickname_candidates: None,
+diff --git a/codex-rs/core/tests/suite/agent_execution.rs b/codex-rs/core/tests/suite/agent_execution.rs
+index 480b5bb5..570333f0 100644
+--- a/codex-rs/core/tests/suite/agent_execution.rs
++++ b/codex-rs/core/tests/suite/agent_execution.rs
+@@ -56,6 +56,25 @@ async fn mount_root_collaboration_call(
+     call_id: &'static str,
+     tool_name: &'static str,
+     arguments: serde_json::Value,
++) -> ResponseMock {
++    mount_namespaced_collaboration_call(
++        server,
++        MULTI_AGENT_V2_NAMESPACE,
++        prompt,
++        call_id,
++        tool_name,
++        arguments,
++    )
++    .await
++}
++
++pub(super) async fn mount_namespaced_collaboration_call(
++    server: &wiremock::MockServer,
++    namespace: &'static str,
++    prompt: &'static str,
++    call_id: &'static str,
++    tool_name: &'static str,
++    arguments: serde_json::Value,
+ ) -> ResponseMock {
+     let response_id = format!("resp-{call_id}");
+     mount_sse_once_match(
+@@ -63,12 +82,7 @@ async fn mount_root_collaboration_call(
+         move |request: &wiremock::Request| body_contains(request, prompt),
+         sse(vec![
+             ev_response_created(&response_id),
+-            ev_function_call_with_namespace(
+-                call_id,
+-                MULTI_AGENT_V2_NAMESPACE,
+-                tool_name,
+-                &arguments.to_string(),
+-            ),
++            ev_function_call_with_namespace(call_id, namespace, tool_name, &arguments.to_string()),
+             ev_completed(&response_id),
+         ]),
+     )
+@@ -89,7 +103,7 @@ async fn mount_root_collaboration_call(
+     .await
+ }
+ 
+-async fn mount_completed_worker(
++pub(super) async fn mount_completed_worker(
+     server: &wiremock::MockServer,
+     task: &'static str,
+     parent_call_id: &'static str,
+diff --git a/codex-rs/core/tests/suite/cross_provider_v1.rs b/codex-rs/core/tests/suite/cross_provider_v1.rs
+new file mode 100644
+index 00000000..80dd4fac
+--- /dev/null
++++ b/codex-rs/core/tests/suite/cross_provider_v1.rs
+@@ -0,0 +1,249 @@
++use super::agent_execution::mount_completed_worker;
++use super::agent_execution::mount_namespaced_collaboration_call;
++use anyhow::Result;
++use codex_config::CONFIG_TOML_FILE;
++use codex_core::config::AgentRoleConfig;
++use codex_core::config::Config;
++use codex_features::Feature;
++use codex_login::CodexAuth;
++use codex_model_provider_info::WireApi;
++use codex_model_provider_info::create_oss_provider_with_base_url;
++use codex_models_manager::bundled_models_response;
++use codex_protocol::protocol::MultiAgentVersion;
++use core_test_support::responses::ResponseMock;
++use core_test_support::responses::ResponsesRequest;
++use core_test_support::responses::start_mock_server;
++use core_test_support::test_codex::test_codex;
++use pretty_assertions::assert_eq;
++use serde_json::json;
++use std::time::Duration;
++
++const CUSTOM_ROLE: &str = "custom_child";
++const CUSTOM_PROVIDER: &str = "custom";
++const CUSTOM_MODEL: &str = "@preset/external-model";
++const CUSTOM_TOKEN: &str = "custom-provider-token";
++
++fn configure_custom_provider(
++    config: &mut Config,
++    base_url: String,
++    multi_agent_version: MultiAgentVersion,
++) {
++    config.config_layer_stack = config
++        .config_layer_stack
++        .with_user_config(
++            &config.codex_home.join(CONFIG_TOML_FILE),
++            toml::from_str(&format!(
++                "subagent_model_provider_allowlist = [\"{CUSTOM_PROVIDER}\"]"
++            ))
++            .expect("valid user config"),
++        )
++        .expect("user config should be valid");
++    config
++        .features
++        .enable(Feature::Collab)
++        .expect("enable collaboration");
++    match multi_agent_version {
++        MultiAgentVersion::V1 => config
++            .features
++            .disable(Feature::MultiAgentV2)
++            .expect("disable multi-agent v2"),
++        MultiAgentVersion::V2 => config
++            .features
++            .enable(Feature::MultiAgentV2)
++            .expect("enable multi-agent v2"),
++        MultiAgentVersion::Disabled => panic!("cross-provider test requires multi-agent tools"),
++    }
++    config
++        .features
++        .disable(Feature::EnableRequestCompression)
++        .expect("disable request compression");
++    install_custom_provider_role(
++        config,
++        CustomProviderRoleSpec {
++            base_url: &base_url,
++            provider_id: CUSTOM_PROVIDER,
++            bearer_token: CUSTOM_TOKEN,
++            model: CUSTOM_MODEL,
++            role: CUSTOM_ROLE,
++            catalog_name: "custom-models.json",
++            role_file_name: "custom-child.toml",
++            multi_agent_version,
++        },
++    );
++}
++
++struct CustomProviderRoleSpec<'a> {
++    base_url: &'a str,
++    provider_id: &'a str,
++    bearer_token: &'a str,
++    model: &'a str,
++    role: &'a str,
++    catalog_name: &'a str,
++    role_file_name: &'a str,
++    multi_agent_version: MultiAgentVersion,
++}
++
++fn install_custom_provider_role(config: &mut Config, spec: CustomProviderRoleSpec<'_>) {
++    let CustomProviderRoleSpec {
++        base_url,
++        provider_id,
++        bearer_token,
++        model,
++        role,
++        catalog_name,
++        role_file_name,
++        multi_agent_version,
++    } = spec;
++    let mut provider = create_oss_provider_with_base_url(base_url, WireApi::Responses);
++    provider.experimental_bearer_token = Some(bearer_token.into());
++    provider.request_max_retries = Some(0);
++    provider.stream_max_retries = Some(0);
++    config
++        .model_providers
++        .insert(provider_id.to_string(), provider);
++
++    let mut custom_catalog = bundled_models_response().expect("bundled model catalog should parse");
++    custom_catalog
++        .models
++        .retain(|model| model.slug == "gpt-5.5");
++    let custom_model = custom_catalog
++        .models
++        .first_mut()
++        .expect("gpt-5.5 should exist in the bundled model catalog");
++    custom_model.slug = model.to_string();
++    custom_model.display_name = "Cross-provider test model".to_string();
++    custom_model.multi_agent_version = Some(multi_agent_version);
++    let catalog_path = config.codex_home.join(catalog_name);
++    std::fs::write(
++        &catalog_path,
++        serde_json::to_vec(&custom_catalog).expect("custom model catalog should serialize"),
++    )
++    .expect("write custom model catalog");
++    let role_path = config.codex_home.join(role_file_name);
++    std::fs::write(
++        &role_path,
++        format!(
++            "model = \"{model}\"\nmodel_provider = \"{provider_id}\"\nmodel_catalog_json = \"{catalog_name}\""
++        ),
++    )
++    .expect("write role config");
++    config.agent_roles.insert(
++        role.to_string(),
++        AgentRoleConfig {
++            config_file: Some(role_path.to_path_buf()),
++            model_provider: Some(provider_id.to_string()),
++            model_catalog_json: Some(catalog_path),
++            ..Default::default()
++        },
++    );
++}
++
++async fn wait_for_request(mock: &ResponseMock) -> ResponsesRequest {
++    tokio::time::timeout(Duration::from_secs(10), async {
++        loop {
++            if let Some(request) = mock.last_request() {
++                return request;
++            }
++            tokio::time::sleep(Duration::from_millis(10)).await;
++        }
++    })
++    .await
++    .expect("timed out waiting for model request")
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn v1_role_switch_routes_child_to_custom_provider() -> Result<()> {
++    const ROOT_PROMPT: &str = "spawn one custom-provider worker";
++    const CHILD_PROMPT: &str = "check the assigned symbol through v1";
++    const CALL_ID: &str = "spawn-v1-custom";
++
++    let root_server = start_mock_server().await;
++    let child_server = start_mock_server().await;
++    mount_namespaced_collaboration_call(
++        &root_server,
++        "multi_agent_v1",
++        ROOT_PROMPT,
++        CALL_ID,
++        "spawn_agent",
++        json!({
++            "message": CHILD_PROMPT,
++            "agent_type": CUSTOM_ROLE,
++        }),
++    )
++    .await;
++    let child_mock = mount_completed_worker(&child_server, CHILD_PROMPT, CALL_ID).await;
++    let child_base_url = format!("{}/v1", child_server.uri());
++    let mut builder = test_codex()
++        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
++        .with_config(move |config| {
++            configure_custom_provider(config, child_base_url, MultiAgentVersion::V1)
++        })
++        .with_model_info_override("gpt-5.5", |model| {
++            model.multi_agent_version = Some(MultiAgentVersion::V1);
++        });
++    let test = builder.build_with_auto_env(&root_server).await?;
++
++    test.submit_turn(ROOT_PROMPT).await?;
++
++    let child_request = wait_for_request(&child_mock).await;
++    assert_eq!(
++        child_request.header("authorization").as_deref(),
++        Some("Bearer custom-provider-token")
++    );
++    assert_eq!(child_request.body_json()["model"], CUSTOM_MODEL);
++    assert!(child_request.body_contains_text(CHILD_PROMPT));
++    assert!(!child_request.body_contains_text(ROOT_PROMPT));
++    assert_eq!(test.thread_manager.list_thread_ids().await.len(), 2);
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn v1_revoked_provider_grant_rejects_spawn_without_contacting_child() -> Result<()> {
++    let root_server = start_mock_server().await;
++    let child_server = start_mock_server().await;
++    let parent_mock = mount_namespaced_collaboration_call(
++        &root_server,
++        "multi_agent_v1",
++        "try revoked worker",
++        "revoked-spawn",
++        "spawn_agent",
++        json!({"message": "private task", "agent_type": CUSTOM_ROLE}),
++    )
++    .await;
++    let child_base_url = format!("{}/v1", child_server.uri());
++    let mut builder = test_codex()
++        .with_auth(CodexAuth::create_dummy_chatgpt_auth_for_testing())
++        .with_config(move |config| {
++            configure_custom_provider(config, child_base_url, MultiAgentVersion::V1);
++            config.config_layer_stack = config
++                .config_layer_stack
++                .with_user_config(
++                    &config.codex_home.join(CONFIG_TOML_FILE),
++                    toml::from_str("subagent_model_provider_allowlist = []")
++                        .expect("revoked grant"),
++                )
++                .expect("user configuration");
++        })
++        .with_model_info_override("gpt-5.5", |model| {
++            model.multi_agent_version = Some(MultiAgentVersion::V1);
++        });
++    let test = builder.build_with_auto_env(&root_server).await?;
++    test.submit_turn("try revoked worker").await?;
++    wait_for_request(&parent_mock).await;
++    assert!(
++        parent_mock
++            .function_call_output_text("revoked-spawn")
++            .expect("spawn rejection")
++            .contains("agent type is currently not available")
++    );
++    assert_eq!(
++        child_server
++            .received_requests()
++            .await
++            .expect("child requests")
++            .len(),
++        0
++    );
++    assert_eq!(test.thread_manager.list_thread_ids().await.len(), 1);
++    Ok(())
++}
+diff --git a/codex-rs/core/tests/suite/mod.rs b/codex-rs/core/tests/suite/mod.rs
+index 50f965cd..270d5694 100644
+--- a/codex-rs/core/tests/suite/mod.rs
++++ b/codex-rs/core/tests/suite/mod.rs
+@@ -247,3 +247,5 @@ mod worktree_trust;
+ 
+ #[path = "guardian_sender_messages_tests.rs"]
+ mod guardian_sender_messages;
++
++mod cross_provider_v1;
+diff --git a/codex-rs/core/tests/suite/multi_agent_resume.rs b/codex-rs/core/tests/suite/multi_agent_resume.rs
+index d9de8111..d0c7c48e 100644
+--- a/codex-rs/core/tests/suite/multi_agent_resume.rs
++++ b/codex-rs/core/tests/suite/multi_agent_resume.rs
+@@ -162,6 +162,8 @@ fn configure_multi_agent_v2_with_role(
+     config.agent_roles.insert(
+         ROLE_NAME.to_string(),
+         AgentRoleConfig {
++            model_provider: None,
++            model_catalog_json: None,
+             description: Some("Durable worker role".to_string()),
+             config_file: Some(role_path.to_path_buf()),
+             nickname_candidates: None,
+diff --git a/codex-rs/core/tests/suite/multi_agent_tool_descriptions.rs b/codex-rs/core/tests/suite/multi_agent_tool_descriptions.rs
+index 21448bff..effeba01 100644
+--- a/codex-rs/core/tests/suite/multi_agent_tool_descriptions.rs
++++ b/codex-rs/core/tests/suite/multi_agent_tool_descriptions.rs
+@@ -160,6 +160,8 @@ async fn multi_agent_catalog_messages_change_only_selected_tool_fields(
+                 config.agent_roles.insert(
+                     "researcher".to_string(),
+                     AgentRoleConfig {
++                        model_provider: None,
++                        model_catalog_json: None,
+                         description: Some("Research the assigned question.".to_string()),
+                         config_file: None,
+                         nickname_candidates: None,
+diff --git a/codex-rs/core/tests/suite/spawn_agent_description.rs b/codex-rs/core/tests/suite/spawn_agent_description.rs
+index bc0eaf75..d464395e 100644
+--- a/codex-rs/core/tests/suite/spawn_agent_description.rs
++++ b/codex-rs/core/tests/suite/spawn_agent_description.rs
+@@ -316,6 +316,8 @@ async fn configured_agent_roles_control_spawn_agent_type(
+                 config.agent_roles.insert(
+                     "researcher".to_string(),
+                     AgentRoleConfig {
++                        model_provider: None,
++                        model_catalog_json: None,
+                         description: Some("Research role".to_string()),
+                         config_file: None,
+                         nickname_candidates: None,
+diff --git a/codex-rs/core/tests/suite/spawn_settings_tests.rs b/codex-rs/core/tests/suite/spawn_settings_tests.rs
+index fa690f46..5c2d3e62 100644
+--- a/codex-rs/core/tests/suite/spawn_settings_tests.rs
++++ b/codex-rs/core/tests/suite/spawn_settings_tests.rs
+@@ -106,6 +106,8 @@ async fn spawn_reports_effective_settings_after_child_runtime_is_removed() -> Re
+             config.agent_roles.insert(
+                 "custom".to_string(),
+                 AgentRoleConfig {
++                    model_provider: None,
++                    model_catalog_json: None,
+                     description: Some("Custom role".to_string()),
+                     config_file: Some(role_path.to_path_buf()),
+                     nickname_candidates: Some(vec!["Captured".to_string()]),
+diff --git a/codex-rs/core/tests/suite/subagent_notifications.rs b/codex-rs/core/tests/suite/subagent_notifications.rs
+index ccd44bb9..91a20fba 100644
+--- a/codex-rs/core/tests/suite/subagent_notifications.rs
++++ b/codex-rs/core/tests/suite/subagent_notifications.rs
+@@ -3207,6 +3207,8 @@ async fn spawn_agent_role_overrides_requested_model_and_reasoning_settings() ->
+                 config.agent_roles.insert(
+                     "custom".to_string(),
+                     AgentRoleConfig {
++                        model_provider: None,
++                        model_catalog_json: None,
+                         description: Some("Custom role".to_string()),
+                         config_file: Some(role_path.to_path_buf()),
+                         nickname_candidates: None,
+@@ -3242,6 +3244,8 @@ async fn spawn_agent_preserves_configured_defaults_through_unrelated_role() -> R
+                 config.agent_roles.insert(
+                     "custom".to_string(),
+                     AgentRoleConfig {
++                        model_provider: None,
++                        model_catalog_json: None,
+                         description: Some("Custom role".to_string()),
+                         config_file: Some(role_path.to_path_buf()),
+                         nickname_candidates: None,
+@@ -3310,6 +3314,8 @@ async fn spawn_agent_rejects_reasoning_effort_unsupported_by_role_model() -> Res
+             config.agent_roles.insert(
+                 "custom".to_string(),
+                 AgentRoleConfig {
++                    model_provider: None,
++                    model_catalog_json: None,
+                     description: Some("Custom role".to_string()),
+                     config_file: Some(role_path.to_path_buf()),
+                     nickname_candidates: None,
+@@ -3382,6 +3388,8 @@ async fn spawn_agent_tool_description_mentions_role_locked_settings() -> Result<
+         config.agent_roles.insert(
+             "custom".to_string(),
+             AgentRoleConfig {
++                model_provider: None,
++                model_catalog_json: None,
+                 description: Some("Custom role".to_string()),
+                 config_file: Some(role_path.to_path_buf()),
+                 nickname_candidates: None,
+diff --git a/codex-rs/core/tests/suite/subagent_service_tier.rs b/codex-rs/core/tests/suite/subagent_service_tier.rs
+index 74d55925..d6304708 100644
+--- a/codex-rs/core/tests/suite/subagent_service_tier.rs
++++ b/codex-rs/core/tests/suite/subagent_service_tier.rs
+@@ -77,6 +77,8 @@ fn configure_priority_role(config: &mut Config) {
+     config.agent_roles.insert(
+         PRIORITY_ROLE.to_string(),
+         AgentRoleConfig {
++            model_provider: None,
++            model_catalog_json: None,
+             description: Some("Role with a configured priority tier".to_string()),
+             config_file: Some(role_path.to_path_buf()),
+             nickname_candidates: None,
+diff --git a/codex-rs/model-provider/src/auth.rs b/codex-rs/model-provider/src/auth.rs
+index f4d27646..be38b766 100644
+--- a/codex-rs/model-provider/src/auth.rs
++++ b/codex-rs/model-provider/src/auth.rs
+@@ -181,16 +181,25 @@ pub fn unauthenticated_auth_provider() -> SharedAuthProvider {
+     Arc::new(UnauthenticatedAuthProvider)
+ }
+ 
+-/// Returns the provider-scoped auth manager when this provider uses command-backed auth.
+-///
+-/// Providers without custom auth continue using the caller-supplied base manager, when present.
++pub(crate) fn provider_uses_first_party_auth_path(provider: &ModelProviderInfo) -> bool {
++    provider.requires_openai_auth
++        && provider.env_key.is_none()
++        && provider.experimental_bearer_token.is_none()
++        && provider.auth.is_none()
++        && provider.aws.is_none()
++}
++
++/// Returns only the auth manager that is valid for this provider's auth path.
+ pub(crate) fn auth_manager_for_provider(
+     auth_manager: Option<Arc<AuthManager>>,
+     provider: &ModelProviderInfo,
+ ) -> Option<Arc<AuthManager>> {
+     match provider.auth.clone() {
+         Some(config) => Some(AuthManager::external_bearer_only(config)),
+-        None => auth_manager,
++        None if provider_uses_first_party_auth_path(provider) || provider.is_amazon_bedrock() => {
++            auth_manager
++        }
++        None => None,
+     }
+ }
+ 
+diff --git a/codex-rs/model-provider/src/provider.rs b/codex-rs/model-provider/src/provider.rs
+index 7d99c556..22981df4 100644
+--- a/codex-rs/model-provider/src/provider.rs
++++ b/codex-rs/model-provider/src/provider.rs
+@@ -28,6 +28,7 @@ use crate::amazon_bedrock::AmazonBedrockModelProvider;
+ use crate::auth::ProviderAuthScope;
+ use crate::auth::ResolvedProviderAuth;
+ use crate::auth::auth_manager_for_provider;
++use crate::auth::provider_uses_first_party_auth_path;
+ use crate::auth::resolve_provider_auth;
+ use crate::auth::resolve_provider_auth_for_scope;
+ use crate::combined_auth::compose_auth;
+@@ -357,14 +358,6 @@ pub type ModelProviderFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a
+ /// Shared runtime model provider handle.
+ pub type SharedModelProvider = Arc<dyn ModelProvider>;
+ 
+-fn provider_uses_first_party_auth_path(provider: &ModelProviderInfo) -> bool {
+-    provider.requires_openai_auth
+-        && provider.env_key.is_none()
+-        && provider.experimental_bearer_token.is_none()
+-        && provider.auth.is_none()
+-        && provider.aws.is_none()
+-}
+-
+ /// Creates the default runtime model provider for configured provider metadata.
+ pub fn create_model_provider(
+     provider_info: ModelProviderInfo,
+@@ -1203,7 +1196,7 @@ printf '%s\n' '{"AccessKeyId":"exported","SecretAccessKey":"secret"}'
+     }
+ 
+     #[test]
+-    fn custom_non_openai_provider_returns_no_account_state() {
++    fn custom_non_openai_provider_drops_ambient_account_state() {
+         let provider = create_model_provider(
+             ModelProviderInfo {
+                 name: "Custom".to_string(),
+@@ -1212,9 +1205,13 @@ printf '%s\n' '{"AccessKeyId":"exported","SecretAccessKey":"secret"}'
+                 requires_openai_auth: false,
+                 ..Default::default()
+             },
+-            /*auth_manager*/ None,
++            Some(AuthManager::from_auth_for_testing(
++                CodexAuth::create_dummy_chatgpt_auth_for_testing(),
++            )),
+         );
+ 
++        assert!(provider.auth_manager().is_none());
++        assert!(!provider.supports_attestation());
+         assert_eq!(
+             provider.account_state(),
+             Ok(ProviderAccountState {

@@ -1,0 +1,9 @@
+{
+  "source": "https://github.com/openai/codex.git",
+  "commit": "d27764b82f7118f674371e6d6e76271d9d606edb",
+  "reference": "https://github.com/Bozentan/codex/commit/af3072ebbcde8d47bb8592a6a3226ef1b83b560a",
+  "version": "0.160.1",
+  "patchSha256": "7ee14e1215de57d917a4ea0ed6e3ef52c449ca616d9cd9bb321d7458b50013bb",
+  "rustToolchain": "1.95.0",
+  "productDefaultChanged": false
+}
