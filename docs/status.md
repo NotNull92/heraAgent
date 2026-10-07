@@ -93,10 +93,10 @@ pattern scanning also passed (1,161 tracked files).
 
 Source commit `67c68e30d65ba812c4f12126f5243921fe66a90c` was pushed to private
 `NotNull92/heraAgent` main after origin, identity, staged-content, secret and ancestry
-checks. `ls-remote` matched the local SHA. At the latest observation, product CI
-[37578298594](https://github.com/NotNull92/heraAgent/actions/runs/37578298594) had passed
-both platform offline checks, Windows packaging and macOS installed-package checks;
-the Windows installed-package job was pending. The downloaded CI archive checksum
+checks. `ls-remote` matched the local SHA. Product CI
+[37578298594](https://github.com/NotNull92/heraAgent/actions/runs/37578298594) passed
+all four jobs: both platform offline checks, Windows packaging and Windows/macOS
+installed-package checks. The downloaded CI archive checksum
 matched `944f53782ac68963c492a67705055fd3b48501e3b8e0033cf214d0ff2058314b`;
 those exact bytes passed local Windows install/native initialization/reinstall,
 credential persistence and launcher checks. The first invocation used the local
