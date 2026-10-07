@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {heraHome} from '../dist/paths.js';
 import {loadConfig} from '../dist/config.js';
 import {errorView} from '../dist/errors.js';
+import {acquireWorkspace} from '../dist/session/workspace-lock.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One disposable GPT-only fixture, at most five main turns, two Node tests, 240 seconds. --before uses the preserved pre-change build. No worker or credential changes.');process.exit(4);}
 const beforeMode=process.argv.includes('--before');const base=beforeMode?'../.artifacts/efficiency-before/dist/':'../dist/';
 const {Controller}=await import(base+'session/controller.js');const {CodexClient}=await import(base+'codex/client.js');
@@ -22,7 +23,9 @@ CodexClient.prototype.turn=async function(params){
 let controller;let expired=false;const timer=setTimeout(()=>{expired=true;void controller?.interrupt().catch(()=>{});},240000);
 try{
  console.error(JSON.stringify({scope:'token efficiency fixture',variant:beforeMode?'before':'after',main:config.main,maxMainTurns:5,deadlineSeconds:240}));
- controller=await Controller.open(home,cwd,config,true);
+ // Retain the historical proposal comparison; normal Hera no longer uses /apply.
+ if(beforeMode)controller=await Controller.open(home,cwd,config,true);
+ else{const client=await CodexClient.session(home,cwd,config,'read-only',false);controller=new Controller(client,home,cwd,config);controller.lock=await acquireWorkspace(home,cwd);await controller.start();}
  await controller.run('Inspect sum.cjs and propose the smallest addition fix: replace a - b with a + b. Preserve every documentation line exactly. Future approval scope: only sum.cjs, followed by exactly these tests in order: node check-one.cjs, node check-two.cjs. Keep both test files unchanged. No workers, writes or tests yet.');
  const review=await controller.requestApply();assert.equal(await readFile(join(cwd,'sum.cjs'),'utf8'),before);assert.deepEqual(review.proposal.changes,[{path:'sum.cjs',content:after}]);assert.deepEqual(review.proposal.tests,tests);
  if(!beforeMode){assert.ok(review.edits);assert.ok(JSON.stringify(review.edits.changes).length<before.length/2);}

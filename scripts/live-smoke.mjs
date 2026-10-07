@@ -8,8 +8,8 @@ import {errorView} from '../dist/errors.js';
 import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 if(!process.argv.includes('--live')){console.error('Opt-in required: npm run test:live -- --live. Two read-only GPT turns at most; native internal retries are not a guaranteed billable-call limit.');process.exit(4);}
-const home=await heraHome();const {config}=await loadConfig(home);
-console.error(JSON.stringify({provider:'openai',requestedModel:config.main.model,scope:'temporary read-only fixture; initial turn and resume follow-up',deadlineSeconds:90,workerTests:'blocked pending native safety gates'}));
+const home=await heraHome();const {config}=await loadConfig(home);config.mode='gpt_only';
+console.error(JSON.stringify({provider:'openai',requestedModel:config.main.model,scope:'temporary read-only fixture; initial turn and resume follow-up',deadlineSeconds:90,workerTests:'not_run; use live-native-workflow.mjs'}));
 const marker=randomUUID();
 const cwd=await mkdtemp(join(tmpdir(),'hera-live-fixture-'));await writeFile(join(cwd,'sum.ts'),`// fixture marker: ${marker}\nexport const sum = (a: number, b: number) => a - b;\n`);
 async function verifyReply(controller,requireRead){
@@ -24,11 +24,11 @@ async function verifyReply(controller,requireRead){
 let controller;let timedOut=false;const timer=setTimeout(()=>{timedOut=true;void controller?.close();},90000);
 try{
   controller=await Controller.open(home,cwd,config,true);
-  await controller.run('Use the native command tool to read sum.ts. Quote its fixture marker and propose the smallest corrected TypeScript expression. Do not edit files, spawn agents, access the network or run commands with side effects. If tools are unavailable report failure.');
+  await controller.run('Use the native command tool to read sum.ts. Quote its fixture marker and propose the smallest corrected TypeScript expression. Do not edit files, spawn agents, access the network or run commands with side effects. If tools are unavailable report failure.',undefined,true);
   await verifyReply(controller,true);
   const metadata=controller.metadata;if(!await controller.close())throw new Error('Initial turn quiescence unconfirmed');
   controller=await Controller.open(home,cwd,config,true,metadata);
-  await controller.run('Without using tools or changing files, recall the exact fixture marker and corrected expression from our earlier exchange.');
+  await controller.run('Without using tools or changing files, recall the exact fixture marker and corrected expression from our earlier exchange.',undefined,true);
   await verifyReply(controller,false);
   if(timedOut)throw new Error('Live fixture deadline reached');
   console.log(JSON.stringify({platform:process.platform,arch:process.arch,requestedModel:config.main.model,readOnlyTurn:'pass',nativeResumeFollowup:'pass',workerSafety:'not_run',external:'not_run'}));

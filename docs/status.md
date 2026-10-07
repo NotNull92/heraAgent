@@ -65,6 +65,32 @@ Observed native Windows 10.0.26200 x64, PowerShell 7.6.6, Node v24.12.0 results:
   Git history and decompressed archive passed the credential/JWT scan without
   displaying values. `.omo/` and `outputs/` remain unrelated, untracked and excluded.
 
+Upload and follow-up verification receipt:
+
+- Feature commit `a259d4739fc7c71060a6a25c5873bf133fb9dfdc` was pushed to the
+  verified private `NotNull92/heraAgent` main branch; local and remote SHAs matched.
+- CI run `37610664560`, attempt 1: both offline jobs and the macOS installed-package
+  job passed. The fresh Windows installed-package job failed with
+  `CREDENTIAL_STORE_UNAVAILABLE` (OS-store helper unavailable or timed out). The
+  same archive had passed the Windows build-runner installation check. No key or
+  helper stderr was disclosed. A failed-job-only rerun was requested; this entry
+  does not claim its result.
+- The exact downloaded CI archive SHA-256 is
+  `d7a62b9ad967bc9181ebedcd22a9acb984fa4184b98398ae4ab20d64053a18f6`.
+  Local Windows installation, native initialization, reinstall/settings,
+  credential persistence and launcher checks passed on those bytes, exit 0.
+  It differs from the local archive only in LICENSE/NOTICE line endings.
+- A second native Windows PTY exercised an actual command approval: the picker
+  defaulted to decline, Enter declined it, the turn returned to Ready, and Ctrl+Q
+  cleaned up and exited 0. Permission acceptance was verified by the separate
+  controller integration fixture, not by clicking this picker.
+- Existing opt-in GPT smoke/interrupt scripts now explicitly select GPT and
+  read-only turns. Historical proposal/apply fixtures instantiate the retained
+  phased controller directly; they do not use the public native entry point.
+  All four scripts passed syntax checks. `npm run test:live -- --live` passed
+  real GPT read-only file inspection and cold resume, exit 0. The historical paid
+  proposal/token-comparison fixtures were not rerun for this script-only change.
+
 The previous source CI run 37605900976 failed a Windows OS credential-store timeout
 after its 74 offline tests passed. Earlier browser CI 37601591133 and greeting CI
 37602184114 passed. Those are historical results, not this change's CI result.
