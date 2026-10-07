@@ -43,7 +43,7 @@ export class Controller extends EventEmitter {
     if(previous&&previous.workspaceRealPath!==this.cwd)throw new HeraError('WORKSPACE_MISMATCH','Session belongs to a different workspace.',2);
     if(previous){this.workers=new NativeWorkers(previous.codexThreadId,this.cwd,this.config);await this.workers.assertIdle(this.client);}
     const started=previous?await this.client.resume({...params,threadId:previous.codexThreadId}):await this.client.start(params);
-    verifySearchInventory(await this.client.rpc.request('mcpServerStatus/list',{threadId:started.thread.id,limit:100}));
+    verifySearchInventory(await this.client.rpc.request('mcpServerStatus/list',{threadId:started.thread.id,limit:100}),this.client.research!.url);
     if(started.model!==this.config.main.model||started.modelProvider!=='openai'||started.sandbox.type!=='readOnly'||started.sandbox.networkAccess!==false||started.approvalPolicy!=='never')throw new HeraError('ROUTING_OR_POLICY_DRIFT','Effective model/provider/sandbox differs from the requested safe session.',4);
     this.workers??=new NativeWorkers(started.thread.id,this.cwd,this.config,!previous);
     await this.workers.refresh(this.client);
@@ -73,8 +73,8 @@ export class Controller extends EventEmitter {
         if(get(provider+'.base_url')!==this.config.providers.opencode_go_deepseek.baseUrl||get(provider+'.requires_openai_auth')!==false||get(provider+'.env_key')!=='HERA_OPENCODE_GO_API_KEY'||get(provider+'.request_max_retries')!==0||get(provider+'.stream_max_retries')!==0)throw new HeraError('WORKER_CONFIG_DRIFT','Go endpoint/auth/retry policy changed.',4);
       }
     }
-    verifySearchConfig(get('mcp_servers'),!this.applying);
-    if(get('web_search')!=='disabled')throw new HeraError('SEARCH_CONFIG_DRIFT','Native web search must remain disabled; use the bundled Exa profile.',4);
+    verifySearchConfig(get('mcp_servers'),!this.applying,this.client.research?.url);
+    if(get('web_search')!=='disabled')throw new HeraError('SEARCH_CONFIG_DRIFT','Native web search must remain disabled; use local Playwright research.',4);
     for(const key of ['hooks']){const value=get(key);if(value&&typeof value==='object'&&Object.keys(value).length)throw new HeraError('EXTERNAL_TOOLS_BLOCKED',`Configured ${key} requires a separately verified read-only profile.`,4);}
     if(get('notify')||get('shell_environment_policy.inherit')!=='core')throw new HeraError('UNSAFE_RUNTIME_CONFIG','Startup hooks or shell policy differ from the safe profile.',4);
     if(process.platform==='win32'){const readiness=await this.client.windowsSandboxReadiness();if(readiness.status!=='ready')throw new HeraError('WINDOWS_SANDBOX_NOT_READY','Run hera sandbox setup in the isolated Hera profile; no unrestricted fallback.',4);}
@@ -124,6 +124,9 @@ export class Controller extends EventEmitter {
       this.metadata.status=done.turn.status==='completed'?'complete':done.turn.status==='interrupted'?'interrupted':'unknown_outcome';await this.persist();
       if(done.turn.status==='interrupted')await this.client.cleanBackgroundTerminals(this.metadata.codexThreadId);
       await this.workerChecks;if(this.fault)throw this.fault;
+      // Parent completion can race child cancellation; await native cleanup before
+      // deciding whether the child's final command outcome is still unknown.
+      if(this.stopping)await this.stopping;
       // A native turn may finish before its final command notification is delivered.
       await this.reconcileCommands();
       const unresolved=[...this.commands.values()].some(id=>{const child=this.workers?.snapshot.get(id);return id===this.metadata!.codexThreadId||!this.workerAnalysis||this.phase.phase!=='ANALYZE_READ_ONLY'||!child||!threadBusy(child);});
@@ -134,7 +137,7 @@ export class Controller extends EventEmitter {
     }catch(e){if(this.metadata.status==='running'||e instanceof HeraError&&!e.outcomeKnown)this.metadata.status='unknown_outcome';await this.persist();throw e;}
     finally{this.waiter=null;this.failure=null;this.active=false;this.turnId=null;}
   }
-  async interrupt(){if(this.applying)this.applyCanceled=true;if(this.stopping)return this.stopping;if(this.workers){this.stopping=this.workers.interrupt(this.client);try{await this.stopping;await this.reconcileCommands();if(this.commands.size)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native command outcomes remain unresolved after interruption.',5,false);this.emit('notice','Owned native main/worker turns and background terminals are idle.');}finally{this.stopping=null;}return;}if(this.turnId&&this.metadata){await this.client.interrupt(this.metadata.codexThreadId,this.turnId);this.emit('notice','Interrupt requested; waiting for native completion.');}else if(this.active)throw new HeraError('INTERRUPTED_UNCONFIRMED','Turn acknowledgment is pending; do not replay.',5,false);}
+  async interrupt(){if(this.applying)this.applyCanceled=true;if(this.stopping)return this.stopping;if(this.workers){this.stopping=Promise.all([this.workers.interrupt(this.client),this.client.research?.browser.interrupt()]).then(()=>{});try{await this.stopping;await this.reconcileCommands();if(this.commands.size)throw new HeraError('INTERRUPTED_UNCONFIRMED','Native command outcomes remain unresolved after interruption.',5,false);this.emit('notice','Owned native main/worker turns and background terminals are idle.');}finally{this.stopping=null;}return;}if(this.turnId&&this.metadata){await this.client.interrupt(this.metadata.codexThreadId,this.turnId);this.emit('notice','Interrupt requested; waiting for native completion.');}else if(this.active)throw new HeraError('INTERRUPTED_UNCONFIRMED','Turn acknowledgment is pending; do not replay.',5,false);}
   cancelApply(){this.review=null;this.phase.cancelReview();}
   async requestApply(){
     if(this.active||!this.metadata||this.phase.phase!=='ANALYZE_READ_ONLY')throw new HeraError('APPLY_GATE_BLOCKED','Finish read-only analysis before requesting a review.',4);

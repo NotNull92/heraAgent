@@ -43,6 +43,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native credential store smoke failed' }
           npm run native:smoke
           if ($LASTEXITCODE -ne 0) { throw 'Native initialization failed' }
+          node node_modules/playwright/cli.js install chromium --no-remove
+          if ($LASTEXITCODE -ne 0) { throw 'Research browser install failed' }
+          node scripts/research-browser-check.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Research browser fixtures failed' }
       - name: Build the single Windows artifact
         if: runner.os == 'Windows'
         shell: pwsh

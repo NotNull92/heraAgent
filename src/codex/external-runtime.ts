@@ -51,7 +51,7 @@ export async function installExternalRuntime(home:string,source:string,expectedS
   await atomicJson(join(home,'runtimes','external-runtime.json'),receipt);return receipt;
 }
 
-export async function launchExternal(home:string,cwd:string,config:Config,mode:'read-only'|'workspace-write',workers:boolean){
+export async function launchExternal(home:string,cwd:string,config:Config,mode:'read-only'|'workspace-write',workers:boolean,searchUrl?:string){
   const runtime=await externalRuntime(home);if(!runtime)throw new HeraError('EXTERNAL_RUNTIME_MISSING','Install the reviewed mixed runtime with hera runtime install before using external_workers. No fallback.',4);
   const {key}=workers?await resolveGoCredential(home):{key:undefined};if(workers&&!key)throw new HeraError('PROVIDER_SETUP_REQUIRED','Save the Go key through /providers. No fallback.',3);
   const codexHome=join(home,'codex');await mkdir(codexHome,{recursive:true,mode:0o700});
@@ -65,7 +65,7 @@ export async function launchExternal(home:string,cwd:string,config:Config,mode:'
   const catalogContents=JSON.stringify({models:catalog.models.map(m=>m.slug===config.main.model?{...m,multi_agent_version:'v1'}:m)});
   const owned=[[rolePath,role],[catalogPath,catalogContents],[profilePath,profileContents]] as const;
   for(const [path,contents] of owned)await writeFile(path,contents,{flag:'wx',mode:0o600});
-  const settings={...nativeSettings({...config,workers:{...config.workers,gptModel:null,reasoningEffort:null}},mode,workers),model_catalog_json:catalogPath,
+  const settings={...nativeSettings({...config,workers:{...config.workers,gptModel:null,reasoningEffort:null}},mode,workers,searchUrl),model_catalog_json:catalogPath,
     'features.multi_agent_v2':false,'agents.max_depth':1,
     [`model_providers.${GO_PROVIDER}`]:{name:'Hera OpenCode Go',base_url:GO_URL,env_key:'HERA_OPENCODE_GO_API_KEY',wire_api:'responses',requires_openai_auth:false,request_max_retries:0,stream_max_retries:0,stream_idle_timeout_ms:20000,supports_websockets:false,http_headers:{'User-Agent':'hera/0.1.0-alpha.1','x-opencode-session':randomUUID()}}};
   function args(values:Record<string,unknown>,prefix=''):string[]{return Object.entries(values).flatMap(([k,v])=>v&&typeof v==='object'&&!Array.isArray(v)?args(v as Record<string,unknown>,prefix+k+'.'):['-c',`${prefix+k}=${JSON.stringify(v)}`]);}

@@ -42,16 +42,21 @@ it('rejects repeated native inventory cursors instead of claiming a complete wor
   const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),'loaded-cycle'],{stdio:['pipe','pipe','pipe'],windowsHide:true}));try{await client.initialize();await expect(client.loadedThreads()).rejects.toMatchObject({errorCode:'THREAD_INVENTORY_LIMIT'});}finally{await client.close();}
 });
 it('allows the read-only root to finish while an owned worker runs, but still blocks apply and unresolved main commands',async()=>{
-  for(const scenario of ['active-child-command','active-main-command']){
+  for(const scenario of ['active-child-command','active-main-command','canceling-child-command']){
     const home=await mkdtemp(join(tmpdir(),'hera-command-owner-'));const cwd=await mkdtemp(join(tmpdir(),'hera-command-work-'));
-    const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),scenario],{stdio:['pipe','pipe','pipe'],windowsHide:true}));
+    const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),scenario==='canceling-child-command'?'active-child-command':scenario],{stdio:['pipe','pipe','pipe'],windowsHide:true}));
     try{
       await client.initialize();const config=structuredClone(defaults);const controller=new Controller(client,home,cwd,config,true);controller.phase.analyze();Object.assign(controller,{baselineHash:await baseline(cwd)});
       controller.metadata={schemaVersion:1,heraSessionId:randomUUID(),codexThreadId:'fixture-thread',codexVersion:'0.160.1',mode:'gpt_only',workspaceRealPath:cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:'fixture',capabilityFingerprint:'fixture',updatedAt:new Date().toISOString()};
       const workers=new NativeWorkers('fixture-thread',cwd,config);controller.workers=workers;
       const child={id:'fixture-child',parentThreadId:'fixture-thread',cwd,modelProvider:'openai',model:null,reasoningEffort:null,status:{type:'active' as const},turns:[{id:'child-turn',status:'inProgress' as const,items:[]}]};
       workers.snapshot.set(child.id,child);vi.spyOn(workers,'refresh').mockImplementation(async()=>workers.snapshot);
-      if(scenario==='active-child-command'){await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(controller.busy).toBe(true);await expect(controller.requestApply()).rejects.toMatchObject({errorCode:'NOT_QUIESCENT'});}
+      if(scenario==='canceling-child-command'){
+        const canceled={...child,status:{type:'idle' as const},turns:[{id:'child-turn',status:'interrupted' as const,items:[{id:'pending-command',type:'commandExecution',status:'inProgress',exitCode:null as number|null}]}]};
+        client.on('event',event=>{if(event.method==='item/started'){workers.snapshot.set(child.id,canceled);Object.assign(controller,{stopping:new Promise<void>(resolve=>setTimeout(()=>{Object.assign(canceled.turns[0]!.items[0]!,{status:'failed',exitCode:-1});resolve();},50))});}});
+        await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(controller.metadata.status).toBe('complete');
+      }
+      else if(scenario==='active-child-command'){await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(controller.busy).toBe(true);await expect(controller.requestApply()).rejects.toMatchObject({errorCode:'NOT_QUIESCENT'});}
       else await expect(controller.run('fixture')).rejects.toMatchObject({errorCode:'INTERRUPTED_UNCONFIRMED',outcomeKnown:false});
     }finally{await client.close();}
   }

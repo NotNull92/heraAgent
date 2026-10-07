@@ -12,7 +12,7 @@ export function validateModelChoices(config:Config,models:ModelView[]){
     if(effort!==null&&!selected.supportedReasoningEfforts.some(e=>e.reasoningEffort===effort))throw new HeraError('UNSUPPORTED_EFFORT',`Selected ${role} model does not advertise effort ${effort}.`,2);
   }
 }
-export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false):Record<string,JsonValue> {
+export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false,searchUrl?:string):Record<string,JsonValue> {
   if(workers&&mode!=='read-only')throw new HeraError('INVALID_PHASE','Workers are only available in read-only analysis.',4);
   return {
     model_provider:'openai',sandbox_mode:mode,approval_policy:'never',
@@ -29,7 +29,7 @@ export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'=
     'features.code_mode_host':true,'features.request_permissions_tool':false,
     'features.skill_mcp_dependency_install':false,'features.skill_search':false,
     'features.remote_plugin':false,'features.in_app_local_automation':false,
-    'features.unbounded_connection_retries':false,web_search:'disabled',...searchSettings(mode==='read-only'),
+    'features.unbounded_connection_retries':false,web_search:'disabled',...searchSettings(mode==='read-only'&&!!searchUrl,searchUrl),
     allow_login_shell:false,'shell_environment_policy.inherit':'core',
     'shell_environment_policy.exclude':['*KEY*','*TOKEN*','*SECRET*','*PASSWORD*','GH_*','GITHUB_*','AWS_*','AZURE_*'],
     'analytics.enabled':false,check_for_update_on_startup:false

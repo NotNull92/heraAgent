@@ -1,4 +1,104 @@
-# Public web research through native MCP
+# Free local browser research
+
+## Current decision (2026-10-07)
+
+The user rejected keyless/free-tier search services and authorized local Playwright,
+shared throttling/cache, direct official document reuse and human-only CAPTCHA
+resolution. This supersedes the Exa integration recorded below. No paid search API
+or search credential remains in the product; GPT/Go inference still uses tokens.
+Search availability and token savings are not guaranteed.
+
+Primary sources reviewed: [Playwright](https://github.com/microsoft/playwright),
+[CLI](https://github.com/microsoft/playwright-cli),
+[official MCP](https://github.com/microsoft/playwright-mcp),
+[browser installation](https://playwright.dev/docs/browsers),
+[MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk),
+[Google unusual traffic](https://support.google.com/websearch/answer/86640?hl=en),
+[HTTP 429](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429),
+[SearXNG limiter](https://docs.searxng.org/admin/searx.limiter.html).
+The full browser MCP exposes more interaction than research needs; its URL
+allowlist is explicitly not a security boundary. The CLI suits general coding,
+but Hera's analysis shell is network-disabled. A small Playwright service with
+the existing native MCP client gives two bounded read tools without another
+model loop. Self-hosted metasearch would not eliminate upstream blocks.
+
+## Operation and boundaries
+
+- Install with `hera research setup` or `/research setup`. The pinned local
+  Playwright installer uses `--no-remove` outside Git; no global plugin/Codex change.
+- `/research` opens a Korean setup/status/open/resume picker; backslash also works.
+  On CAPTCHA, finish the model turn, run `/research open`, solve it yourself,
+  then `/research resume`. The checked result enters the cache; send the original
+  request again. No automatic model-turn replay occurs.
+- `web_search` reads DuckDuckGo HTML results: at most three links with snippets.
+  `web_fetch` returns text (default 3,000, maximum 6,000 characters per call; offset
+  up to 100,000). Native output budgets remain 1,500/2,000 tokens before serialization
+  allowance. Truncated text is not proof of full reading or a total task token cap.
+- Main and workers share one serial queue per owned runtime tree, at most 16 pending
+  unique requests, a two-second origin gap, duplicate merging and 100 successful
+  memory-cache entries for ten minutes. Independent Hera processes do not share
+  throttling. Restarting the runtime clears its cache and challenge cookies.
+- HTTP 429 honors Retry-After and requires a later explicit request, never an
+  automatic loop. CAPTCHA pauses for human resolution; other 403 blocks stop that
+  origin for this runtime. Unexpected markup/empty results are errors, not success.
+- Chromium uses a fresh memory context with no personal profile/imported cookies.
+  Scripts, downloads, service workers, popups and non-GET/HEAD requests are disabled
+  for model reads. Human CAPTCHA mode enables scripts and POST while model reads
+  remain paused. Do not log in through that temporary window.
+- A loopback CONNECT proxy checks all DNS answers, pins a public address and blocks
+  private/special networks. HTTPS/443 only, redirects included; no credentialed
+  URLs. QUIC and nonproxied WebRTC are disabled. This restricts egress, not CAPTCHA:
+  no stealth, proxy rotation, fingerprint spoofing or automated challenge solving.
+- The browser runs outside the native filesystem sandbox. It exposes no file,
+  upload, click or arbitrary-JS tool. Its localhost MCP endpoint uses a random path
+  and rejects Origin/wrong Host; it is not a boundary against hostile same-user
+  processes. Queries/URLs can still contain private strings: no DLP claim. Web
+  content is untrusted evidence, never task authorization.
+- Analysis verifies the exact two-tool native catalog. Apply/tests disable the
+  server and close owned browsers. Native web search and shell network stay off.
+  Chromium receives no model credentials. Browser startup is lazy, so missing
+  Chromium does not block unrelated local-only session startup.
+
+The requested 3-5 complementary DRD research assignments remain a subsequent
+workflow layer. This supplies search/reading, not enforced research coverage or
+a measured percentage reduction in model tokens.
+
+## Current Windows evidence
+
+Windows 10.0.26200 x64, i7-12700, PowerShell 7.6.6, Node v24.12.0:
+
+- Dependency and Chromium installation completed, exit 0; npm audit reported zero
+  vulnerabilities at install time. Existing browser versions were preserved.
+- Real DuckDuckGo search initially stopped at CAPTCHA. The user solved it in the
+  dedicated visible window and reported completion. Actual resume returned three
+  links; an official Node 24 document fetch returned 3,000 characters, and a repeated
+  fetch reused its timestamp/cache. Script exit 0. Some search links referred to
+  other Node versions; consumers must verify relevance.
+- An unauthenticated native session connected the exact two tools and fetched an
+  official document, without inference, exit 0; root
+  `01a115a6-5446-7b83-87c2-9c671c41aa75`.
+- Real GPT Luna/max worker and Astra/high parent document reads/cache sharing passed,
+  root `01a115ac-3639-7fc3-a3c6-df2b85c30211`, child
+  `01a115ac-a1fd-7cf3-a34c-c47b214c51eb`. Go DeepSeek V4.1 Flash/low and Astra/high
+  also passed, root `01a115ac-3a9a-7271-98df-729ecfcd7bfd`, child
+  `01a115ac-c36d-7063-b0b0-186a042da9ef`. Both scripts exited 0 and observed disabled
+  write-phase catalogs plus actual native rejection of a search call. These read
+  known official URLs; they are not additional live-search tests.
+- Real Chromium/MCP fixture check passed: extraction/cache, HTTP 429, CAPTCHA pause
+  without another request, private URL/input rejection, interrupt/close and server
+  port closure. Intercepted fixture pages are not live search evidence. Reproduce
+  with `node scripts/research-browser-check.mjs` after build/browser installation.
+  This check is included in Windows/macOS CI.
+- Typecheck, build and 73/73 offline tests passed. macOS local/manual/live browser
+  checks are NOT_RUN. Current CI/package results are recorded in status.md;
+  historical CI below does not qualify this implementation.
+
+Live browser: `node scripts/research-smoke.mjs --live --manual` (600 s bound).
+Live worker: `node scripts/live-web-research.mjs --live [--external]` (180 s,
+one worker and main turn). It reads one official Node 24 URL from both threads,
+checks cache and write-phase denial, and does not count fetches as new searches.
+
+## Superseded Exa evidence (historical, not current behavior)
 
 ## Decision and alternatives (2026-10-07)
 

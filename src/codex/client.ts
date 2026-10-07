@@ -15,8 +15,9 @@ import type {ThreadLoadedListParams} from './generated/v2/ThreadLoadedListParams
 import {setTimeout as delay} from 'node:timers/promises';
 import type {Config} from '../config.js';
 import type {JsonValue} from './generated/serde_json/JsonValue.js';
-import {startupArgs} from './config-compiler.js';
+import {nativeSettings} from './config-compiler.js';
 import {launchExternal} from './external-runtime.js';
+import {startResearch} from '../research/server.js';
 export const threadSchema=z.object({id:z.string(),cwd:z.string(),modelProvider:z.string(),status:z.object({type:z.string()}),turns:z.array(z.unknown()).optional()}).passthrough();
 const sessionSchema=z.object({thread:threadSchema,model:z.string(),modelProvider:z.string(),sandbox:z.object({type:z.string()}).passthrough()}).passthrough();
 export const modelSchema=z.object({id:z.string(),model:z.string(),displayName:z.string(),supportedReasoningEfforts:z.array(z.object({reasoningEffort:z.string()}))});
@@ -24,12 +25,16 @@ export type ModelView=z.infer<typeof modelSchema>;
 export class CodexClient extends EventEmitter {
   readonly rpc:Transport;private closing=false;
   sessionSettings:Record<string,JsonValue>|undefined;private cleanup:(()=>Promise<void>)|undefined;
+  research:Awaited<ReturnType<typeof startResearch>>|undefined;
   constructor(readonly child:ChildProcessWithoutNullStreams){super();this.rpc=new Transport(child.stdout,child.stdin);child.stderr.resume();child.on('error',()=>this.rpc.fail(new HeraError('SPAWN_FAILED','Could not start the pinned runtime.',4)));child.on('exit',()=>{if(!this.closing)this.rpc.fail(new HeraError('SERVER_EXIT','Runtime exited; outcome unknown.',5,false));});this.rpc.on('notification',(e:RpcEvent)=>this.emit('event',e));this.rpc.on('request',(e:RpcRequest)=>this.emit('request',e));this.rpc.on('fault',(e:HeraError)=>{if(!this.closing)this.emit('fault',e);});}
   static async connect(home:string,cwd:string,overrides:string[]=[]){await verifyContract();const client=new CodexClient(await launch(home,cwd,overrides));try{await client.initialize();return client;}catch(e){await client.close();throw e;}}
   static async session(home:string,cwd:string,config:Config,mode:'read-only'|'workspace-write',workers:boolean){
-    if(config.mode==='gpt_only')return this.connect(home,cwd,startupArgs(config,mode,workers));
-    await verifyContract();const started=await launchExternal(home,cwd,config,mode,workers);const client=new CodexClient(started.child);client.cleanup=started.cleanup;client.sessionSettings=started.settings;
-    try{await client.initialize();return client;}catch(e){await client.close();throw e;}
+    const research=mode==='read-only'?await startResearch(home):undefined;let client:CodexClient|undefined;
+    try{
+      if(config.mode==='gpt_only'){const settings=nativeSettings(config,mode,workers,research?.url);client=await this.connect(home,cwd,Object.entries(settings).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]));client.sessionSettings=settings;}
+      else{await verifyContract();const started=await launchExternal(home,cwd,config,mode,workers,research?.url);client=new CodexClient(started.child);client.cleanup=started.cleanup;client.sessionSettings=started.settings;await client.initialize();}
+      client.research=research;return client;
+    }catch(e){await research?.close();await client?.close();throw e;}
   }
   async initialize(){const params:InitializeParams={clientInfo:{name:'hera',title:'Hera',version:'0.1.0-alpha.1'},capabilities:{experimentalApi:true,requestAttestation:false}};const result=z.object({userAgent:z.string(),codexHome:z.string(),platformOs:z.string()}).parse(await this.rpc.request('initialize',params,20000));if(!result.userAgent.includes(`/${CODEX_VERSION} `))throw new HeraError('UNSUPPORTED_RUNTIME','Native runtime version mismatch.',4);this.rpc.notify('initialized');return result;}
   async account(){const result=z.object({account:z.object({type:z.string()}).passthrough().nullable(),requiresOpenaiAuth:z.boolean()}).parse(await this.rpc.request('account/read',{refreshToken:false}));return {ready:result.account!==null,category:result.account?.type??'none'};}
@@ -85,5 +90,5 @@ export class CodexClient extends EventEmitter {
       });
     }finally{clearTimeout(timer);this.off('event',event);this.off('fault',fault);signal?.removeEventListener('abort',abort);}
   }
-  async close(){this.closing=true;this.rpc.close();const graceful=await closeOwned(this.child);if(graceful&&this.cleanup){const cleanup=this.cleanup;this.cleanup=undefined;await cleanup();}return graceful;}
+  async close(){this.closing=true;await this.research?.close();this.rpc.close();const graceful=await closeOwned(this.child);if(graceful&&this.cleanup){const cleanup=this.cleanup;this.cleanup=undefined;await cleanup();}return graceful;}
 }

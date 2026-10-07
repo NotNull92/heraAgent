@@ -11,6 +11,13 @@ license identifiers are recorded in the source lock and consumer shrinkwrap.
 - Ink 8.0.0: MIT, https://github.com/vadimdemedes/ink
 - Commander 15.0.0: MIT, https://github.com/tj/commander.js
 - Zod 4.6.5: MIT, https://github.com/colinhacks/zod
+- Playwright 1.63.0: Apache-2.0, https://github.com/microsoft/playwright
+- MCP TypeScript SDK 1.32.1: MIT, https://github.com/modelcontextprotocol/typescript-sdk
+- ipaddr.js 2.3.0: MIT, https://github.com/whitequark/ipaddr.js
+
+Chromium is installed separately into the user browser cache by the pinned
+Playwright installer, preserving upstream licenses and existing browser versions.
+Browser binaries and user browser data are not included in the Hera archive.
 
 Generated Codex protocol declarations and matching config schema originate from
 openai/codex rust-v0.160.1 (Apache-2.0). Hera changes only generated relative import

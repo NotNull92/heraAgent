@@ -2,7 +2,63 @@
 
 ## Current checkpoint (2026-10-07)
 
+### Free local Playwright replaces keyless Exa
+
+At the user's request, analysis now uses a bundled local Playwright service through
+the existing native MCP client, with only search/fetch and no paid search API or
+fallback. Main and workers share queue/cache; CAPTCHA stops until the user uses
+`/research open` and `/research resume`. `hera research setup` installs pinned
+Chromium without deleting existing versions. [Operation/evidence](web-research.md)
+records the outside-sandbox browser boundary, public HTTPS egress guard, limits,
+official sources and human-only CAPTCHA handling. DRD 3-5 assignments are not yet
+enforced. Existing Windows/macOS product targets and CI remain.
+
+Windows: actual user-assisted DuckDuckGo search/resume, official page fetch/cache,
+real Chromium/MCP block/throttle/cleanup fixtures, native GPT/Go worker document
+reads/shared cache and native write-phase tool denial passed. Typecheck/build and
+73 offline tests passed (exit 0). Initial setup CLI failed because Playwright does
+not export its CLI subpath; resolving its CLI beside the exported package manifest
+fixed it, and the actual setup command then passed. Installed-package checks now
+exercise this command. No credentials or user browser profile are imported.
+Previous Exa CI does not qualify this change. macOS local/manual/live search
+remains NOT_RUN.
+
+Positive product regression passed for both modes (worker follow-up, saved session
+resume, current contracts, exact main-only edit and Node test exit 0): GPT root
+`01a115af-33ed-77a3-acc2-59216514b0fb`, mixed root
+`01a115af-39a7-7ae0-a004-606d3675ea9d`. An additional mixed cancellation failed,
+root `01a115b1-2a0f-75e1-89ca-e655956d9a26`: the parent completion was reconciled
+while child cleanup was still finishing. Its later saved history showed the child
+command failed with exit -1; the original unknown-outcome fixture remains preserved.
+Controller now waits for an ongoing owned cancellation before judging command
+outcomes. The regression retains rejection of truly unresolved commands. Fresh
+actual cancellation fixtures then passed in both modes: GPT
+`01a115b3-ddcf-75f3-ba99-b2cb557944e3`, mixed
+`01a115b3-e2a6-74a2-9a91-85b5e9a94ede`; pending-worker apply blocked, actual child
+command interrupted, tree idle, workspace released and unrelated process preserved.
+
+Reviewed source (excluding concurrent unstaged TUI changes) passed typecheck,
+73 tests, build and actual Chromium fixtures. The first index-export test lacked
+a `.git` marker and failed the expected repository-home boundary fixture; adding
+that marker to the disposable export made all 73 pass, with no product change.
+The normal shared worktree separately passed 74 including an unrelated TUI test.
+Prepared archive SHA-256:
+`8003d4827a3a54fa50e6ec845d425b823b10c0cb139a7ac02aef8afa995a6d5b`.
+Archive inspection and native Windows installation, actual research setup, native
+initialization, reinstall, OS-credential persistence and launcher checks passed,
+exit 0. An earlier archive also passed but predates the cancellation correction.
+No release, npm publication, license grant or global Codex change was performed.
+
+After reviewing these actual probes and historical unchanged native permission,
+concurrency, provider/auth/failure gates below, mode-specific local acceptance was
+maintainer-attested outside Git with uniquely named backups. Historical negatives
+are not relabeled as fresh. Browser/source/dependency pins are fingerprint inputs;
+tests/installers do not auto-promote acceptance. Public gated startup was checked
+without inference. Credentials remain outside the repository.
+
 ### Bundled public web research
+
+Historical Exa checkpoint, superseded by the free local browser implementation above.
 
 Official Exa remote MCP is integrated through the native runtime, with exactly
 search/fetch in analysis and the server disabled in apply/tests. No new dependency,

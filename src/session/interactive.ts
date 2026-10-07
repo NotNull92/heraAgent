@@ -19,6 +19,7 @@ import {externalRuntime,GO_EFFORT} from '../codex/external-runtime.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
 import {parseLimits,mergeLimits} from './limits.js';
 import type {LimitSnapshot} from './limits.js';
+import {installBrowser} from '../research/browser.js';
 const exec=promisify(execFile);
 type Role='main'|'worker';
 export type SelectionMenu={title:string;options:{value:string;label:string}[];current:string|null;choose:(value:string)=>Promise<void>};
@@ -102,8 +103,19 @@ export class InteractiveSession extends EventEmitter {
   }
   async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text))await this.command('/'+text.trim().slice(1));else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
+    case '/research':{
+      if(args.length>1)throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
+      const browser=this.controller?.client.research?.browser;
+      if(!args.length){this.selection={title:'무료 웹 리서치 · 로컬 Playwright',current:null,options:[{value:'status',label:'상태 확인'},{value:'setup',label:'무료 Chromium 설치'},{value:'open',label:'CAPTCHA 해결용 브라우저 열기'},{value:'resume',label:'인증 완료 후 재개'}],choose:async value=>this.command('/research '+value)};break;}
+      if(args[0]==='setup'){await installBrowser(this.home);this.add('\n무료 Chromium 설치 완료. 기존 브라우저와 로그인 정보는 사용하지 않습니다.\n');break;}
+      if(args[0]==='status'){this.add('\n'+JSON.stringify(browser?.status()??{connected:false},null,2)+'\n');break;}
+      if(!browser||this.controller?.phase.phase!=='ANALYZE_READ_ONLY')throw new HeraError('RESEARCH_UNAVAILABLE','읽기 전용 세션의 검색 요청이 있어야 합니다.',4);
+      if(args[0]==='open'){await browser.openChallenge();this.add('\n전용 브라우저에서 CAPTCHA만 직접 해결하고 /research resume을 입력하세요. 로그인은 필요하지 않습니다.\n');break;}
+      if(args[0]==='resume'){const result=await browser.resume();this.add(`\n인증 후 결과 확인 완료: ${result.url}\n결과를 캐시에 보관했습니다. 원래 조사 요청을 이어서 보내세요.\n`);break;}
+      throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
+    }
     case '/providers':if(args.length)throw new HeraError('INVALID_COMMAND','/providers에서 선택하세요. 키를 명령 인수에 넣지 마세요.',2);await this.openProviders();break;
-    case '/help':this.add('\n/providers /help /mode [gpt_only|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /apply /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
+    case '/help':this.add('\n/providers /research [setup|status|open|resume] /help /mode [gpt_only|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /apply /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
     case '/mode':{if(!args[0]){this.selection={title:'모드 선택 · 다음 세션부터 적용',current:this.config.mode,options:[{value:'gpt_only',label:'GPT 전용 · 공식 엔진'},{value:'external_workers',label:'GPT 메인 + DeepSeek 워커 · 전용 엔진'}],choose:async value=>this.command(`/mode ${value}`)};break;}if(args.length!==1||!['gpt_only','external_workers'].includes(args[0]))throw new HeraError('INVALID_MODE','Use gpt_only or external_workers.',2);if(args[0]==='external_workers'&&!await externalRuntime(this.home))throw new HeraError('EXTERNAL_RUNTIME_MISSING','혼합 모드용 검증 엔진을 먼저 설치하세요. GPT로 자동 전환하지 않습니다.',4);const candidate={...this.config,mode:args[0] as Config['mode']};await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);this.add(`\n모드: ${this.config.mode} · 다음 세션부터 적용. /doctor에서 검증 상태를 확인하세요.\n`);break;}
     case '/model':case '/effort':{
       if(!args.length){await this.openSettings(command==='/model'?'model':'effort');break;}
