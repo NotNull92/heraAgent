@@ -864,3 +864,39 @@ Bracketed paste still never submits or exits, a pasted leading slash stays liter
 and a single input chunk containing text plus a carriage return does not submit.
 Windows local: typecheck, build and 65 offline tests passed (exit 0). Real terminal
 key reporting (Shift+Enter, Alt+Enter) and IME behavior are NOT_RUN.
+
+## Scrollback conversation and input footer (2026-10-07)
+
+At the user's request the TUI now behaves like a shell-style agent session. The
+framed fixed-height journal is gone: a banner (title plate, emblem, greeting,
+workspace) is printed once, every finished transcript line is written once through
+Ink's Static output so it stays in the terminal's own scrollback, and only the
+unfinished line remains in the live area above the input. Slash commands are echoed
+into the transcript like other input; `/providers` is echoed without arguments.
+Lines already written keep their slot but drop their text beyond the newest 2,000,
+and the session transcript stays a 128 KiB sliding window.
+
+Everything that changes at runtime moved to a footer under the input panel: the
+phase track (always shown; studs plus the current name below 76 columns), a status
+line (activity, status, mode, exact phase, live worker count) and one line per role
+with the configured route, the observed limit windows and observed thread tokens.
+The empty-state setup hint was removed earlier and the greeting is one of eleven
+short Skyrim lines chosen per start.
+
+Windows local: typecheck, build and 74 offline tests passed (exit 0). A fake-TTY
+render confirmed the banner and finished lines are written once and not repainted
+when typing, and that the cursor lands on the input row; one render after a new
+unfinished line appears places the cursor a row high before the next frame corrects
+it. Behavior in an actual Windows Terminal/herdr (scrollback, resize reflow, IME)
+is NOT_RUN.
+
+Follow-up at the user's request: the cumulative token figures were removed from the
+footer, together with the session's per-thread token tracking that only fed that
+display. The role lines now show the configured route and the observed limit windows
+(or the plain limit statement) only. Windows local after this edit: typecheck, build
+and the offline tests passed (exit 0).
+
+Further footer trimming at the user's request: the worker line no longer names the
+provider, and the status line no longer repeats the exact phase name (the phase track
+remains the phase display). Windows local: typecheck, build and 74 offline tests
+passed (exit 0).

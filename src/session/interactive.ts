@@ -28,12 +28,11 @@ export class InteractiveSession extends EventEmitter {
   selection:SelectionMenu|null=null;
   // undefined: not read yet; null: the runtime returned no usable limit data.
   limits:LimitSnapshot[]|null|undefined=undefined;
-  // Cumulative totals from native thread/tokenUsage/updated, keyed by thread; absent until observed.
-  private tokens=new Map<string,number>();
-  tokenTotals(){const root=this.controller?.metadata?.codexThreadId;let main:number|null=null,workers:number|null=null;for(const [id,total] of this.tokens){if(id===root)main=total;else workers=(workers??0)+total;}return {main,workers};}
   providerSetupRequired=false;providerKeyInput=false;providerLoginText='';private providerAbort:AbortController|null=null;
   constructor(readonly home:string,readonly cwd:string,readonly config:Config,readonly singleAgent:boolean){super();}
-  add(text:string){this.transcript=(this.transcript+safeText(text)).slice(-128*1024);this.emit('change');}
+  // Running count of appended characters: the transcript is a sliding window, so a view needs this to find new text.
+  written=0;
+  add(text:string){const safe=safeText(text);this.written+=safe.length;this.transcript=(this.transcript+safe).slice(-128*1024);this.emit('change');}
   private async models(){const client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config));try{return await client.models();}finally{await client.close();}}
   // Read-only native account call; no inference. A failed refresh keeps the last observed snapshot.
   async refreshLimits(){
@@ -95,13 +94,14 @@ export class InteractiveSession extends EventEmitter {
     this.controller.on('event',event=>{
       if(event.method==='item/agentMessage/delta'){const p=z.object({threadId:z.string(),delta:z.string()}).safeParse(event.params);if(p.success&&p.data.threadId===this.controller?.metadata?.codexThreadId)this.add(p.data.delta);}
       else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);}
-      else if(event.method==='thread/tokenUsage/updated'){const p=z.object({threadId:z.string(),tokenUsage:z.object({total:z.object({totalTokens:z.number()})})}).safeParse(event.params);if(p.success){this.tokens.set(p.data.threadId,p.data.tokenUsage.total.totalTokens);this.emit('change');}}
       else if(event.method==='account/rateLimits/updated'&&this.limits){this.limits=mergeLimits(this.limits,event.params);this.emit('change');}
     });
     this.controller.on('workers',()=>this.emit('change'));
     this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));
   }
-  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text))await this.command('/'+text.trim().slice(1));else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
+  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text)){
+      // Echo the command like any other input; /providers arguments are rejected, so they are never echoed.
+      const typed='/'+text.trim().slice(1);this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
     case '/research':{
       if(args.length>1)throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
@@ -141,6 +141,6 @@ export class InteractiveSession extends EventEmitter {
     default:throw new HeraError('UNKNOWN_COMMAND','Unknown slash command. Use /help.',2);
   }}
   async interrupt(){if(this.providerAbort){this.providerAbort.abort();return;}if(this.controller?.busy){await this.controller.interrupt();}else this.add('\nNo model turn is active. Use /quit to exit.\n');}
-  private async newSession(){if(this.controller&&!await this.controller.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Cannot switch sessions until prior execution is reconciled.',5,false);this.controller=null;this.tokens.clear();}
+  private async newSession(){if(this.controller&&!await this.controller.close())throw new HeraError('INTERRUPTED_UNCONFIRMED','Cannot switch sessions until prior execution is reconciled.',5,false);this.controller=null;}
   async close(){this.providerAbort?.abort();this.providerKeyInput=false;if(this.controller&&!await this.controller.close())process.exitCode=5;}
 }

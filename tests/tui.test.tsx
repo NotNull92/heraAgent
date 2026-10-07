@@ -39,21 +39,22 @@ it('drops every hue for NO_COLOR or ui.color=never and keeps them otherwise',()=
   expect(palette('auto',{}).gold).toMatch(/^#[0-9a-f]{6}$/);expect(palette('auto',{NO_COLOR:''}).gold).toBeDefined();
   for(const plain of [palette('never',{}),palette('auto',{NO_COLOR:'1'})])expect(Object.values(plain).every(hue=>hue===undefined)).toBe(true);
 });
-it('shows the observed phase on the track, collapses it when narrow and keeps the newest journal output',async()=>{
+it('writes the whole conversation into scrollback once, keeps the phase track live and collapses it when narrow',async()=>{
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
   session.add(Array.from({length:60},(_,i)=>`entry ${i} ${'가나다라 '.repeat(40)}`).join('\n')+'\nYou: 마지막 요청');
   const ui=render(<App session={session}/>);await tick();
-  expect(ui.lastFrame()).toContain('◆ IDLE ── ◇ ANALYZE');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('entry 0 ');
-  expect(ui.lastFrame()!.split('\n').length).toBeLessThan(24);
+  expect(ui.lastFrame()).toContain('◆ IDLE ── ◇ ANALYZE');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).toContain('entry 0 ');expect(ui.lastFrame()).toContain('entry 59 ');
+  // A finished line is written once; later output appends below it instead of redrawing it.
+  session.add('\nHera: 이어지는 답변');await tick();expect(ui.lastFrame()!.split('You: 마지막 요청')).toHaveLength(2);expect(ui.lastFrame()!.split('entry 0 ')).toHaveLength(2);expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   Object.defineProperty(ui.stdout,'columns',{get:()=>60});ui.stdout.emit('resize');await tick();
-  expect(ui.lastFrame()).not.toContain('ANALYZE');expect(ui.lastFrame()).toContain('IDLE');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('승인');expect(ui.lastFrame()).not.toContain('Ctrl+');
-  await act(async()=>{session.approval='fixture/requestApproval: denied';session.emit('change');await tick();});expect(ui.lastFrame()).toContain('◆ fixture/requestApproval: denied');expect(ui.lastFrame()).toContain('You: 마지막 요청');
+  expect(ui.lastFrame()).not.toContain('ANALYZE');expect(ui.lastFrame()).toContain('◆◇◇◇◇◇◇ IDLE');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('승인');expect(ui.lastFrame()).not.toContain('Ctrl+');
+  await act(async()=>{session.approval='fixture/requestApproval: denied';session.emit('change');await tick();});expect(ui.lastFrame()).toContain('◆ fixture/requestApproval: denied');expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   ui.unmount();
 });
-it('names the configured worker provider, model and effort for each mode',async()=>{
+it('names the configured worker model and effort for each mode',async()=>{
   const config=structuredClone(defaults);config.workers.gptModel='fixture-worker';config.workers.reasoningEffort='max';
-  const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toMatch(/워커 모델\s+OpenAI · fixture-worker · effort\s+max/);gpt.unmount();
-  const go=render(<App session={new InteractiveSession('unused','fixture',{...config,mode:'external_workers'},true)}/>);await tick();expect(go.lastFrame()).toMatch(/워커 모델\s+OpenCode Go · deepseek-v4\.1-flash · effort\s+low/);go.unmount();
+  const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toMatch(/워커\s+fixture-worker · effort max/);gpt.unmount();
+  const go=render(<App session={new InteractiveSession('unused','fixture',{...config,mode:'external_workers'},true)}/>);await tick();expect(go.lastFrame()).toMatch(/워커\s+deepseek-v4\.1-flash · effort low/);go.unmount();
 });
 it('places the IME caret by terminal cells across Korean text, newlines and hard wraps',()=>{
   expect(caret('',0,80)).toEqual({x:2,y:0});expect(caret('한글 ab',5,80)).toEqual({x:9,y:0});expect(caret('한글 ab',1,80)).toEqual({x:4,y:0});
@@ -64,14 +65,12 @@ it('shows only the limit windows the runtime returned and merges sparse updates'
   const limits=parseLimits(read);expect(windowsFor(limits,'any')).toHaveLength(1);expect(windowsFor([],'any')).toEqual([]);
   const merged=mergeLimits(limits,{rateLimits:{limitId:'codex',primary:null,secondary:{usedPercent:90,windowDurationMins:300,resetsAt:null}}});expect(windowsFor(merged,null).map(w=>w.usedPercent)).toEqual([21,90]);expect(mergeLimits(limits,{bad:true})).toBe(limits);
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);const ui=render(<App session={session}/>);await tick();expect(ui.lastFrame()).toContain('확인 전');
-  session.limits=merged;session.emit('change');await tick();expect(ui.lastFrame()).toMatch(/사용량\s+주간 79% 남음 \(\d+\/\d+ \d\d:\d\d 리셋\) · 5h 10% 남음/);
+  session.limits=merged;session.emit('change');await tick();expect(ui.lastFrame()).toMatch(/메인[^\n]*· 주간 79% 남음 \(\d+\/\d+ \d\d:\d\d 리셋\) · 5h 10% 남음/);expect(ui.lastFrame()).toMatch(/워커[^\n]*· 메인과 한도 공유/);
   session.limits=null;session.emit('change');await tick();expect(ui.lastFrame()).toContain('한도 정보 없음');ui.unmount();
 });
-it('shows observed thread token totals per role and never a Go limit figure',async()=>{
+it('points Go limits to the provider console instead of showing a figure',async()=>{
   const session=new InteractiveSession('unused','fixture',{...structuredClone(defaults),mode:'external_workers'},true);
-  const ui=render(<App session={session}/>);await tick();expect(ui.lastFrame()).toMatch(/워커 모델[^\n]*\n\s+사용량\s+한도: OpenCode 콘솔에서 확인/);expect(ui.lastFrame()).not.toContain('토큰');
-  vi.spyOn(session,'tokenTotals').mockReturnValue({main:7122,workers:1250000});session.emit('change');await tick();
-  expect(ui.lastFrame()).toContain('확인 전 · 누적 7.1k 토큰');expect(ui.lastFrame()).toContain('누적 1.3M 토큰 · 한도: OpenCode 콘솔에서 확인');ui.unmount();vi.restoreAllMocks();
+  const ui=render(<App session={session}/>);await tick();expect(ui.lastFrame()).toMatch(/워커[^\n]*· 한도: OpenCode 콘솔\s*$/);expect(ui.lastFrame()).not.toContain('토큰');expect(ui.lastFrame()).not.toContain('%');ui.unmount();
 });
 it('follows Claude Code keys: Enter sends, newline keys, history, double Escape and word delete',async()=>{
   const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={t=>sent.push(t)} cancel={()=>{}}/>);await tick();
