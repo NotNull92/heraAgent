@@ -5,9 +5,10 @@ Repository: `heraAgent`. Package: `hera-agent`. Command: `hera`.
 
 Development prerelease. Native protocol initialization, catalog discovery, official
 isolated login, read-only sessions, resume, Korean/English Ink UI and offline checks
-are implemented. Single-agent `/apply` now reviews changes and tests before a native
-workspace-write transition; its Windows fixture passed. **Product GPT collaboration
-and Go workers remain gated.** A catalog entry is not proof of model entitlement.
+are implemented. GPT workers use native thread history, task/result contracts and
+recursive cancellation; `/apply` requires the entire tree to be idle before reviewed
+main-only writes and tests. Windows integration fixtures passed. **GPT collaboration
+requires matching local verification; Go workers remain blocked.** A catalog entry is not proof of model entitlement.
 No provider fallback. macOS live/manual checks have not been performed.
 
 See [status](docs/status.md), [compatibility](docs/compatibility.md) and the full
@@ -51,7 +52,7 @@ After read-only analysis, `/apply` prepares a proposal without writing. Page thr
 the complete before/after text, test commands and risks with Down/Enter; Up goes back.
 Only `a` on the final page approves workspace writes and the displayed tests. Escape
 cancels. This grants workspace-level native permissions, not a per-file OS lock.
-All worker paths, external tools and network remain disabled. Hera rechecks the
+During application, all worker paths, external tools and network remain disabled. Hera rechecks the
 baseline, resumes the same thread in a fresh runtime, compares applied contents and
 checks for unlisted file changes before running the tests. Tests may create build
 artifacts inside the approved workspace. Unsupported command-display formats produce
@@ -85,6 +86,14 @@ turns reject setting changes; an uncertain shutdown prevents switching sessions.
 Pasted commands remain literal text, including pasted Enter keys in menus. Normal
 composer Enter still inserts a newline; bare settings commands open menus instead.
 These settings do not enable gated workers.
+
+`hera doctor` reports the worker verification state for the selected configuration.
+Acceptance is scoped to runtime/code, OS/architecture, models/efforts and worker limit.
+Changing these invalidates the local record; it is never copied from Windows to macOS
+or inferred from CI/mocks. A verified profile can use plain `hera`; other profiles can
+explicitly use `--single-agent`. See [verification evidence](docs/status.md) for the
+maintainer live fixtures and current gaps. Native histories remain the source of truth;
+there is no Hera conversation database. Worker test claims never count as executed tests.
 
 Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
 copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses its OS-stored

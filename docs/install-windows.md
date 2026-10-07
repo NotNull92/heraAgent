@@ -34,9 +34,13 @@ pinned Codex's official unelevated setup in the isolated Hera profile, waits for
 completion, and checks readiness in a fresh runtime. It does not request elevation.
 `--mode elevated` is an explicit operator choice when administrator setup is desired.
 A failure or timeout is not retried automatically; inspect `doctor --json` first.
-Do not select unrestricted mode. Current
-live safety tests are incomplete, so parallel collaboration and `/apply` stay blocked.
-`hera.cmd --single-agent` explicitly chooses the available read-only path.
+Do not select unrestricted mode. `hera.cmd auth login go` stores the second required
+provider credential in Windows Credential Manager. `/providers` offers both setup flows.
+`hera.cmd --single-agent` explicitly chooses analysis without workers; `/apply` then
+offers reviewed main-only changes and tests. Plain `hera.cmd` requires a matching local
+GPT worker verification record; `doctor` reports readiness. A different runtime,
+model/effort, worker limit or OS requires fresh verification. External Go workers are
+still blocked; stored credentials and a direct Go response alone do not enable them.
 
 TUI: Enter inserts a newline, Ctrl+S sends, Escape clears the composer, Ctrl+C requests
 turn interruption, `/quit` exits. Pasted slash text is literal, not a command.

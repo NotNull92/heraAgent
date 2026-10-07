@@ -1,5 +1,88 @@
 # Implementation status
 
+## Current checkpoint (2026-10-07)
+
+The earlier sections below are historical. The real Go key is now present in the
+OS credential store; a fresh process reports source=keyring. No key value was printed,
+copied into the repository, sent in command arguments, or included in an artifact.
+OpenAI remains the isolated official keyring login. Global Codex is unchanged.
+
+GPT product collaboration is implemented and locally verified on Windows with
+gpt-6-astra/high, gpt-6-luna/max and configured worker limit 3. Native loaded inventory,
+spawn history and parentThreadId reconcile descendants, including V2 children omitted
+from thread/list. No assumption of shared sessionId or separate conversation store.
+Quiescence includes descendants/background commands; cancellation touches only owned
+threads. Main-authorized task contracts are checked against latest native worker final
+results and workspace baseline. Stale/missing results block apply. Worker test claims
+are retained as unverified claims; only observed main test exit codes establish tests.
+
+Windows live evidence (all pinned Codex 0.160.1):
+
+- Product native collaboration, follow-up, marker recall after same-root/child resume,
+  validated result contracts, reviewed exact file application and actual test exit 0:
+  `scripts/live-product-workers.mjs --live`, root
+  `01a1143c-cfaf-72e3-b5d5-fa41be2e1484`, exit 0.
+- Actual worker write denial and unchanged sentinel: earlier product fixture root
+  `01a11426-d7de-7520-a564-844e31093f15`, exit 0. The later positive fixture deliberately
+  separates normal collaboration from permission-negative instructions. Its first
+  revised run withheld a pass because no write attempt occurred; model compliance
+  with a no-write instruction was not misreported as a native denial.
+- Root N+1 and recursive child spawn rejection at fixture limit 1; after runtime
+  restart all three spawn switches were false and an actual native spawn lookup/call
+  failed, with no new child. Root `01a11428-9237-7232-8447-8cde51b0727d`.
+  The combined script reports incomplete because the model declined to issue its
+  never-policy escalation request. That subtest is NOT counted as a native denial.
+- A separate on-request, read-only fixture exercised a real worker approval request
+  and Hera's decline handler, with unchanged sentinel and no permission granted:
+  `scripts/live-worker-approval.mjs --live`, root
+  `01a11430-b1d5-7da3-9834-0dda8ce1daf2`, exit 0. Product policy remains never.
+- `scripts/live-product-worker-cancel.mjs --live`: real child sleep interrupted,
+  apply rejected while busy, entire tree/terminal inventory idle, workspace lock
+  released, unrelated test-owned process preserved; exit 0.
+- Public Controller.open (parallel mode) initialized and closed without inference
+  using the matching local acceptance record; exit 0.
+
+The local `metadata/worker-verification.json` contains only audited check outcomes,
+native thread references and the code/configuration/platform fingerprint. It is not
+shipped or committed. Missing/stale records block workers, and model/effort/limit or
+runtime changes require fresh native checks. The current record covers this Windows
+profile only. The fixture scripts are opt-in maintainer verification, not unattended
+paid self-tests; they do not automatically mint acceptance from mocks. A newly started
+thread is read metadata-only until its first turn because this native version rejects
+includeTurns=true before then. Bounded hydration currently caps 512 threads / 32 MiB.
+
+Go direct coding-expression probe: one request, 64 output tokens, 20-second bound,
+requested and reported model deepseek-v4.1-flash, exit 0. An additional Responses HTTP
+request returned 200. More importantly, `scripts/live-go-native.mjs --live` completed
+a real native read-only command and returned an unpredictable marker from its file:
+root `01a1143f-be40-75c3-820f-6a118d00f9eb`, exit 0. Provider request/stream retries
+were disabled. An initial fixture launch had a malformed nested CLI config and exited
+before inference; flattening the documented config keys fixed the test launcher.
+This is standalone Go access, not cross-provider worker acceptance.
+
+Cross-provider investigation: explicit V2 spawn model deepseek-v4.1-flash was rejected
+as unknown (`01a11441-c59f-7520-bc45-ec035429fa55`). Omitting that argument allowed a
+role-configured DeepSeek model, but the actual child provider remained openai and its
+turn failed HTTP 400 (unsupported ChatGPT model), child
+`01a11443-0a4c-7290-b6d1-cf50e236257d`. This is a failed route, never a successful Go
+worker or a fallback policy. The first isolated cross-provider launcher omitted the
+keyring setting and received OpenAI HTTP 401 before spawning; this test setup error
+was corrected without touching saved credentials. External mode remains blocked.
+An additional attempt requesting the older backend also failed with the same
+unsupported ChatGPT model result (root 01a11444-5070-72c1-bfa7-e75e6314d8a1);
+no alternate-backend compatibility is claimed. The pinned Codex role override source
+omits model_provider. [ADR-002](adr/002-external-mode-blocked.md) records that source,
+the requested DeepSeek Harness investigation and the architectural options.
+
+Current local checks: typecheck/build and 48 offline tests passed, exit 0. Prepared
+archive inspection and clean-prefix Windows install/reinstall/OS-credential persistence/
+native initialization/launcher checks passed (exit 0). This is not a paid installed
+model test. CI results for this source must be observed after reviewed private push.
+Previous commit 2350c0d52faae2d0932db7c99f24b3b3e99d0f46 was uploaded and its CI run
+37443934863 passed all four Windows/macOS offline and identical-archive install jobs.
+Windows physical Korean IME/herdr and macOS manual/live remain NOT_RUN. Windows/macOS
+product code and CI are retained. No public release, npm publication or license grant.
+
 ## Provider setup and OS credential storage (2026-10-06)
 
 User-requested scope extension: store Go credentials persistently in the OS credential

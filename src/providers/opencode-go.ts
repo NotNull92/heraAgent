@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {z} from 'zod';
 import {HeraError} from '../errors.js';
 export const GO_URL='https://opencode.ai/zen/go/v1';
 export const GO_MODEL='deepseek-v4.1-flash';
@@ -13,6 +14,8 @@ export async function probeGo(key:string|undefined,request:typeof fetch=fetch){
     const value:unknown=JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if(!value||typeof value!=='object'||!('choices'in value)||!Array.isArray(value.choices)||value.choices.length!==1)throw new HeraError('INVALID_PROVIDER_RESPONSE','Unrecognized Go completion; no success inferred.',5,false);
     const choice:unknown=value.choices[0];if(!choice||typeof choice!=='object'||!('finish_reason'in choice)||choice.finish_reason!=='stop')throw new HeraError('INCOMPLETE_PROVIDER_RESPONSE','Probe did not finish normally.',5,false);
-    return {state:'pass',scope:'one direct Go text probe only',requestedModel:GO_MODEL,route:GO_URL,sessionHeader:'x-opencode-session',externalMode:'blocked',remaining:['G11','G12','G13','G14','G15']};
+    const completion=z.object({model:z.string().min(1),choices:z.array(z.object({message:z.object({role:z.literal('assistant'),content:z.string().min(1)})})).length(1)}).safeParse(value);
+    if(!completion.success||!/^\s*\(?\s*1\s*\+\s*1\s*\)?\s*;?\s*$/.test(completion.data.choices[0]!.message.content))throw new HeraError('INVALID_PROVIDER_RESPONSE','Go did not return the requested coding expression; no success inferred.',5,false);
+    return {state:'pass',scope:'one direct Go coding-expression probe only',requestedModel:GO_MODEL,reportedModel:completion.data.model,route:GO_URL,sessionHeader:'x-opencode-session',externalMode:'blocked',remaining:['G11','G12','G13','G14','G15']};
   }catch(error){if(error instanceof HeraError)throw error;throw new HeraError('PROBE_UNKNOWN_OUTCOME','Go probe transport/format failed; no retry or billing fallback.',5,false);}finally{clearTimeout(timer);}
 }

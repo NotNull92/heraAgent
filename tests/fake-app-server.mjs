@@ -11,6 +11,7 @@ createInterface({input:process.stdin}).on('line',line=>{
     case 'config/read':result={config:{agents:{enabled:false},features:{multi_agent:false,multi_agent_v2:false,apps:false,plugins:false,hooks:false,browser_use:false,computer_use:false,request_permissions_tool:false},shell_environment_policy:{inherit:'core'}}};break;
     case 'thread/start':case 'thread/resume':result={thread,model:params.model,modelProvider:'openai',sandbox:{type:'readOnly'}};break;
     case 'thread/read':result={thread};break;
+    case 'thread/loaded/list':result={data:['fixture-thread'],nextCursor:process.argv[2]==='loaded-cycle'?'same-cursor':null};break;
     case 'turn/start':{
       if(process.argv[2]==='interrupt-order'){
         const item={id:'late-command',type:'commandExecution',status:'failed',exitCode:-1};

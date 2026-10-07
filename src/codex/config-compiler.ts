@@ -10,12 +10,13 @@ export function validateModelChoices(config:Config,models:ModelView[]){
     if(effort!==null&&!selected.supportedReasoningEfforts.some(e=>e.reasoningEffort===effort))throw new HeraError('UNSUPPORTED_EFFORT',`Selected ${role} model does not advertise effort ${effort}.`,2);
   }
 }
-export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only'):Record<string,JsonValue> {
+export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false):Record<string,JsonValue> {
+  if(workers&&mode!=='read-only')throw new HeraError('INVALID_PHASE','Workers are only available in read-only analysis.',4);
   return {
     model_provider:'openai',sandbox_mode:mode,approval_policy:'never',
     'sandbox_workspace_write.exclude_tmpdir_env_var':true,'sandbox_workspace_write.exclude_slash_tmp':true,
     'sandbox_workspace_write.network_access':false,'sandbox_workspace_write.writable_roots':[],
-    'agents.enabled':false,'features.multi_agent':false,'features.multi_agent_v2':false,
+    'agents.enabled':workers,'features.multi_agent':workers,'features.multi_agent_v2':workers,
     'agents.max_concurrent_threads_per_session':config.workers.maxConcurrent,
     ...(config.workers.gptModel?{'agents.default_subagent_model':config.workers.gptModel}:{}),
     ...(config.main.reasoningEffort?{model_reasoning_effort:config.main.reasoningEffort}:{}),
@@ -32,9 +33,10 @@ export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'=
     'analytics.enabled':false,check_for_update_on_startup:false
   };
 }
-export function startupArgs(config:Config,mode:'read-only'|'workspace-write'='read-only'){return Object.entries(nativeSettings(config,mode)).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]);}
-export function requireMode(config:Config,singleAgent:boolean){
+export function startupArgs(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false){return Object.entries(nativeSettings(config,mode,workers)).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]);}
+export function requireMode(config:Config,singleAgent:boolean,workersVerified=false){
   if(config.mode==='external_workers')throw new HeraError('EXTERNAL_MODE_BLOCKED','Go native routing and collaboration gates G10-G15 have not passed; no fallback.',4);
-  if(!singleAgent)throw new HeraError('COLLABORATION_UNVERIFIED','G02-G04 are unverified. Explicitly select --single-agent for a read-only session.',4);
+  if(!singleAgent&&!workersVerified)throw new HeraError('COLLABORATION_UNVERIFIED','Native worker gates are unverified for these settings. Use hera doctor or explicitly select --single-agent.',4);
   if(!config.main.model)throw new HeraError('MODEL_NOT_SELECTED','Run hera init --list-models, then explicitly select --model and --worker-model.',2);
+  if(!singleAgent&&!config.workers.gptModel)throw new HeraError('MODEL_NOT_SELECTED','Select a native worker model before starting collaboration.',2);
 }

@@ -11,6 +11,7 @@ import type {ThreadResumeParams} from './generated/v2/ThreadResumeParams.js';
 import type {TurnStartParams} from './generated/v2/TurnStartParams.js';
 import type {WindowsSandboxSetupMode} from './generated/v2/WindowsSandboxSetupMode.js';
 import type {ThreadBackgroundTerminalsCleanParams} from './generated/v2/ThreadBackgroundTerminalsCleanParams.js';
+import type {ThreadLoadedListParams} from './generated/v2/ThreadLoadedListParams.js';
 import {setTimeout as delay} from 'node:timers/promises';
 export const threadSchema=z.object({id:z.string(),cwd:z.string(),modelProvider:z.string(),status:z.object({type:z.string()}),turns:z.array(z.unknown()).optional()}).passthrough();
 const sessionSchema=z.object({thread:threadSchema,model:z.string(),modelProvider:z.string(),sandbox:z.object({type:z.string()}).passthrough()}).passthrough();
@@ -26,6 +27,11 @@ export class CodexClient extends EventEmitter {
   async start(params:ThreadStartParams){return sessionSchema.parse(await this.rpc.request('thread/start',params));}
   async resume(params:ThreadResumeParams){return sessionSchema.parse(await this.rpc.request('thread/resume',params));}
   async read(threadId:string){return z.object({thread:threadSchema}).parse(await this.rpc.request('thread/read',{threadId,includeTurns:true})).thread;}
+  async loadedThreads(){
+    const ids=new Set<string>();const cursors=new Set<string>();let cursor:string|null=null;
+    do{const params:ThreadLoadedListParams={cursor,limit:100};const page=z.object({data:z.array(z.string()),nextCursor:z.string().nullable()}).parse(await this.rpc.request('thread/loaded/list',params));for(const id of page.data)ids.add(id);cursor=page.nextCursor;if(ids.size>512||cursor&&cursors.has(cursor))throw new HeraError('THREAD_INVENTORY_LIMIT','Native thread inventory is incomplete; no phase transition.',4);if(cursor)cursors.add(cursor);}while(cursor);
+    return ids;
+  }
   async turn(params:TurnStartParams){return z.object({turn:z.object({id:z.string(),status:z.string()})}).parse(await this.rpc.request('turn/start',params)).turn;}
   async interrupt(threadId:string,turnId:string){await this.rpc.request('turn/interrupt',{threadId,turnId});}
   async cleanBackgroundTerminals(threadId:string,timeoutMs=2000){

@@ -37,3 +37,6 @@ it('does not treat a native cleanup acknowledgment as proof that commands stoppe
   const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),'cleanup-pending'],{stdio:['pipe','pipe','pipe'],windowsHide:true}));
   try{await client.initialize();await expect(client.cleanBackgroundTerminals('fixture-thread',0)).rejects.toMatchObject({errorCode:'INTERRUPTED_UNCONFIRMED',outcomeKnown:false});}finally{await client.close();}
 });
+it('rejects repeated native inventory cursors instead of claiming a complete worker tree',async()=>{
+  const client=new CodexClient(spawn(process.execPath,[resolve('tests/fake-app-server.mjs'),'loaded-cycle'],{stdio:['pipe','pipe','pipe'],windowsHide:true}));try{await client.initialize();await expect(client.loadedThreads()).rejects.toMatchObject({errorCode:'THREAD_INVENTORY_LIMIT'});}finally{await client.close();}
+});

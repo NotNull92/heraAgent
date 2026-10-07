@@ -21,8 +21,12 @@ dependency and sets the installed executable mode. No Windows binary is vendored
 Select exact catalog main/worker IDs with `init --model <id> --worker-model <id>`.
 The isolated OS keyring profile is ~/.hera/codex; do not copy original Codex credentials
 or put HERA_HOME inside a repository. OpenAI login/keyring errors are blockers.
-Use `doctor --json` and explicitly choose `--single-agent` for the read-only path.
-Native collaboration/apply/external gates remain incomplete.
+Store the Go key with `auth login go` or `/providers`; it uses macOS Keychain.
+Use `doctor --json` and explicitly choose `--single-agent` for analysis without workers.
+The product offers reviewed main-only `/apply`, but macOS live validation is NOT_RUN.
+GPT workers require matching local verification; Windows acceptance does not unlock
+macOS. External Go workers remain blocked. Neither absence of a local Mac nor these
+live evidence gaps removes macOS CI/package support.
 
 Enter inserts a newline; Ctrl+S sends. If terminal flow control captures Ctrl+S,
 use the headless `run --single-agent --prompt-file <file>` path. Bracketed paste is

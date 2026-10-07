@@ -8,8 +8,10 @@ main-only apply checks. Older missing-login/sandbox entries below are historical
 The native code-mode host is enabled for catalog-selected code_mode_only models.
 Only background-terminal cleanup/list experimental types are additionally generated
 from the same pinned binary; no Codex upgrade or independent execution engine is used.
-Full product worker/apply gates remain incomplete. Go verification is user-deferred;
-macOS live/manual checks are still NOT_RUN.
+GPT worker/apply integration passed on Windows for Astra/high + Luna/max, configured
+limit 3; the local acceptance fingerprint gates that exact profile. Go direct coding
+and a standalone native Responses tool turn passed. Cross-provider collaboration is
+still blocked; current details are in status.md. macOS live/manual checks remain NOT_RUN.
 
 ## M0 contract discovery (2026-10-06)
 
@@ -41,16 +43,18 @@ The installed schema and matching upstream config.schema.json expose:
 - Generated initialize, model/list, account/read, thread/start/read/resume,
   turn/start/interrupt and command/file approval contracts.
 
-These are configuration observations, NOT successful live write/spawn negative tests.
-Parallel collaboration and apply remain unavailable until their runtime gates pass.
+These initial mappings were configuration observations. Later Windows live write/spawn
+negative tests and product transitions are recorded separately in status.md.
 Official native keyring login is required; no credential copying or plaintext fallback.
 
 ## Provider boundary
 
 OpenCode Go documentation lists deepseek-v4.1-flash at its /chat/completions endpoint,
 an identifying User-Agent and stable x-opencode-session. The Codex provider schema
-requires Responses. Direct native cross-provider compatibility is UNVERIFIED;
-no bridge or external mode is enabled on that basis. No alternative provider is used.
+requires Responses. Actual 2026-10-07 requests also reached Go via Responses: a native
+DeepSeek tool read passed. This removes the earlier wire-format-only blocker but does
+not establish cross-provider child routing/messages. No bridge or external mode is
+enabled on that basis. No alternative provider is used.
 Provider balance overflow settings are independent of Hera's no-fallback policy.
 
 ## Dependency and CI selection
