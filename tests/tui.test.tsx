@@ -51,6 +51,14 @@ it('keeps conversation scrollback and status without a workflow track at wide an
   await act(async()=>{session.approval='fixture/requestApproval: denied';session.emit('change');await tick();});expect(ui.lastFrame()).toContain('◆ fixture/requestApproval: denied');expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   ui.unmount();
 });
+it('clears the terminal and reprints the conversation after a resize settles',async()=>{
+  const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);session.add('You: 크기 변경 전\n');
+  const ui=render(<App session={session}/>);await tick();const before=ui.frames.length;
+  Object.assign(ui.stdout,{isTTY:true});Object.defineProperty(ui.stdout,'columns',{get:()=>50});ui.stdout.emit('resize');await tick();ui.stdout.emit('resize');await tick();
+  expect(ui.frames.slice(before).filter(frame=>frame.includes('\x1b[2J\x1b[3J'))).toHaveLength(0);
+  await new Promise(resolve=>setTimeout(resolve,200));expect(ui.frames.slice(before).filter(frame=>frame.includes('\x1b[2J\x1b[3J'))).toHaveLength(1);
+  expect(ui.lastFrame()).toContain('You: 크기 변경 전');expect(ui.lastFrame()).toContain('I can do anything with you.');ui.unmount();
+});
 it('names the configured worker model and effort for each mode',async()=>{
   const config=structuredClone(defaults);config.workers.gptModel='fixture-worker';config.workers.reasoningEffort='max';
   const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toMatch(/워커\s+fixture-worker · effort max/);gpt.unmount();

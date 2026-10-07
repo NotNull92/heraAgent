@@ -1005,3 +1005,13 @@ Further footer trimming at the user's request: the worker line no longer names t
 provider, and the status line no longer repeats the exact phase name (the phase track
 remains the phase display). Windows local: typecheck, build and 74 offline tests
 passed (exit 0).
+
+Resize fix (user report: dragging a herdr pane border stacked input rules): a terminal
+re-wraps the rows it already holds when its width changes, so the rows Ink erases by
+count no longer match the live area. Once resize events settle for 100 ms on a TTY,
+the TUI now clears the screen and scrollback (CSI 2J, 3J, H) and prints the banner
+and conversation again at the new width. Windows local: typecheck, build and 81
+offline tests passed (exit 0), including a test that the clear is written once after
+a burst of resize events. The cause was read from Ink 8.0.0's resize handler, not
+reproduced; behavior in herdr or any real terminal is NOT_RUN. A terminal that
+ignores CSI 3J would keep the old copy in scrollback above the reprinted one.

@@ -44,7 +44,13 @@ function Banner({width,cwd,greeting,language}:{width:number;cwd:string;greeting:
 }
 export function App({session}:{session:InteractiveSession}){
   const [,update]=useState(0);const [greeting]=useState(()=>GREETINGS[Math.floor(Math.random()*GREETINGS.length)]!);const {exit}=useApp();const {stdout}=useStdout();
-  useEffect(()=>{let dirty=false;const changed=()=>{dirty=true;};const quit=()=>exit();session.on('change',changed);session.on('quit',quit);stdout.on('resize',changed);const timer=setInterval(()=>{if(dirty){dirty=false;update(n=>n+1);}},50);return()=>{clearInterval(timer);session.off('change',changed);session.off('quit',quit);stdout.off('resize',changed);};},[session,exit,stdout]);
+  // A terminal re-wraps lines it already holds when its width changes, so the rows Ink erases by count no
+  // longer match and old input rules pile up. Once resizing settles, wipe the screen and scrollback and
+  // print the conversation again at the new width.
+  const [epoch,redraw]=useState(0);
+  useEffect(()=>{let dirty=false;let resizedAt=0;const changed=()=>{dirty=true;};const resized=()=>{dirty=true;resizedAt=Date.now();};const quit=()=>exit();session.on('change',changed);session.on('quit',quit);stdout.on('resize',resized);const timer=setInterval(()=>{
+    if(resizedAt&&Date.now()-resizedAt>=100){resizedAt=0;if('isTTY'in stdout&&stdout.isTTY){stdout.write('\x1b[2J\x1b[3J\x1b[H');redraw(n=>n+1);}}
+    if(dirty){dirty=false;update(n=>n+1);}},50);return()=>{clearInterval(timer);session.off('change',changed);session.off('quit',quit);stdout.off('resize',resized);};},[session,exit,stdout]);
   const {color,reducedMotion}=session.config.ui;const theme=useMemo(()=>({c:palette(color),motion:!reducedMotion}),[color,reducedMotion]);const c=theme.c;
   const ko=session.config.language==='ko';const width='columns'in stdout&&typeof stdout.columns==='number'?stdout.columns:80;const height='rows'in stdout&&typeof stdout.rows==='number'?stdout.rows:24;
   // The conversation flows into the terminal's own scrollback like a shell session: every finished
@@ -68,7 +74,7 @@ export function App({session}:{session:InteractiveSession}){
   const shared=workerWindows.length>0&&JSON.stringify(workerWindows)===JSON.stringify(mainWindows);
   const workerNote=external?(ko?'한도: OpenCode 콘솔':'limits: OpenCode console'):shared?(ko?'메인과 한도 공유':'shares the main limit'):unread;
   return <ThemeContext.Provider value={theme}>
-    <Static items={items}>{(line,i)=>line===null?<Banner key={i} width={width} cwd={session.cwd} greeting={greeting} language={session.config.language}/>:<Line key={i} text={line}/>}</Static>
+    <Static key={epoch} items={items}>{(line,i)=>line===null?<Banner key={i} width={width} cwd={session.cwd} greeting={greeting} language={session.config.language}/>:<Line key={i} text={line}/>}</Static>
     <Box flexDirection="column">
       {log.current.tail!==''&&<Line text={log.current.tail}/>}
       {approval&&<Text bold color={c.gold}>◆ {approval}</Text>}
