@@ -54,8 +54,9 @@ model loop. Self-hosted metasearch would not eliminate upstream blocks.
   and rejects Origin/wrong Host; it is not a boundary against hostile same-user
   processes. Queries/URLs can still contain private strings: no DLP claim. Web
   content is untrusted evidence, never task authorization.
-- Analysis verifies the exact two-tool native catalog. Apply/tests disable the
-  server and close owned browsers. Native web search and shell network stay off.
+- Native tasks verify the exact two-tool catalog and retain search/fetch during
+  coding. Historical phased fixtures disable it in their write phase. Native web
+  search stays off; shell network requires explicit native escalation approval.
   Chromium receives no model credentials. Browser startup is lazy, so missing
   Chromium does not block unrelated local-only session startup.
 

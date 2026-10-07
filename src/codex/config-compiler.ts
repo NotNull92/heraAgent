@@ -5,17 +5,17 @@ import type {ModelView} from './client.js';
 import {searchSettings} from './web-research.js';
 export function validateModelChoices(config:Config,models:ModelView[]){
   for(const [role,id,effort] of [['main',config.main.model,config.main.reasoningEffort],['worker',config.workers.gptModel,config.workers.reasoningEffort]] as const){
-    if(role==='worker'&&config.mode==='external_workers')continue;
+    if(role==='worker'&&config.mode!=='gpt_only')continue;
     if(!id){if(effort!==null)throw new HeraError('MODEL_NOT_SELECTED',`Select the ${role} model before its effort.`,2);continue;}
     const selected=models.find(m=>m.model===id);
     if(!selected)throw new HeraError('MODEL_UNAVAILABLE',`Selected ${role} model is absent from the native catalog; no fallback.`,2);
     if(effort!==null&&!selected.supportedReasoningEfforts.some(e=>e.reasoningEffort===effort))throw new HeraError('UNSUPPORTED_EFFORT',`Selected ${role} model does not advertise effort ${effort}.`,2);
   }
 }
-export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false,searchUrl?:string):Record<string,JsonValue> {
-  if(workers&&mode!=='read-only')throw new HeraError('INVALID_PHASE','Workers are only available in read-only analysis.',4);
+export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false,searchUrl?:string,nativeFlow=false):Record<string,JsonValue> {
+  if(workers&&mode!=='read-only'&&!nativeFlow)throw new HeraError('INVALID_PHASE','Legacy workers are only available in read-only analysis.',4);
   return {
-    model_provider:'openai',sandbox_mode:mode,approval_policy:'never',
+    model_provider:'openai',sandbox_mode:mode,approval_policy:nativeFlow?'on-request':'never',
     'sandbox_workspace_write.exclude_tmpdir_env_var':true,'sandbox_workspace_write.exclude_slash_tmp':true,
     'sandbox_workspace_write.network_access':false,'sandbox_workspace_write.writable_roots':[],
     'agents.enabled':workers,'features.multi_agent':workers,'features.multi_agent_v2':workers,
@@ -29,7 +29,7 @@ export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'=
     'features.code_mode_host':true,'features.request_permissions_tool':false,
     'features.skill_mcp_dependency_install':false,'features.skill_search':false,
     'features.remote_plugin':false,'features.in_app_local_automation':false,
-    'features.unbounded_connection_retries':false,web_search:'disabled',...searchSettings(mode==='read-only'&&!!searchUrl,searchUrl),
+    'features.unbounded_connection_retries':false,web_search:'disabled',...searchSettings((nativeFlow||mode==='read-only')&&!!searchUrl,searchUrl),
     allow_login_shell:false,'shell_environment_policy.inherit':'core',
     'shell_environment_policy.exclude':['*KEY*','*TOKEN*','*SECRET*','*PASSWORD*','GH_*','GITHUB_*','AWS_*','AZURE_*'],
     'analytics.enabled':false,check_for_update_on_startup:false

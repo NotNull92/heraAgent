@@ -43,11 +43,11 @@ it('writes the whole conversation into scrollback once, keeps the phase track li
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
   session.add(Array.from({length:60},(_,i)=>`entry ${i} ${'가나다라 '.repeat(40)}`).join('\n')+'\nYou: 마지막 요청');
   const ui=render(<App session={session}/>);await tick();
-  expect(ui.lastFrame()).toContain('◆ IDLE ── ◇ ANALYZE');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).toContain('entry 0 ');expect(ui.lastFrame()).toContain('entry 59 ');
+  expect(ui.lastFrame()).toContain('◆ 작업 · 추가 권한이 필요할 때 확인');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).toContain('entry 0 ');expect(ui.lastFrame()).toContain('entry 59 ');
   // A finished line is written once; later output appends below it instead of redrawing it.
   session.add('\nHera: 이어지는 답변');await tick();expect(ui.lastFrame()!.split('You: 마지막 요청')).toHaveLength(2);expect(ui.lastFrame()!.split('entry 0 ')).toHaveLength(2);expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   Object.defineProperty(ui.stdout,'columns',{get:()=>60});ui.stdout.emit('resize');await tick();
-  expect(ui.lastFrame()).not.toContain('ANALYZE');expect(ui.lastFrame()).toContain('◆◇◇◇◇◇◇ IDLE');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('승인');expect(ui.lastFrame()).not.toContain('Ctrl+');
+  expect(ui.lastFrame()).not.toContain('ANALYZE');expect(ui.lastFrame()).toContain('◆ 작업 · 추가 권한이 필요할 때 확인');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('승인');expect(ui.lastFrame()).not.toContain('Ctrl+');
   await act(async()=>{session.approval='fixture/requestApproval: denied';session.emit('change');await tick();});expect(ui.lastFrame()).toContain('◆ fixture/requestApproval: denied');expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   ui.unmount();
 });

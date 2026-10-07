@@ -2,7 +2,78 @@
 
 ## Current checkpoint (2026-10-07)
 
-### Free local Playwright replaces keyless Exa
+### Codex-native execution replaces the mandatory apply workflow
+
+The user authorized immediate edits and checks, with questions only for decisions
+or extra native permissions. Public Controller/TUI/headless sessions now start in
+native workspace-write/on-request, without a whole-workspace baseline, proposal
+schema turn, `/apply` confirmation or phase restart. `/plan` sets the native turn
+to read-only/never. Unknown requests and persistent write-root grants remain
+unavailable; allow-once/decline and native question UI are responsive during turns.
+Native resolved notifications remove stale controls. Headless requests are declined.
+Native children inherit permissions; scoped file ownership is coordination, not
+the former read-only-worker/single-writer guarantee. Historical phased helpers and
+evidence remain distinct from new native-workflow verification records.
+
+Adaptive mode runs conversation/routine work through Go DeepSeek V4.1 Flash/low,
+delegating deep reasoning, planning and design through the native Astra role with
+the selected model/effort. The user's local selection is gpt-6-astra/high, worker
+limit 3. GPT-only and GPT-root/Go-worker modes remain. Role menus/footer describe
+adaptive responsibilities. No extra classifier call, agent loop or history DB.
+The selected local config was backed up outside Git before saving adaptive mode.
+Credentials remain in the existing OS stores and were not changed.
+
+Observed native Windows 10.0.26200 x64, PowerShell 7.6.6, Node v24.12.0 results:
+
+- Typecheck/build and 80 offline tests passed, exit 0. Regressions cover a 129 MiB
+  file without a baseline scan, on-request approvals during streaming, headless
+  refusal, stale grants, per-turn plan sandbox, adaptive route drift and separate
+  capability records. Existing Ctrl+C, Unicode and scrollback tests remain.
+- `scripts/live-native-workflow.mjs --live --mode=<mode> --record` passed for all
+  three modes, exit 0. Each fixture included greeting with no children, direct
+  sum.cjs edit and observed native `node check.cjs` exit 0, same-thread cold resume,
+  native child routing, actual denied and accepted permission requests, a read-only
+  plan turn, actual running shell interruption, and two native workers within the
+  configured ceiling. This does not claim a fresh N+1 rejection test at limit 3.
+- Successful native roots: GPT `01a115f7-a45f-7251-be1c-56d2c96b2d63`, mixed
+  `01a115f7-a98c-76f3-a548-ffe703e0fca5`, adaptive
+  `01a115f7-b07a-7870-88eb-b465440d89fe`. Adaptive design delegation was chosen by
+  the model from a normal planning request; effective child model/effort was
+  gpt-6-astra/high. Greeting used no Astra child. Capability records/backups remain
+  outside Git and require matching runtime/source/configuration/platform.
+- Initial adaptive startup incorrectly queried OpenAI readiness through the Go
+  root; fixed by querying the official OpenAI runtime. A later parallel fixture
+  rejected native Codex resource inventory as an external tool; only the two
+  read-only inventory operations were allowed. Early allow-once fixtures falsely
+  declined because display-escaped Windows paths did not match; the fixture now
+  compares the single parsed command action exactly. Failed runs are not passes.
+- The earlier archive ce72c5466d52ec4fa55b8363de6128738f5998b3251fedfb49f9f801dc05c7d2
+  passed Windows installation, native initialization, reinstall/settings, OS-store
+  persistence and launcher checks. It precedes a TUI hook-order correction; the
+  final artifact receipt and current upload/CI status are reported separately.
+- Public `hera run` in this actual large repository returned a Korean greeting
+  through Go, root `01a115fb-c123-7192-8a2d-8b8e95d92905`, exit 0. An actual native
+  Windows PTY then launched `hera`, accepted injected Korean `안녕` and Enter,
+  displayed a response/Ready with zero active workers, and exited 0 after two idle
+  Ctrl+C presses with native tree cleanup. This verifies injected terminal input,
+  not physical IME composition. Repeated input reuses the connected runtime rather
+  than repeating provider setup; adaptive usage refresh queries OpenAI separately.
+- Final prepared local archive SHA-256:
+  `d65063832dfb9e566439515fa8c63057ff53f5d1a1186cc3004d402fcbb62cad`.
+  Its native Windows clean-prefix install, native initialization, reinstall,
+  OS-store credential persistence and launcher checks passed, exit 0. Staged source,
+  Git history and decompressed archive passed the credential/JWT scan without
+  displaying values. `.omo/` and `outputs/` remain unrelated, untracked and excluded.
+
+The previous source CI run 37605900976 failed a Windows OS credential-store timeout
+after its 74 offline tests passed. Earlier browser CI 37601591133 and greeting CI
+37602184114 passed. Those are historical results, not this change's CI result.
+Windows/macOS workflows remain enabled. macOS native adaptive/permission/live and
+manual terminal/IME checks are NOT_RUN. The new UI's real IME composition and
+physical terminal review are not certified by injected/offline input tests.
+
+### Earlier checkpoint: free local Playwright replaces keyless Exa
+
 
 At the user's request, analysis now uses a bundled local Playwright service through
 the existing native MCP client, with only search/fetch and no paid search API or

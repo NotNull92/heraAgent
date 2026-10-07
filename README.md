@@ -4,19 +4,20 @@ Independent local TypeScript / React / Ink client for the Codex App Server.
 Repository: `heraAgent`. Package: `hera-agent`. Command: `hera`.
 
 Development prerelease. Native protocol initialization, catalog discovery, official
-isolated login, read-only sessions, resume, Korean/English Ink UI and offline checks
-are implemented. GPT workers use native thread history, task/result contracts and
-recursive cancellation; `/apply` requires the entire tree to be idle before reviewed
-main-only writes and tests. Windows integration fixtures passed. **GPT collaboration
-requires matching local verification; Go workers additionally require the reviewed
-mixed runtime and their own local verification.** A catalog entry is not proof of model entitlement.
+isolated login, native workspace sessions, resume, Korean/English Ink UI and offline
+checks are implemented. Ask for a change and Hera edits and tests in the same task;
+there is no `/apply` step or whole-workspace baseline scan. Native extra permissions
+are presented for allow-once/decline; headless requests are declined. `/plan` remains
+read-only. Workers inherit native permissions and coordinate file ownership.
+**Collaboration requires matching native-workflow verification; mixed/adaptive modes
+also require the reviewed local runtime.** A catalog entry is not proof of model entitlement.
 No provider fallback. macOS live/manual checks have not been performed.
 
 Public web research uses local Playwright/Chromium through native MCP: no search
 API key, paid search service or paid fallback. Run `hera research setup` once to
 install Chromium, or choose setup in `/research`. Main and workers share a queue
 and ten-minute memory cache. Search returns three links; page reads default to
-3,000 characters. Only analysis has search/fetch; apply/tests disable both.
+3,000 characters. Native tasks retain this bounded search/fetch service.
 Public queries go to DuckDuckGo and requested pages go to their sites; never send
 secrets or private project content. CAPTCHA pauses requests: `/research open` opens
 a separate browser for you to solve it, then `/research resume` caches the result.
@@ -66,22 +67,17 @@ Credential Manager or macOS Keychain. New terminals load it automatically for th
 same user and HERA_HOME. Saving a key does not verify provider access or enable the
 still-gated external worker mode. No inference is performed during setup/status.
 
-After read-only analysis, `/apply` prepares a proposal without writing. Page through
-the complete before/after text, test commands and risks with Down/Enter; Up goes back.
-Only `a` on the final page approves workspace writes and the displayed tests. Escape
-cancels. This grants workspace-level native permissions, not a per-file OS lock.
-During application, all worker paths, external tools and network remain disabled. Hera rechecks the
-baseline, resumes the same thread in a fresh runtime, compares applied contents and
-checks for unlisted file changes before running the tests. Tests may create build
-artifacts inside the approved workspace. Unsupported command-display formats produce
-an unknown test result rather than a pass. Use `/resume <ID>` to continue read-only
-after completion. Failed or interrupted writes are never automatically replayed.
-The initial review supports bounded UTF-8 replacements/new files; binary changes,
-deletions, symlink targets and credential/configuration paths require separate work.
-Existing files use compact, uniquely matched edits; Hera reconstructs the full review
-locally and checks the exact final contents. Approved tests run sequentially in one
-model turn, with native command/exit evidence checked individually. See
-[token-efficiency measurements and limits](docs/token-efficiency.md).
+Normal requests use Codex's workspace sandbox and on-request approval policy.
+Use `/diff` for actual Git changes and `/resume <ID>` to continue native history.
+Failed or interrupted writes are never automatically replayed. The old `/apply`
+command only explains that an ordinary edit request is sufficient.
+
+Select `/mode adaptive` for DeepSeek routine execution and native Astra delegation
+for deep reasoning, planning and design. `/model main` and `/effort main` configure
+the reasoning role in that mode; Go uses its qualified fixed model/effort. No extra
+classifier model or second agent loop runs. GPT-only and GPT-main/Go-worker modes
+remain explicit choices. Saved schema-1 phase labels are legacy compatibility data;
+the native workspace policy above controls normal product sessions.
 
 Inside the TUI, type `/model`, `/effort` or `/workers` and press Enter to open a
 selection menu. Use Up/Down and Enter to choose, or Escape to cancel without saving.

@@ -69,7 +69,7 @@ export class NativeWorkers {
     this.snapshot=owned;
     if([...owned.values()].some(t=>t.status.type==='systemError'))throw new HeraError('WORKER_STATE_UNKNOWN','A native thread reports a system error.',5,false);
     if(checkRouting)for(const t of owned.values()){
-      const main=t.id===this.root;const external=!main&&this.config.mode==='external_workers';const model=main?this.config.main.model:external?GO_MODEL:this.config.workers.gptModel;const effort=main?this.config.main.reasoningEffort:external?GO_EFFORT:this.config.workers.reasoningEffort;
+      const main=t.id===this.root;const adaptive=this.config.mode==='adaptive';const external=adaptive?(main||t.modelProvider===GO_PROVIDER):!main&&this.config.mode==='external_workers';const model=external?GO_MODEL:main||adaptive?this.config.main.model:this.config.workers.gptModel;const effort=external?GO_EFFORT:main||adaptive?this.config.main.reasoningEffort:this.config.workers.reasoningEffort;
       if(t.modelProvider!==(external?GO_PROVIDER:'openai')||t.model!==model||effort!==null&&t.reasoningEffort!==effort)throw new HeraError('WORKER_ROUTING_DRIFT','Observed native model/provider/effort differs from the selected role. Defaults are not preventive override enforcement.',4,false);
     }
     if(this.activeCount>this.config.workers.maxConcurrent)throw new HeraError('WORKER_LIMIT_DRIFT','Observed active workers exceed the configured limit.',4,false);

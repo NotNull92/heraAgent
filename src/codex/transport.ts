@@ -17,10 +17,11 @@ export class Transport extends EventEmitter {
     output.on('error',()=>this.fail(new HeraError('TRANSPORT_FAILED','App Server output failed.',5,false)));
   }
   get pendingCount(){return this.pending.size;}get requestsPending(){return this.serverIds.size;}
+  hasServerRequest(id:string|number){return this.serverIds.has(id);}
   private dispatch(line:string){
     if(this.closed)return;
     const parsed:unknown=JSON.parse(line);const msg=envelope.parse(parsed);
-    if(msg.method){if(msg.id!==undefined){if(this.serverIds.has(msg.id)||this.serverIds.size>=this.maxPending)throw new Error('Duplicate or excess server request');this.serverIds.add(msg.id);this.emit('request',{id:msg.id,method:msg.method,params:msg.params});}else this.emit('notification',{method:msg.method,params:msg.params});return;}
+    if(msg.method){if(msg.id!==undefined){if(this.serverIds.has(msg.id)||this.serverIds.size>=this.maxPending)throw new Error('Duplicate or excess server request');this.serverIds.add(msg.id);this.emit('request',{id:msg.id,method:msg.method,params:msg.params});}else{if(msg.method==='serverRequest/resolved'){const resolved=z.object({requestId:idSchema}).parse(msg.params);this.serverIds.delete(resolved.requestId);}this.emit('notification',{method:msg.method,params:msg.params});}return;}
     if(typeof msg.id!=='number'||(!Object.hasOwn(msg,'result')&&!msg.error))throw new Error('Invalid response');
     const p=this.pending.get(msg.id);if(!p)throw new Error('Unknown/duplicate response');this.pending.delete(msg.id);clearTimeout(p.timer);
     if(msg.error)p.reject(new HeraError(`RPC_${msg.error.code}`,msg.error.message,5,false));else p.resolve(msg.result);

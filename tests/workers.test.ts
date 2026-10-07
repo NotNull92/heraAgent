@@ -23,6 +23,7 @@ it('requires every mixed descendant to stay on Go while the root stays on OpenAI
   rows.get('grandchild')!.modelProvider='openai';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});
   await tracker.interrupt(client);expect(client.interrupt).not.toHaveBeenCalledWith('foreign',expect.anything());
 });
+it('routes adaptive routine work to Go and permits only the selected Astra reasoning role',async()=>{const {rows,tracker,client,config}=fixture();config.mode='adaptive';for(const id of ['root','child'])Object.assign(rows.get(id)!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:GO_EFFORT});Object.assign(rows.get('grandchild')!,{model:'main',reasoningEffort:'high'});await tracker.assertIdle(client);rows.get('grandchild')!.model='worker';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});});
 it('recovers recursive V1/V2 children, excludes message recipients, and rejects foreign spawn references and routing drift',async()=>{
   const {rows,tracker,client,loaded}=fixture();await tracker.assertIdle(client,true);expect([...tracker.snapshot.keys()]).toEqual(['root','child','grandchild']);expect(client.cleanBackgroundTerminals).not.toHaveBeenCalledWith('foreign');
   loaded.clear();for(const t of rows.values())t.status.type='notLoaded';await tracker.refresh(client);expect(tracker.count).toBe(2);

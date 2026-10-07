@@ -3,7 +3,7 @@ import {readdir,readFile,lstat,realpath} from 'node:fs/promises';
 import {join,relative,isAbsolute,resolve} from 'node:path';
 import {z} from 'zod';
 import {HeraError} from '../errors.js';
-export type Phase='IDLE'|'ANALYZE_READ_ONLY'|'QUIESCING'|'READY_TO_APPLY'|'APPLY_SINGLE_WRITER'|'VERIFY_SINGLE_WRITER'|'COMPLETE'|'NEEDS_FIX';
+export type Phase='IDLE'|'NATIVE'|'ANALYZE_READ_ONLY'|'QUIESCING'|'READY_TO_APPLY'|'APPLY_SINGLE_WRITER'|'VERIFY_SINGLE_WRITER'|'COMPLETE'|'NEEDS_FIX';
 export class PhasePolicy {
   phase:Phase='IDLE';
   cancelReview(){if(this.phase==='READY_TO_APPLY')this.phase='ANALYZE_READ_ONLY';}

@@ -1,5 +1,41 @@
 # Hera Agent: Detailed Implementation Specification
 
+## Authorized workflow amendment — 2026-10-07
+
+The user explicitly selected immediate Codex-style editing and verification and
+removed the mandatory `/apply` workflow. This amendment takes precedence over
+conflicting fixed-root, phased, proposal-contract, baseline and single-writer
+requirements in Sections 1, 8-9, 12-15, 17-18, 21 and Appendix A.
+
+- Ordinary TUI and headless tasks use native `workspace-write` with `on-request`
+  approvals, no whole-workspace scan, no extra proposal turn, and no `/apply` step.
+  The headless client declines interactive permission requests; it never grants
+  permissions silently. `/plan` overrides the native turn to read-only/never.
+- Native tools perform requested edits and checks in the normal conversation.
+  Preserve the workspace-instance lock, native histories, ownership checks,
+  bounded requests, cancellation and unknown-outcome handling. Do not replay writes.
+- Native children inherit permissions. Assign disjoint ownership and wait before
+  editing another worker's files. This is Codex coordination, not per-file OS
+  locking or a claim that all workers remain read-only. No extra execution engine.
+- Adaptive mode uses Go `deepseek-v4.1-flash/low` for conversation/routine coding
+  and the user's selected GPT model/effort (`gpt-6-astra/high` in the observed local
+  setup) for deep reasoning, planning and design through a native `hera_astra`
+  role. It is a distinct, explicitly selected mode, not fallback on provider error.
+  Keep GPT-only and GPT-root/Go-worker modes available with their separate routes.
+- Native command/file approval requests show their actual action and owner. Allow
+  once or decline only; default to decline. Persistent write-root grants and unknown
+  requests remain unavailable. Clear stale requests on native resolution. Support
+  native question choices/text without copying conversations into a Hera database.
+- The bounded public Playwright search/fetch service remains available throughout
+  native tasks. Its existing egress, secret and CAPTCHA boundaries remain. Shell
+  network is off until a specific native escalation is explicitly granted.
+- Historical phase helpers/fixtures and schema-1 `phased_single_writer` /
+  `patch_proposals` config labels are compatibility data, not current permissions.
+  New native workflow evidence uses separate fingerprints and records, never old
+  phase passes. macOS automated and live/manual evidence remain separate.
+
+The original specification follows for history and all non-conflicting requirements.
+
 > Document version: 1.2.0 (Windows development revision)  
 > Revision date: 2026-10-06  
 > Product: **Hera** | Git repository and local directory: **`heraAgent`**  

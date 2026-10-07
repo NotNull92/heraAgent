@@ -6,6 +6,7 @@ import {ProviderKeyInput,ProviderLogin} from './ProviderInput.js';
 import {Composer} from './Composer.js';
 import {ApplyReview} from './ApplyReview.js';
 import {SettingsPicker} from './SettingsPicker.js';
+import {NativePrompt} from './NativePrompt.js';
 import {Glint,Ornate,Text,ThemeContext,palette,useTheme} from './theme.js';
 import {safeText} from '../errors.js';
 import {GO_EFFORT} from '../codex/external-runtime.js';
@@ -20,8 +21,10 @@ const EMBLEM=['◇','◇ ┃ ◇','◇   ┃   ◇','◆━━━━━╋━━
 // Lines already written to the terminal keep their slot but drop their text beyond this many.
 const KEPT_LINES=2000;
 // Footer phase track. NEEDS_FIX takes the terminal slot; narrow terminals get studs plus the current name.
-function Track({phase,wide}:{phase:Phase;wide:boolean}){
-  const {c}=useTheme();const failed=phase==='NEEDS_FIX';const at=(id:Phase)=>id===phase||failed&&id==='COMPLETE';const hue=failed?c.blood:c.gold;
+function Track({phase,wide,ko}:{phase:Phase;wide:boolean;ko:boolean}){
+  const {c}=useTheme();
+  if(phase==='NATIVE')return <Text>{ko?'◆ 작업 · 추가 권한이 필요할 때 확인':'◆ Work · ask when extra permission is needed'}</Text>;
+  const failed=phase==='NEEDS_FIX';const at=(id:Phase)=>id===phase||failed&&id==='COMPLETE';const hue=failed?c.blood:c.gold;
   if(!wide)return <Text>{TRACK.map(([id])=><Text key={id} color={at(id)?hue:c.iron}>{at(id)?'◆':'◇'}</Text>)}<Text bold color={hue}> {failed?'NEEDS_FIX':TRACK.find(([id])=>id===phase)?.[1]}</Text></Text>;
   return <Text>{TRACK.map(([id,label],i)=><Text key={id}><Text color={c.iron}>{i?' ── ':''}</Text><Text bold={at(id)} color={at(id)?hue:c.iron}>{at(id)?'◆':'◇'} {at(id)&&failed?'NEEDS_FIX':label}</Text></Text>)}</Text>;
 }
@@ -65,9 +68,10 @@ export function App({session}:{session:InteractiveSession}){
   }
   const items=useMemo(()=>[null,...log.current.lines],[log.current.lines]);
   const approval=safeText(session.approval);const rows=height-6-Number(!!approval);
-  const phase=session.controller?.phase.phase??'IDLE';const active=session.controller?.workers?.activeCount??0;const limit=session.config.workers.maxConcurrent;
+  const request=session.controller?.requests.values().next().value;
+  const phase=session.controller?.phase.phase??'NATIVE';const active=session.controller?.workers?.activeCount??0;const limit=session.config.workers.maxConcurrent;
   const tone=session.busy?c.gold:session.status==='Ready'||session.status==='COMPLETE'?c.moss:/^[A-Z][A-Z0-9_-]+$/.test(session.status)?c.blood:undefined;
-  const quit=()=>{void session.close().finally(()=>exit());};const external=session.config.mode==='external_workers';
+  const quit=()=>{void session.close().finally(()=>exit());};const external=session.config.mode!=='gpt_only';const adaptive=session.config.mode==='adaptive';
   const unread=session.limits===undefined?(ko?'확인 전':'not read yet'):(ko?'한도 정보 없음':'limit unavailable');const unset=ko?'선택 필요':'unselected';
   const mainWindows=session.limits?windowsFor(session.limits,session.config.main.model):[];const workerWindows=session.limits?windowsFor(session.limits,session.config.workers.gptModel):[];
   // Go limits exist only in the provider console; a GPT worker normally draws on the main model's bucket.
@@ -80,14 +84,15 @@ export function App({session}:{session:InteractiveSession}){
       {approval&&<Text bold color={c.gold}>◆ {approval}</Text>}
       {session.providerKeyInput?<ProviderKeyInput language={session.config.language} save={key=>{void session.saveProviderKey(key);}} cancel={()=>session.cancelProviderKey()}/>
         :session.providerLoginText?<ProviderLogin text={session.providerLoginText} cancel={()=>{void session.interrupt();}} quit={quit}/>
+        :request?<NativePrompt key={request.id} request={request} language={session.config.language} rows={Math.max(7,rows)} answer={value=>{try{session.controller!.answerRequest(request.id,value);}catch(e){session.add(String(e));}}} quit={quit}/>
         :session.controller?.review&&!session.busy?<ApplyReview key={session.controller.review.id} review={session.controller.review} rows={Math.max(8,rows)} columns={width} language={session.config.language} approve={()=>{void session.approveApply();}} cancel={()=>session.cancelApply()}/>
         :session.selection?<SettingsPicker key={session.selection.title} menu={session.selection} language={session.config.language} rows={Math.max(7,rows)} choose={value=>{void session.selectOption(value);}} cancel={()=>session.cancelSelection()} quit={quit}/>
         :<Composer language={session.config.language} busy={session.busy} send={text=>{void session.submit(text);}} cancel={()=>{void session.interrupt().catch(e=>session.add(String(e)));}} quit={quit}/>}
-      <Track phase={phase} wide={width>=76}/>
-      <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{external?'GPT + DeepSeek':'GPT'}</Text>
+      <Track phase={phase} wide={width>=76} ko={ko}/>
+      <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{adaptive?'DeepSeek + Astra':external?'GPT + DeepSeek':'GPT'}</Text>
         {session.controller?.collaborationEnabled&&<Text><Text color={c.iron}> · {ko?'워커':'Workers'} </Text><Text color={c.frost}>{'◆'.repeat(Math.min(active,limit))}</Text><Text color={c.iron}>{'◇'.repeat(Math.max(0,limit-active))}</Text>{ko?` ${active} 활성 / 상한 ${limit}`:` ${active} active / limit ${limit}`}</Text>}</Box>
-      <Role label={ko?'메인':'Main'} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language}>{safeText(session.config.main.model??unset)}<Text color={c.iron}> · effort </Text>{session.config.main.reasoningEffort??'default'}</Role>
-      <Role label={ko?'워커':'Worker'} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(external?GO_EFFORT:session.config.workers.reasoningEffort)??'default'}</Role>
+      <Role label={adaptive?(ko?'깊은 추론':'Reasoning'):(ko?'메인':'Main')} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language}>{safeText(session.config.main.model??unset)}<Text color={c.iron}> · effort </Text>{session.config.main.reasoningEffort??'default'}</Role>
+      <Role label={adaptive?(ko?'일상 작업':'Routine'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(external?GO_EFFORT:session.config.workers.reasoningEffort)??'default'}</Role>
     </Box>
   </ThemeContext.Provider>;
 }

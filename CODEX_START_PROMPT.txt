@@ -1,3 +1,16 @@
+User-authorized workflow amendment (2026-10-07): ordinary Hera sessions must use
+Codex-native workspace-write and on-request approvals. Execute requested edits
+and checks without a separate /apply, proposal-generation turn, whole-workspace
+baseline scan, or mandatory phase restart. /plan remains read-only. Native workers
+inherit native permissions; scoped ownership is coordination, not an OS file lock.
+Keep legacy phased fixtures only as historical qualification. Do not promote their
+read-only/single-writer evidence into the new workflow. Add separately qualified
+adaptive mode: Go DeepSeek handles routine work and delegates deep reasoning,
+planning and design to the selected Astra role through native collaboration.
+Keep explicit GPT-only and GPT-main/Go-worker modes, credentials outside Git,
+per-platform qualification, no provider fallback, and the existing private upload
+checks. This amendment supersedes conflicting phase/fixed-main rules below.
+
 Implement Hera, an independent CLI/TUI coding agent, from this native Windows
 workspace using Codex. Perform development and hands-on/local testing on Windows.
 Windows AND macOS remain required product targets; this is not a Windows-only app.
