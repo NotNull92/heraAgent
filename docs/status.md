@@ -56,6 +56,18 @@ are not relabeled as fresh. Browser/source/dependency pins are fingerprint input
 tests/installers do not auto-promote acceptance. Public gated startup was checked
 without inference. Credentials remain outside the repository.
 
+Source commit `1a9b3a38f0b934ae15a1e73f4d1cfbb5fdebd43b` was pushed to private
+`NotNull92/heraAgent` main with exact remote SHA verification after owner, both origin
+URLs, ancestry, staged-content, source/history pattern and exact-value Go credential
+checks. The latter also checked the decompressed archive without logging the key.
+Concurrent TUI changes and untracked `.omo/`/`outputs/` were preserved.
+CI [37601591133](https://github.com/NotNull92/heraAgent/actions/runs/37601591133)
+has passed macOS offline/Chromium checks and the Windows offline/Chromium step;
+Windows artifact preparation/installation is still running at this checkpoint.
+The two identical-archive installation jobs are pending, not passed. No current
+macOS live/manual search result is claimed. Local `hera doctor` reports account
+and sandbox ready and mixed mode `verified_local`.
+
 ### Bundled public web research
 
 Historical Exa checkpoint, superseded by the free local browser implementation above.
