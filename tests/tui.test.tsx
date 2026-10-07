@@ -2,7 +2,7 @@ import React,{act} from 'react';
 import {it,expect,vi} from 'vitest';
 import {render} from 'ink-testing-library';
 import {Composer,caret,editInput,graphemes} from '../src/tui/Composer.js';
-import {App} from '../src/tui/App.js';
+import {App,GREETINGS} from '../src/tui/App.js';
 import {palette} from '../src/tui/theme.js';
 import {parseLimits,mergeLimits,windowsFor} from '../src/session/limits.js';
 import {InteractiveSession} from '../src/session/interactive.js';
@@ -85,5 +85,11 @@ it('follows Claude Code keys: Enter sends, newline keys, history, double Escape 
 it('Escape interrupts active work and Enter does not send while busy',async()=>{
   const sent:string[]=[];let cancels=0;const ui=render(<Composer language="ko" busy send={t=>sent.push(t)} cancel={()=>cancels++}/>);await tick();
   ui.stdin.write('wait');await tick();ui.stdin.write('\r');await tick();expect(sent).toEqual([]);ui.stdin.write('\x1b');await tick();expect(cancels).toBe(1);expect(ui.lastFrame()).toContain('wait');ui.unmount();
+});
+it('greets with one pooled line per start and keeps it across re-renders',async()=>{
+  const random=vi.spyOn(Math,'random').mockReturnValue(0.99);const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
+  const ui=render(<App session={session}/>);await tick();expect(GREETINGS.length).toBeGreaterThan(1);expect(Math.max(...GREETINGS.map(line=>line.length))).toBe(51);expect(ui.lastFrame()).toContain(GREETINGS.at(-1));
+  random.mockReturnValue(0);session.status='Working';session.emit('change');await tick();expect(ui.lastFrame()).toContain('Working');expect(ui.lastFrame()).toContain(GREETINGS.at(-1));expect(ui.lastFrame()).not.toContain(GREETINGS[0]);
+  ui.unmount();random.mockRestore();
 });
 it('keeps pasted backslash commands literal',async()=>{const submitted:string[]=[];const ui=render(<Composer language="ko" busy={false} send={t=>submitted.push(t)} cancel={()=>{}}/>);await tick();ui.stdin.write('\x1b[200~\\workers 8\x1b[201~');await tick();ui.stdin.write('\r');await tick();expect(submitted).toEqual([' \\workers 8']);ui.unmount();});

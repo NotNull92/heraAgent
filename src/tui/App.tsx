@@ -14,6 +14,8 @@ import type {LimitSnapshot} from '../session/limits.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
 
 const TRACK:[Phase,string][]=[['IDLE','IDLE'],['ANALYZE_READ_ONLY','ANALYZE'],['QUIESCING','QUIESCE'],['READY_TO_APPLY','READY'],['APPLY_SINGLE_WRITER','APPLY'],['VERIFY_SINGLE_WRITER','VERIFY'],['COMPLETE','COMPLETE']];
+// Title-screen greetings: well-known Skyrim lines of at most 51 characters, one chosen per TUI start.
+export const GREETINGS=["Hey, you. You're finally awake.","Let me guess: someone stole your sweetroll?","Do you get to the Cloud District very often?","Fus Ro Dah!","I am sworn to carry your burdens.","Skyrim belongs to the Nords!","Never should have come here!","Some may call this junk. Me, I call them treasures.","No lollygaggin'.","Khajiit has wares, if you have coin.","Sky above, voice within."];
 const EMBLEM=['◇','◇ ┃ ◇','◇   ┃   ◇','◆━━━━━╋━━━━━◆','◇   ┃   ◇','◇ ┃ ◇','◆'];
 // Compass-style phase track. NEEDS_FIX takes the terminal slot so the row keeps one width.
 function Compass({phase}:{phase:Phase}){
@@ -44,12 +46,12 @@ function Usage({limits,model,total,language}:{limits:LimitSnapshot[]|null|undefi
     return <Text key={i}><Text color={c.iron}>{i?' · ':''}</Text>{name(w.windowDurationMins)} <Text bold color={left>=50?c.moss:left>=20?c.gold:c.blood}>{left}%</Text>{ko?' 남음':' left'}{when&&<Text color={c.iron}>{ko?` (${when} 리셋)`:` (resets ${when})`}</Text>}</Text>;
   }):<Text color={c.iron}>{limits===undefined?(ko?'확인 전':'not read yet'):(ko?'한도 정보 없음':'limit unavailable')}</Text>}<Tokens total={total} lead language={language}/></Text>;
 }
-function Journal({transcript,rows,language}:{transcript:string;rows:number;language:'ko'|'en'}){
+function Journal({transcript,rows,language,greeting}:{transcript:string;rows:number;language:'ko'|'en';greeting:string}){
   const {c}=useTheme();const ko=language==='ko';const inner=Math.max(1,rows-2);
   const lines=transcript.split('\n').slice(-inner).join('\n').slice(-12000).split('\n');
   if(!transcript.trim())return <Frame title={ko?'일지':'Journal'} height={inner}><Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
     {inner>=12&&EMBLEM.map((line,i)=><Ornate key={i} text={line} bold/>)}
-    {inner>=5&&<><Text> </Text><Text bold>H   E   R   A</Text><Ornate text="─────── ◆ ───────"/><Text color={c.iron}>Hey, you. You&apos;re finally awake.</Text></>}
+    {inner>=5&&<><Text> </Text><Text bold>H   E   R   A</Text><Ornate text="─────── ◆ ───────"/><Text color={c.iron}>{greeting}</Text></>}
   </Box></Frame>;
   // Bottom-anchored so wrapped lines push old text out instead of hiding the newest output.
   return <Frame title={ko?'일지':'Journal'} height={inner}><Box flexDirection="column" justifyContent="flex-end" flexGrow={1} overflow="hidden">
@@ -58,7 +60,7 @@ function Journal({transcript,rows,language}:{transcript:string;rows:number;langu
   </Box></Frame>;
 }
 export function App({session}:{session:InteractiveSession}){
-  const [,update]=useState(0);const {exit}=useApp();const {stdout}=useStdout();
+  const [,update]=useState(0);const [greeting]=useState(()=>GREETINGS[Math.floor(Math.random()*GREETINGS.length)]!);const {exit}=useApp();const {stdout}=useStdout();
   useEffect(()=>{let dirty=false;const changed=()=>{dirty=true;};const quit=()=>exit();session.on('change',changed);session.on('quit',quit);stdout.on('resize',changed);const timer=setInterval(()=>{if(dirty){dirty=false;update(n=>n+1);}},50);return()=>{clearInterval(timer);session.off('change',changed);session.off('quit',quit);stdout.off('resize',changed);};},[session,exit,stdout]);
   const {color,reducedMotion}=session.config.ui;const theme=useMemo(()=>({c:palette(color),motion:!reducedMotion}),[color,reducedMotion]);const c=theme.c;
   const ko=session.config.language==='ko';const width='columns'in stdout&&typeof stdout.columns==='number'?stdout.columns:80;const height='rows'in stdout&&typeof stdout.rows==='number'?stdout.rows:24;
@@ -85,6 +87,6 @@ export function App({session}:{session:InteractiveSession}){
       :session.providerLoginText?<ProviderLogin text={session.providerLoginText} cancel={()=>{void session.interrupt();}} quit={quit}/>
       :session.controller?.review&&!session.busy?<ApplyReview key={session.controller.review.id} review={session.controller.review} rows={Math.max(8,rows)} columns={width} language={session.config.language} approve={()=>{void session.approveApply();}} cancel={()=>session.cancelApply()}/>
       :session.selection?<SettingsPicker key={session.selection.title} menu={session.selection} language={session.config.language} rows={Math.max(7,rows)} choose={value=>{void session.selectOption(value);}} cancel={()=>session.cancelSelection()} quit={quit}/>
-      :<><Journal transcript={session.transcript} rows={Math.max(5,rows-4)} language={session.config.language}/><Composer language={session.config.language} busy={session.busy} send={text=>{void session.submit(text);}} cancel={()=>{void session.interrupt().catch(e=>session.add(String(e)));}} quit={quit}/></>}
+      :<><Journal transcript={session.transcript} rows={Math.max(5,rows-4)} language={session.config.language} greeting={greeting}/><Composer language={session.config.language} busy={session.busy} send={text=>{void session.submit(text);}} cancel={()=>{void session.interrupt().catch(e=>session.add(String(e)));}} quit={quit}/></>}
   </Box></ThemeContext.Provider>;
 }
