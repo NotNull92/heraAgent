@@ -47,11 +47,9 @@ function Usage({limits,model,total,language}:{limits:LimitSnapshot[]|null|undefi
 function Journal({transcript,rows,language}:{transcript:string;rows:number;language:'ko'|'en'}){
   const {c}=useTheme();const ko=language==='ko';const inner=Math.max(1,rows-2);
   const lines=transcript.split('\n').slice(-inner).join('\n').slice(-12000).split('\n');
-  const ready=ko?'Hera 전용 로그인과 모델을 설정하세요. /doctor로 상태를 확인합니다.':'Configure Hera login and model selection. /doctor shows readiness.';
   if(!transcript.trim())return <Frame title={ko?'일지':'Journal'} height={inner}><Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
     {inner>=12&&EMBLEM.map((line,i)=><Ornate key={i} text={line} bold/>)}
     {inner>=5&&<><Text> </Text><Text bold>H   E   R   A</Text><Ornate text="─────── ◆ ───────"/><Text color={c.iron}>Hey, you. You&apos;re finally awake.</Text></>}
-    <Text>{ready}</Text>
   </Box></Frame>;
   // Bottom-anchored so wrapped lines push old text out instead of hiding the newest output.
   return <Frame title={ko?'일지':'Journal'} height={inner}><Box flexDirection="column" justifyContent="flex-end" flexGrow={1} overflow="hidden">
