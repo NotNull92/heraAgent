@@ -1,5 +1,36 @@
 # Implementation status
 
+## Public readiness review (2026-10-08; visibility still private)
+
+Develop future changes for independent users on clean Windows and macOS machines,
+with portable installation, user-owned credentials and actionable errors.
+Public visibility is authorized only after the privacy review; npm/release
+publication and a license grant remain unapproved.
+
+Reviewed 1,186 tracked files and 1,528 historical blob versions across 51 commits.
+The source scanner and Gitleaks 8.30.1 full-history scan passed. Gitleaks also
+passed on 46 downloaded Actions logs and 25 downloaded artifacts, including
+expanded package contents. Exact private-email searches found no matches in
+those logs, artifacts or historical file contents. Five large native binary
+artifacts were not fully downloaded/scanned; their workflows were reviewed, which
+does not constitute a binary-content audit. No claim of exhaustive detection is made.
+
+The sole identified personal email was in all 51 commits' author/committer metadata.
+With explicit user approval, replaced it with the verified GitHub noreply address
+and pushed using an exact `force-with-lease`. Every historical tree and commit
+message was verified unchanged. The original complete Git bundle and scan reports
+remain in ignored local `.artifacts/public-audit/`. Future local commits use the
+noreply address. Added ignore rules for local outputs, credentials, certificates,
+databases and backups; existing local files were preserved.
+
+The sanitized tip is `5d3de75fc92ba1eb62ce6ccd3e3d61a005eab0d4`.
+Historical commit IDs in older evidence below refer to the pre-rewrite history.
+GitHub still returns the former tip and its personal author email by its old SHA,
+even after the rewrite. Therefore public conversion is pending removal of retained
+objects, or an approved fresh repository with only the sanitized history.
+See [GitHub's removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
+No release, npm publication or new live/manual model checks were performed.
+
 ## Command suggestions (2026-10-08)
 
 Typing `/` or the existing backslash alias opens a localized command list below

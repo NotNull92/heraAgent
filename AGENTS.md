@@ -6,5 +6,10 @@ Preserve existing files, credentials, unrelated processes and Git history.
 Use the project-local pinned Codex runtime; never alter the global installation.
 Keep Windows and macOS CI. Record actual results separately from unperformed live/manual checks.
 Use English engineering documentation and maintain Korean product input/presentation.
+Develop Hera for other users on clean Windows and macOS machines: portable setup,
+user-owned credentials, clear errors, and documented install/update paths.
+Public repository visibility was authorized on 2026-10-08 subject to a privacy review;
+release publication, npm publication, and a license grant still require approval.
+The user separately authorized the one-time historical email rewrite on that date.
 Do not publish releases, npm packages, public visibility or a license grant without approval.
 Before each authorized private push, review staged content, secrets, origin URLs and ancestry.
