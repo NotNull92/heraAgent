@@ -10,6 +10,7 @@ release-staging/
 !.env.example
 .hera/
 .codex/
+.omo/
 *.log
 .DS_Store
 Thumbs.db
