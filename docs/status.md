@@ -1318,3 +1318,11 @@ cancel, concurrency) for `adaptive`, `external_workers` and `gpt_only`, and all 
 modes report ready again. `low` and `max` were not re-verified with this code (NOT_RUN);
 changing the Go effort makes the records stale until the suite is run again. macOS
 NOT_RUN.
+
+Mode picker labels at the user's request: `/mode` now lists `[GPT 밸런스] Astra 깊은
+추론 · Luna 일상 작업` (gpt_only), `[HERA 밸런스] Astra 깊은 추론 + DeepSeek 일상 작업`
+(adaptive) and `[HERA 개발] Astra 깊은 추론 + DeepSeek 개발 작업` (external_workers), in
+that order. Only the labels and their order changed; the values and mode behavior are the
+same. The labels name Astra and Luna literally, while the models stay configurable.
+Windows local: typecheck, build and 86 offline tests passed (exit 0); the native
+verification records stay ready because this file is outside the fingerprint.
