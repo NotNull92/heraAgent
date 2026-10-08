@@ -18,8 +18,23 @@ native initialization, reinstall/settings, OS credential persistence and launche
 passed, exit 0, for SHA-256
 `8f0d73426c1c59cb5c7b2c14c0e983ea903a9d3f6c4cdcedb3ed7ee0cacfc466`.
 That archive predates the notice/changelog update, not a runtime/code change.
-Mixed-runtime build is in progress. Fresh live mode qualification, updated CI and
-macOS manual/live are NOT_RUN.
+The mixed runtime built successfully on native Windows and passed isolated startup.
+GPT-only live workflow passed (root `01a11939-5d81-7560-be14-7962a016c6a1`),
+including edit/test, cold resume, routing, approval, cancellation and concurrency.
+Mixed-mode startup failed before inference against the existing profile. The new
+official/patched/official isolated-profile regression reproduces that failure.
+Binary inspection found all 73 official Windows migration checksums use CRLF,
+while the source checkout embedded LF. Qualification now matches migration bytes
+to the official platform binary before compilation and verifies the round trip;
+no user database is read directly, rewritten, removed or reset. Rebuild and the
+remaining two live modes are pending. Historical fresh-home smoke alone does not
+establish compatibility with the official runtime's existing state.
+
+CI `37715214835` passed both platforms' offline checks, but Windows reached the
+15-minute job limit during installed-package smoke; downstream archive jobs were
+skipped. The combined offline/package job now allows 30 minutes with all checks
+retained. Native-patch CI `37715231091` passed macOS build/fresh-home smoke;
+Windows remains pending. Updated round-trip CI and macOS manual/live are NOT_RUN.
 Historical passes below do not certify this upgrade. No release was published.
 
 ## Current checkpoint (2026-10-08)

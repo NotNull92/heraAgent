@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {join,dirname} from 'node:path';
-import {mkdir,readFile,writeFile,cp,copyFile,stat,chmod} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,cp,copyFile,stat,chmod,glob} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 
@@ -29,16 +29,27 @@ run('git',['fetch','--depth','1','origin',manifest.commit]);
 run('git',['checkout','--quiet','--detach','FETCH_HEAD']);
 assert.equal(run('git',['rev-parse','HEAD'],checkout,true),manifest.commit);
 run('git',['apply','--check',patch]);run('git',['apply',patch]);run('git',['diff','--check']);
+const require=createRequire(import.meta.url);
+const packageFile=require.resolve(`@openai/codex-${platform}/package.json`);
+assert.equal(JSON.parse(await readFile(packageFile,'utf8')).version,`${manifest.version}-${platform}`);
+const [triple,executable]=platforms[platform];
+// SQLx embeds byte-level checksums. Match the official Windows CRLF / macOS LF build.
+const official=await readFile(join(dirname(packageFile),'vendor',triple,'bin',executable));
+let migrations=0;
+for await(const file of glob('codex-rs/state/*migrations/*.sql',{cwd:checkout})){
+  const path=join(checkout,file);const original=await readFile(path,'utf8');
+  const lf=original.replaceAll('\r\n','\n');const sql=process.platform==='win32'?lf.replaceAll('\n','\r\n'):lf;
+  assert.ok(official.includes(createHash('sha384').update(sql).digest()),`Official migration checksum mismatch: ${file}`);
+  if(sql!==original)await writeFile(path,sql);
+  migrations++;
+}
+assert.ok(migrations>0,'No native migrations found');
 if(process.argv.includes('--prepare-only')){
   console.log(JSON.stringify({sourcePrepared:true,commit:manifest.commit,patchSha256:manifest.patchSha256,build:'not_run'}));
 }else{
   const rust=join(checkout,'codex-rs');
   assert.ok(run('rustc',['--version'],rust,true).startsWith('rustc '+manifest.rustToolchain+' '));
   run('cargo',['build','--locked','-p','codex-app-server','--bin','codex-app-server','--jobs','2',...['age','scrypt','salsa20'].flatMap(name=>['--config',`profile.dev.package.${name}.opt-level=3`])],rust);
-  const require=createRequire(import.meta.url);
-  const packageFile=require.resolve(`@openai/codex-${platform}/package.json`);
-  assert.equal(JSON.parse(await readFile(packageFile,'utf8')).version,`${manifest.version}-${platform}`);
-  const [triple,executable]=platforms[platform];
   const bundle=join(root,'.artifacts','native-patch-bundle');await mkdir(bundle);
   await cp(join(dirname(packageFile),'vendor',triple),bundle,{recursive:true,errorOnExist:true,force:false});
   const binary=join(bundle,'bin',executable);
