@@ -1,6 +1,6 @@
 # Implementation status
 
-## Codex 0.161.0 upgrade (2026-10-08, in progress)
+## Codex 0.161.0 upgrade (2026-10-08, Windows live qualified; CI pending)
 
 The user requested that Hera's fixed runtime match the installed Codex 0.161.0.
 Updated the project dependency/lock, generated protocol and official config schema,
@@ -18,23 +18,58 @@ native initialization, reinstall/settings, OS credential persistence and launche
 passed, exit 0, for SHA-256
 `8f0d73426c1c59cb5c7b2c14c0e983ea903a9d3f6c4cdcedb3ed7ee0cacfc466`.
 That archive predates the notice/changelog update, not a runtime/code change.
-The mixed runtime built successfully on native Windows and passed isolated startup.
-GPT-only live workflow passed (root `01a11939-5d81-7560-be14-7962a016c6a1`),
-including edit/test, cold resume, routing, approval, cancellation and concurrency.
-Mixed-mode startup failed before inference against the existing profile. The new
-official/patched/official isolated-profile regression reproduces that failure.
+The mixed runtime built successfully on native Windows. Its initial fresh-home
+smoke passed, but existing-profile startup failed before inference. A new
+fresh-profile official/patched/official regression reproduced the failure.
 Binary inspection found all 73 official Windows migration checksums use CRLF,
-while the source checkout embedded LF. Qualification now matches migration bytes
-to the official platform binary before compilation and verifies the round trip;
-no user database is read directly, rewritten, removed or reset. Rebuild and the
-remaining two live modes are pending. Historical fresh-home smoke alone does not
-establish compatibility with the official runtime's existing state.
+while the source checkout embedded LF. Qualification now matches source migration
+bytes to the official platform binary before compilation. Rebuilding fixed the
+round-trip regression and existing-profile startup, without directly reading,
+rewriting, removing or resetting any user database. Old binaries and install
+receipts remain backed up under the user's runtime directory.
+
+Installed Windows binary SHA-256:
+`2d9e485bf99ca1915a1def917b1301e99cdbc2e9ed1ef7c71abdc3fee1c7f260`.
+Bundle SHA-256:
+`84bb2ba64b27e2c35c6a1f66c0c4a719dbebb072ccd4d5f96338bf08abaa5593`.
+Both focused native tests passed: provider allowlist/profile precedence and
+`apply_role_cannot_expand_parent_authority`. The latter used the already compiled
+test executable; the waiting redundant Cargo invocation was stopped. Migration
+compatibility is established separately by the rebuilt executable's round trip.
+
+The user explicitly authorized live model qualification for all three modes.
+GPT-only workflow passed, root `01a11939-5d81-7560-be14-7962a016c6a1`.
+The first mixed-mode live attempts failed on Go SSE idle timeouts (adaptive root
+`01a11951-7fd3-7861-86db-0d476910be42`, GPT/Go root
+`01a11951-5163-7a41-80e9-2a313672eb48`). These did not create pass receipts.
+A bounded Go stream probe subsequently completed in 2.4 seconds. No retry policy,
+provider timeout, model or credentials were changed. Fresh sequential qualification
+then passed adaptive root `01a11955-18b7-76a0-93ba-93a26b0bacb9` and GPT/Go root
+`01a11958-0c00-7112-84bd-860f7ee293a3`, exit 0. Each full suite includes
+edit/test, cold resume, routing, approval,
+cancellation and concurrency. New fourth-spawn/DRD and macOS manual/live checks
+are NOT_RUN; earlier runtime passes do not certify those upgrade checks.
+
+All three public gated `Controller.open` paths then passed without inference,
+using matching fresh verification records and runtime 0.161.0. User configuration
+remained byte-identical. Native RPC also read the three saved turns of the prior
+0.160.1 fixture `01a118df-c4f2-7252-b893-8be3d834ed12`; this is history-read evidence,
+not a new model turn in an old session. `hera --version` reports Codex 0.161.0.
 
 CI `37715214835` passed both platforms' offline checks, but Windows reached the
-15-minute job limit during installed-package smoke; downstream archive jobs were
-skipped. The combined offline/package job now allows 30 minutes with all checks
-retained. Native-patch CI `37715231091` passed macOS build/fresh-home smoke;
-Windows remains pending. Updated round-trip CI and macOS manual/live are NOT_RUN.
+15-minute job limit during package smoke; downstream archive jobs were skipped.
+The combined offline/package job now allows 30 minutes with all checks retained.
+Follow-up source commit `a656fdbad659301bdf55300953579b911347192e` is verified on
+the private remote. CI `37716932924` has passed both platforms' offline checks,
+Windows package smoke and macOS clean-prefix installation of that Windows-built
+archive; the second clean-prefix Windows install remains pending.
+Downloaded archive SHA-256 matched its CI checksum file:
+`419ddc54794eca6901d584ffae7999070309b36b6b30a3e7aa6309e86c5a5d17`.
+Superseded native workflow `37715231091` was cancelled
+following its macOS fresh-home pass. Replacement native CI `37716968069` passed
+macOS build and official/patched/official profile round trip; Windows is pending.
+The follow-up status/qualification README commit is documentation-only and skips
+duplicate CI; the runs above target executable source commit `a656fdb`.
 Historical passes below do not certify this upgrade. No release was published.
 
 ## Current checkpoint (2026-10-08)

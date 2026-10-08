@@ -25,11 +25,15 @@ node scripts/qualify-native-patch.mjs --prepare-only
 ```
 
 This fetches the pinned public source into a new ignored checkout and verifies/applies
-the patch. It refuses to overwrite an existing checkout. To build and run a fresh-home,
+the patch. It matches migration line endings to the official platform binary's
+embedded checksums (Windows CRLF, macOS LF), without accessing user databases.
+It refuses to overwrite an existing checkout. To build and run a fresh-home,
 no-inference smoke, use the script without `--prepare-only` in a fresh workspace.
 Rust uses the upstream pinned toolchain, without changing the global default.
 The script copies matching official platform helpers into a separate experiment bundle;
 it replaces only that bundle's executable. It never alters the installed npm runtime.
+The smoke opens the same isolated profile with official, patched, then official
+runtimes to catch incompatible migration checksums before installation.
 
 The debug build optimizes age, scrypt and salsa20. Without this, age's calibrated
 decryption work limit rejected the existing release-created Windows auth store.
