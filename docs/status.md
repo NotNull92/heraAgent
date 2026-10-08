@@ -8,9 +8,16 @@ arguments, Enter selects, and Escape dismisses. `/plan` completion waits for its
 request text. The list uses at most six rows and scrolls within shorter terminals.
 Existing backslash+Enter newline handling, input history, IME caret placement,
 busy cancellation and literal pasted commands are preserved.
-Native Windows typecheck/build and all 19 TUI tests passed, including three new
-keyboard/filter/scroll/paste regressions. No live model calls or new physical
-terminal acceptance were performed. New push CI is reported separately.
+Native Windows typecheck/build, all 19 TUI tests and the full 86-test offline suite
+passed, including three new keyboard/filter/scroll/paste regressions. No live
+model calls or new physical terminal acceptance were performed. Source commit
+`e4614ee6f965524e34c0c0a0b4c0f9e322f3bbd1` is verified on the private remote.
+[CI `37720164302`](https://github.com/NotNull92/heraAgent/actions/runs/37720164302)
+failed before either platform's steps started: GitHub reported failed recent
+account payments or a spending limit requiring an increase. Installed-package
+jobs were skipped. No remote test failure or pass is inferred. Resolve the account
+billing/limit issue and rerun that workflow; account billing was not changed.
+This evidence-only follow-up skips duplicate CI.
 
 ## Runtime label (2026-10-08)
 
