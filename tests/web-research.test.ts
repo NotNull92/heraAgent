@@ -28,6 +28,20 @@ it('loads complete UTF-8 packaged handbooks locally and rejects arbitrary paths'
   }finally{await client.close();await server.close();}
 });
 
+it('exposes only the research handbook in Design and rejects coding loads',async()=>{
+  const server=await startResearch(await mkdtemp(join(tmpdir(),'hera-design-guides-')),false);
+  const client=new Client({name:'design-fixture',version:'1'});
+  try{
+    await client.connect(new StreamableHTTPClientTransport(new URL(server.url)) as Transport);
+    const tool=(await client.listTools()).tools.find(t=>t.name==='load_instructions')!;
+    expect(JSON.stringify(tool)).not.toContain('coding');
+    expect((await client.callTool({name:'load_instructions',arguments:{topic:'coding'}})).isError).toBe(true);
+    const result=await client.callTool({name:'load_instructions',arguments:{topic:'research'}});
+    expect(result.isError).not.toBe(true);
+    expect(JSON.stringify(result.content)).not.toMatch(/coding handbook|continue authorized edits|routine edits/);
+  }finally{await client.close();await server.close();}
+});
+
 it('restricts analysis to the owned local search profile and disables it for writes',()=>{
   for(const enabled of [true,false]){
     const profile=searchProfile(enabled);verifySearchConfig({[SEARCH_SERVER]:profile},enabled);

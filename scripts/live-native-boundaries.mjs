@@ -11,13 +11,13 @@ import {GO_ROLE} from '../dist/codex/external-runtime.js';
 
 if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: three workers, one rejected spawn, child cancellation and recovery; 300 seconds maximum.');
 const mode=process.argv.find(a=>a.startsWith('--mode='))?.slice(7)??'adaptive';
-assert(['adaptive','external_workers','gpt_only'].includes(mode));
+assert(['adaptive','external_workers'].includes(mode));
 const home=await heraHome();const {config}=await loadConfig(home);config.mode=mode;config.workers.maxConcurrent=3;
 const cwd=await mkdtemp(join(tmpdir(),'hera-native-boundaries-'));
 const client=await CodexClient.session(home,cwd,config,'workspace-write',true,true);
 const controller=new Controller(client,home,cwd,config,true,true);
 let timer;let expired=false;let peak=0;
-const route=mode==='gpt_only'?`model=${config.workers.gptModel}, reasoning_effort=${config.workers.reasoningEffort??'medium'}, fork_turns=none, no custom role`:`agent_type=${GO_ROLE}, fork_context=false, no model/effort overrides`;
+const route=`agent_type=${GO_ROLE}, fork_context=false, no model/effort overrides`;
 const sleep=process.platform==='win32'?'Start-Sleep -Seconds 45':'sleep 45';
 try{
   controller.lock=await acquireWorkspace(home,cwd);await controller.start();

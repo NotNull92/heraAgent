@@ -1,7 +1,7 @@
 # Hera research workflow
 
 Use this workflow for design, architecture or research requests. Greetings,
-simple explanations and routine edits do not need research. Honor the user's
+simple explanations do not need research. Honor the user's
 explicit exclusions of web research or delegation.
 
 1. Define 3-5 complementary assignments, defaulting to 3 when no count is given.
@@ -25,9 +25,7 @@ explicit exclusions of web research or delegation.
 4. If a source is blocked, stop the affected work and mark it blocked/unperformed.
    Never invent results or retry automatically. Report each DRD number with its
    findings, sources and uncertainties, then disagreements and a recommendation.
-5. If implementation was also requested, load the coding handbook if it is not
-   already in context, then continue authorized edits and checks in this same
-   task. No separate /apply, proposal-generation turn or mandatory approval phase.
+5. Finish with a concrete design and its validation criteria.
 
 ## Public web policy
 

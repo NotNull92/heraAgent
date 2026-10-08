@@ -13,7 +13,7 @@ import type {WindowsSandboxSetupMode} from './generated/v2/WindowsSandboxSetupMo
 import type {ThreadBackgroundTerminalsCleanParams} from './generated/v2/ThreadBackgroundTerminalsCleanParams.js';
 import type {ThreadLoadedListParams} from './generated/v2/ThreadLoadedListParams.js';
 import {setTimeout as delay} from 'node:timers/promises';
-import type {Config} from '../config.js';
+import {requireActiveMode,type Config} from '../config.js';
 import type {JsonValue} from './generated/serde_json/JsonValue.js';
 import {nativeSettings} from './config-compiler.js';
 import {launchExternal} from './external-runtime.js';
@@ -29,7 +29,8 @@ export class CodexClient extends EventEmitter {
   constructor(readonly child:ChildProcessWithoutNullStreams){super();this.rpc=new Transport(child.stdout,child.stdin);child.stderr.resume();child.on('error',()=>this.rpc.fail(new HeraError('SPAWN_FAILED','Could not start the pinned runtime.',4)));child.on('exit',()=>{if(!this.closing)this.rpc.fail(new HeraError('SERVER_EXIT','Runtime exited; outcome unknown.',5,false));});this.rpc.on('notification',(e:RpcEvent)=>this.emit('event',e));this.rpc.on('request',(e:RpcRequest)=>this.emit('request',e));this.rpc.on('fault',(e:HeraError)=>{if(!this.closing)this.emit('fault',e);});}
   static async connect(home:string,cwd:string,overrides:string[]=[]){await verifyContract();const client=new CodexClient(await launch(home,cwd,overrides));try{await client.initialize();return client;}catch(e){await client.close();throw e;}}
   static async session(home:string,cwd:string,config:Config,mode:'read-only'|'workspace-write',workers:boolean,nativeFlow=false){
-    const research=nativeFlow||mode==='read-only'?await startResearch(home):undefined;let client:CodexClient|undefined;
+    if(nativeFlow)requireActiveMode(config.mode);
+    const research=nativeFlow||mode==='read-only'?await startResearch(home,config.mode==='external_workers'):undefined;let client:CodexClient|undefined;
     try{
       if(config.mode==='gpt_only'){const settings=nativeSettings(config,mode,workers,research?.url,nativeFlow);client=await this.connect(home,cwd,Object.entries(settings).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]));client.sessionSettings=settings;}
       else{await verifyContract();const started=await launchExternal(home,cwd,config,mode,workers,research?.url,nativeFlow);client=new CodexClient(started.child);client.cleanup=started.cleanup;client.sessionSettings=started.settings;await client.initialize();}

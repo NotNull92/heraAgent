@@ -21,7 +21,7 @@ GPT와 OpenCode Go를 명시적으로 선택해 사용할 수 있습니다.
 
 - **수정과 검사를 한 작업에서:** 별도의 `/apply` 단계 없이 파일을 수정하고 테스트합니다.
 - **먼저 계획하기:** `/plan`은 읽기 전용으로 계획하고, `/diff`는 실제 Git 변경을 보여줍니다.
-- **모델 역할 선택:** GPT 전용, GPT 메인·Go 워커, DeepSeek 메인·GPT 추론 지원을 선택합니다.
+- **모델 역할 선택:** HERA 설계(설계·조사)와 HERA 개발(코딩)을 선택합니다.
 - **공개 웹 리서치:** 별도 유료 검색 API 없이 로컬 Playwright/Chromium으로 검색하고 페이지를 읽습니다.
 - **대화 이어가기:** 네이티브 세션을 재개하며 별도의 Hera 대화 데이터베이스를 만들지 않습니다.
 - **터미널에 맞는 조작:** 슬래시 명령 추천, 모델·추론 강도 메뉴, 한국어 입력과 한·영 화면을 제공합니다.
@@ -29,8 +29,7 @@ GPT와 OpenCode Go를 명시적으로 선택해 사용할 수 있습니다.
 ## 빠른 시작
 
 **Git**, **npm이 포함된 Node.js 24.x**, 터미널, 공식 로그인으로 이용할 OpenAI 계정과
-OpenCode Go 키가 필요합니다. **현재 TUI는 GPT 전용 모드에서도 두 제공자의 설정을
-확인합니다.** 각자 본인 계정을 사용하며, 저장소에 인증 정보는 포함되어 있지 않습니다.
+OpenCode Go 키가 필요합니다. **두 모드 모두 두 제공자의 설정이 필요합니다.** 각자 본인 계정을 사용하며, 저장소에 인증 정보는 포함되어 있지 않습니다.
 실제 모델 사용 가능 여부는 계정에 따라 달라집니다.
 
 CI 대상은 Windows x64와 Apple Silicon macOS입니다. Intel macOS는 미검증입니다.
@@ -75,8 +74,7 @@ node bin/hera.mjs init --list-models
 node bin/hera.mjs init --model "YOUR_MODEL_ID" --language ko
 ```
 
-`YOUR_MODEL_ID`를 조회 결과에 나온 정확한 모델 ID로 바꾸세요. GPT 워커를 설정할 때는
-`--worker-model "YOUR_WORKER_MODEL_ID"`도 지정합니다. 추론 강도는 선택한 모델이 지원하는
+`YOUR_MODEL_ID`를 조회 결과에 나온 정확한 모델 ID로 바꾸세요. 추론 강도는 선택한 모델이 지원하는
 값이어야 합니다. 목록에 표시된다고 계정의 사용 권한까지 보장되지는 않습니다.
 OpenAI 로그인에는 `--device`를 사용할 수 있습니다. Go 키는 가려서 입력하고 OS 키링에 저장합니다.
 
@@ -94,7 +92,7 @@ node bin/hera.mjs --cwd "PATH_TO_YOUR_PROJECT" --single-agent
 ```
 
 프로젝트 경로를 실제 존재하는 디렉터리로 바꾸세요. 처음에는 워커를 명시적으로 끄는
-GPT 전용 싱글 에이전트로 시작합니다. 제공자 설정이 빠졌다면 설정 메뉴가 열립니다.
+기본 모드인 HERA 설계의 싱글 에이전트로 시작합니다. 제공자 설정이 빠졌다면 설정 메뉴가 열립니다.
 파일 수정은 네이티브 작업공간 샌드박스를 사용하며, 추가 권한은 한 번 허용하거나 거부할 수
 있습니다. 제한 없는 실행 모드로 자동 전환하지 않습니다.
 
@@ -111,21 +109,23 @@ node bin/hera.mjs --cwd "PATH_TO_YOUR_PROJECT" run --single-agent --prompt-file 
 
 | 모드 | 메인 작업 | 위임 작업 |
 | --- | --- | --- |
-| `gpt_only` | 선택한 GPT 모델 | 선택한 GPT 워커. `--single-agent`이면 워커 없음 |
-| `external_workers` | 선택한 GPT 모델 | OpenCode Go · DeepSeek V4.1 Flash |
-| `adaptive` | OpenCode Go · DeepSeek V4.1 Flash | 어려운 추론·계획·설계는 선택한 GPT/Astra 역할 |
+| HERA 개발 (`external_workers`) | 선택한 GPT 모델 | OpenCode Go · DeepSeek V4.1 Flash |
+| HERA 설계 (`adaptive`, 기본값) | OpenCode Go · DeepSeek V4.1 Flash | 어려운 추론·계획·설계는 선택한 GPT/Astra 역할 |
 
 `/mode`로 선택합니다. **워커는 로컬 검증이 필요합니다.** 런타임, 관련 코드, 플랫폼, 모델,
 제공자, 권한, 동시 실행 수가 검증 기록과 일치해야 하며 변경하면 기록이 무효화됩니다.
-혼합·adaptive 모드는 검토된 네이티브 런타임을 Hera 홈에 별도로 설치해야 합니다.
+두 모드는 검토된 네이티브 런타임을 Hera 홈에 별도로 설치해야 합니다.
 키를 저장하는 것만으로 활성화되지 않으며, 실패 시 다른 제공자로 자동 전환하지 않습니다.
 
 adaptive에서 `/model main`과 `/effort main`은 GPT 추론 역할을 설정합니다.
-새 대화는 짧은 공통 지침으로 시작하고, 코딩할 때 전체 코딩 지침을, 설계·조사할 때
-별도의 연구 지침을 읽습니다. 로컬 도구가 웹 접속 없이 패키지의 두 지침만 읽으며,
-같은 네이티브 대화 이력에 있는 지침은 재사용합니다.
-도구 설명·프로젝트 지침·기존 이력은 문맥에 포함되며, 코딩 후 잡담한다고 이미 읽은 지침을
-대화 이력에서 삭제하지는 않습니다.
+새 대화는 짧은 공통 지침으로 시작합니다. **HERA 개발만 코딩할 때 전체 코딩 지침을
+불러옵니다. HERA 설계는 설계·조사 지침만 사용하며 코딩 지침 요청을 차단합니다.**
+지침은 웹 접속 없이 로컬에서 읽습니다. 이 구분은 지침 범위이며 샌드박스 권한 변경은 아닙니다.
+기존 대화 이력은 삭제하지 않으므로 새 범위는 새 세션에서 사용하세요.
+
+GPT 밸런스는 제거되었습니다. 기존 `gpt_only` 설정과 이력은 보존하지만 작업 실행은 차단합니다.
+`/mode` 또는 `hera init --mode adaptive`(설계) / `hera init --mode external_workers`(개발)로
+직접 선택하세요. 다른 제공자 경로로 자동 변경하지 않습니다.
 
 현재 개발 체크아웃은 `/effort worker`에서 Go의 `low`, `high`, `max`를 제공하며,
 유효한 추론 강도 변경은 v2 검증을 유지합니다. GPT 선택지는 모델 카탈로그를 따릅니다.
@@ -201,7 +201,7 @@ CI 아티팩트는 정식 배포 릴리스가 아닙니다.
 | 상황 | 해결 방법 |
 | --- | --- |
 | 로그인·키 누락 | `/providers` 또는 `auth login openai` / `auth login go` |
-| 워커 사용 차단 | `doctor` 확인. 적절한 경우 GPT 전용 `--single-agent` 사용 |
+| 워커 사용 차단 | `doctor` 확인. 적절한 경우 HERA 설계 `--single-agent` 사용 |
 | Windows 샌드박스 미설정 | `sandbox setup` 실행 후 `doctor --json` 확인 |
 | 기존 `hera` 명령과 충돌 | 로컬 실행 경로 또는 별도 설치 prefix 사용 |
 | 중단되었거나 결과가 불확실한 쓰기 | Git 변경과 네이티브 이력 확인. 무조건 재실행하거나 잠금 삭제 금지 |

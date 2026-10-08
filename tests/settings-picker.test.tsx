@@ -7,7 +7,9 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {CodexClient,type ModelView} from '../src/codex/client.js';
 import {InteractiveSession} from '../src/session/interactive.js';
-import {defaults,saveConfig,loadConfig} from '../src/config.js';
+import {defaults as productDefaults,saveConfig,loadConfig} from '../src/config.js';
+// Historical GPT fixtures must not depend on the current product default.
+const defaults={...productDefaults,mode:'gpt_only' as const};
 import {App} from '../src/tui/App.js';
 
 it('opens keyboard menus, shows model-specific efforts, cancels atomically and revalidates the catalog',async()=>{

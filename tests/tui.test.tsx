@@ -62,7 +62,7 @@ it('clears the terminal on every resize and reprints the conversation',async()=>
 });
 it('names the configured worker model and effort for each mode',async()=>{
   const config=structuredClone(defaults);config.workers.gptModel='fixture-worker';config.workers.reasoningEffort='max';
-  const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toMatch(/워커\s+fixture-worker · effort max/);gpt.unmount();
+  const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toContain('HERA 설계');expect(gpt.lastFrame()).toMatch(/설계·조사\s+deepseek-v4\.1-flash · effort low/);gpt.unmount();
   const go=render(<App session={new InteractiveSession('unused','fixture',{...config,mode:'external_workers'},true)}/>);await tick();expect(go.lastFrame()).toMatch(/워커\s+deepseek-v4\.1-flash · effort low/);go.unmount();
 });
 it('places the IME caret by terminal cells across Korean text, newlines and hard wraps',()=>{
@@ -74,7 +74,7 @@ it('shows only the limit windows the runtime returned and merges sparse updates'
   const limits=parseLimits(read);expect(windowsFor(limits,'any')).toHaveLength(1);expect(windowsFor([],'any')).toEqual([]);
   const merged=mergeLimits(limits,{rateLimits:{limitId:'codex',primary:null,secondary:{usedPercent:90,windowDurationMins:300,resetsAt:null}}});expect(windowsFor(merged,null).map(w=>w.usedPercent)).toEqual([21,90]);expect(mergeLimits(limits,{bad:true})).toBe(limits);
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);const ui=render(<App session={session}/>);await tick();expect(ui.lastFrame()).toContain('확인 전');
-  session.limits=merged;session.emit('change');await tick();expect(ui.lastFrame()).toMatch(/메인[^\n]*· 주간 79% 남음 \(\d+\/\d+ \d\d:\d\d 리셋\) · 5h 10% 남음/);expect(ui.lastFrame()).toMatch(/워커[^\n]*· 메인과 한도 공유/);
+  session.limits=merged;session.emit('change');await tick();expect(ui.lastFrame()).toMatch(/깊은 추론[^\n]*· 주간 79% 남음 \(\d+\/\d+ \d\d:\d\d 리셋\) · 5h 10% 남음/);expect(ui.lastFrame()).toContain('설계·조사');
   session.limits=null;session.emit('change');await tick();expect(ui.lastFrame()).toContain('한도 정보 없음');ui.unmount();
 });
 it('points Go limits to the provider console instead of showing a figure',async()=>{

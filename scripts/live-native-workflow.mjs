@@ -10,7 +10,7 @@ import {loadConfig} from '../dist/config.js';
 import {nativeCapability} from '../dist/codex/capabilities.js';
 if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: bounded native edit/test, resume, routing and permission fixtures.');
 const mode=process.argv.find(a=>a.startsWith('--mode='))?.slice(7)??'adaptive';
-assert(['adaptive','external_workers','gpt_only'].includes(mode));
+assert(['adaptive','external_workers'].includes(mode));
 const home=await heraHome();const {config}=await loadConfig(home);config.mode=mode;
 const goEffort=process.argv.find(a=>a.startsWith('--go-effort='))?.slice(12);
 if(goEffort){assert(['low','high','max'].includes(goEffort));config.workers.goReasoningEffort=goEffort;}
@@ -28,6 +28,7 @@ try{
   console.log(JSON.stringify({stage:'conversation-metrics',mode,effort:mode==='adaptive'?config.workers.goReasoningEffort:config.main.reasoningEffort,elapsedMs:Math.round(performance.now()-greetingStarted),usage}));
   const edit=await run('edit-test','sum.cjs의 덧셈 버그를 고치고 node check.cjs로 실제 테스트해줘. 이 작은 작업은 직접 처리하고 다른 파일은 수정하지 마.');
   const items=edit.turns.at(-1).items;const guideIndex=items.findIndex(i=>i.type==='mcpToolCall'&&i.status==='completed'&&i.tool==='load_instructions'&&i.arguments.topic==='coding');
+  if(mode==='external_workers'){
   assert(guideIndex>=0,'Coding must load the handbook without an explicit user hint');
   const handbook=await readFile(new URL('../assets/codex/coding-instructions.md',import.meta.url),'utf8');
   assert.equal(items[guideIndex].result.content[0].text,handbook,'Full handbook must load without truncation or encoding loss');
@@ -43,6 +44,7 @@ try{
   }),'The full handbook must be in model-visible native tool output');
   assert(items.findIndex(i=>i.type==='fileChange'||i.type==='commandExecution'&&/Set-Content|Out-File|apply_patch|node check\.cjs/.test(i.command))>guideIndex,'Load the handbook before edits or tests');
   console.log(JSON.stringify({stage:'coding-handbook',loaded:'complete',beforeEdits:true,threadId:controller.metadata.codexThreadId}));
+  }else{assert.equal(guideIndex,-1,'Design must not load the coding handbook even during explicit edit/permission regression checks');}
   assert.equal((await import('node:child_process')).spawnSync(process.execPath,['check.cjs'],{cwd,windowsHide:true}).status,0);
   assert(edit.turns.at(-1).items.some(i=>i.type==='commandExecution'&&i.exitCode===0&&i.command.includes('check.cjs')));checks.editTest='pass';
   const saved=structuredClone(controller.metadata);assert.equal(await controller.close(),true);await start(saved);assert.equal(controller.metadata.codexThreadId,saved.codexThreadId);
@@ -63,6 +65,7 @@ try{
   await assert.rejects(run('cancel','Run Start-Sleep -Seconds 30 in the native PowerShell shell and wait. No workers, edits or other tools.'),e=>e.errorCode==='INTERRUPTED');await stop;checks.cancel='pass';
   await run('concurrency',`Start ${Math.min(2,config.workers.maxConcurrent)} native routine workers before waiting, each independently reading sum.cjs with native read tools and summarizing it in one sentence. No writes, web or further agents. Then wait for all. The worker limit is ${config.workers.maxConcurrent}.`);
   const spawns=events.filter(e=>e.method==='item/completed'&&['collabAgentToolCall','subAgentActivity'].includes(e.params.item.type));assert(spawns.length>0);assert(controller.workers.activeCount<=config.workers.maxConcurrent);checks.concurrency='pass';
+  if(mode==='adaptive'){const history=await controller.client.read(controller.metadata.codexThreadId);assert(!history.turns.flatMap(t=>t.items).some(i=>i.type==='mcpToolCall'&&i.tool==='load_instructions'&&i.arguments.topic==='coding'));}
   await controller.workers.refresh(controller.client);nativeThreadIds.push(...controller.workers.snapshot.keys());
   const evidence={schemaVersion:1,fingerprint:(await nativeCapability(home,config)).fingerprint,checkedAt:new Date().toISOString(),checks,nativeThreadIds:[...new Set(nativeThreadIds)]};
   // Only observed full-suite success is recorded, and only with explicit --record.

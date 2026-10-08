@@ -1,6 +1,8 @@
 import {it,expect,vi} from 'vitest';
 import {NativeWorkers} from '../src/session/workers.js';
-import {defaults} from '../src/config.js';
+import {defaults as productDefaults} from '../src/config.js';
+// Historical GPT fixtures must not depend on the current product default.
+const defaults:typeof productDefaults={...productDefaults,mode:'gpt_only'};
 import type {CodexClient} from '../src/codex/client.js';
 import {GO_PROVIDER,GO_EFFORT} from '../src/codex/external-runtime.js';
 import {GO_MODEL} from '../src/providers/opencode-go.js';

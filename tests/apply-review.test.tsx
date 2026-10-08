@@ -12,7 +12,9 @@ import {ApplyReview} from '../src/tui/ApplyReview.js';
 import {validateProposalPath,baseline} from '../src/session/phase-policy.js';
 import {Controller} from '../src/session/controller.js';
 import {CodexClient} from '../src/codex/client.js';
-import {defaults} from '../src/config.js';
+import {defaults as productDefaults} from '../src/config.js';
+// Historical GPT fixtures must not depend on the current product default.
+const defaults={...productDefaults,mode:'gpt_only' as const};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,70));
 it('reconstructs exact compact edits locally and binds approval to unambiguous edits',async()=>{
   const cwd=await mkdtemp(join(tmpdir(),'hera-edits-'));const before='한글\r\nconst answer = 1;\r\n';await writeFile(join(cwd,'a.js'),before);

@@ -4,7 +4,9 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {workerCapability,capabilityReport,nativeCapability} from '../src/codex/capabilities.js';
 import {atomicJson} from '../src/paths.js';
-import {defaults} from '../src/config.js';
+import {defaults as productDefaults} from '../src/config.js';
+// Historical GPT fixtures must not depend on the current product default.
+const defaults={...productDefaults,mode:'gpt_only' as const};
 it('keeps native qualification across effort tuning but rejects model, mode, permission and provider drift',async()=>{
   const home=await mkdtemp(join(tmpdir(),'hera-effort-evidence-'));const config=structuredClone(defaults);
   const initial=await nativeCapability(home,config);

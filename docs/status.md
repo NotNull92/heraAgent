@@ -1326,3 +1326,45 @@ that order. Only the labels and their order changed; the values and mode behavio
 same. The labels name Astra and Luna literally, while the models stay configurable.
 Windows local: typecheck, build and 86 offline tests passed (exit 0); the native
 verification records stay ready because this file is outside the fingerprint.
+
+## Design and Development modes — 2026-10-08
+
+Supersedes the three-mode picker described above. GPT Balance is retired from
+the picker, slash command and native task startup. Legacy config/session metadata
+and historical test fixtures remain readable; there is no automatic provider
+migration. Select `/mode` or `hera init --mode adaptive|external_workers` explicitly
+for retired settings. New installations default to HERA Design (`adaptive`).
+
+HERA Design replaces the HERA Balance label. Its base/developer instructions
+contain design/research guidance, without the coding workflow. Its local handbook
+tool exposes only `research` and rejects `coding`, including calls from children
+using that server. HERA Development (`external_workers`) loads the unchanged full
+pinned coding handbook on demand; both modes retain lightweight greetings.
+The shared research guide no longer instructs automatic coding continuation;
+Development supplies that continuation in its own developer instructions.
+This is an instruction-scope change, not a new read-only sandbox. Explicit edit
+and permission regression requests still use native permissions in either mode.
+Existing native histories are preserved; start a fresh session for the new scope.
+
+Windows local results (exit 0): typecheck, build, 91 tests across 18 files; targeted
+native fixture rerun after correcting its saved mode; isolated CLI selection and
+retired-mode rejection; archive inspection and clean-prefix install, native
+initialization, reinstall/settings/keyring preservation and launcher smoke.
+Prepared local artifact SHA-256:
+`e3666c6a4b6bf0fd027d3bfcfcbacf5c44874b164aeb05ed3da8ef5c23d7d594`.
+No release or npm publication.
+
+With the existing live-test authorization, both supported modes passed the bounded
+native suite (conversation, edit/test, resume, routing, approval, cancellation and
+concurrency), using Go low and the selected GPT high. Development loaded the full
+UTF-8 coding guide before edits, including complete model-visible output. Design
+loaded research guidance and delegated deep planning to Astra, without a coding
+handbook call across the test history. Separate MCP tests reject an explicit
+coding-topic request in Design. Both current configurations report ready:
+
+- Design: `f278c6554d36d9d76e62acf4302ece1361ab8ee75009f5c3d0f18abd442166b8`.
+- Development: `a8057a023432a83d4852c7113ba94f677c2bae83561b947bc857e2500e0bb81f`.
+
+User settings and running user sessions were not changed. Windows/macOS CI remains
+configured; macOS live/manual checks for this revision are NOT_RUN. CI results
+must be checked separately for the pushed commit.

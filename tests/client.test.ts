@@ -3,7 +3,9 @@ import {spawn} from 'node:child_process';
 import {resolve} from 'node:path';
 import {CodexClient} from '../src/codex/client.js';
 import {Controller} from '../src/session/controller.js';
-import {defaults} from '../src/config.js';
+import {defaults as productDefaults} from '../src/config.js';
+// Historical GPT fixtures must not depend on the current product default.
+const defaults={...productDefaults,mode:'gpt_only' as const};
 import {mkdtemp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';

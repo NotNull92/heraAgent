@@ -21,7 +21,7 @@ accounts. It is not an offline model runner.
 
 - **Edits and checks in one task:** no separate `/apply` step.
 - **Read-only planning:** `/plan` plans before editing; `/diff` shows actual Git changes.
-- **Explicit model routing:** GPT-only, GPT with Go workers, or DeepSeek with GPT reasoning support.
+- **Explicit model routing:** HERA Design for design/research; HERA Development for coding.
 - **Public web research:** local Playwright/Chromium search and page reads without a paid search API.
 - **Native session continuity:** resume conversations without a second Hera conversation database.
 - **Terminal interaction:** slash-command suggestions, model/effort menus, Korean input and Korean/English presentation.
@@ -29,8 +29,7 @@ accounts. It is not an offline model runner.
 ## Quick start
 
 You need **Git**, **Node.js 24.x with npm**, a terminal, OpenAI access through the
-official login flow, and an OpenCode Go key. **The current TUI checks both providers,
-including in GPT-only mode.** Use your own accounts; credentials are not included.
+official login flow, and an OpenCode Go key. **Both modes require both providers.** Use your own accounts; credentials are not included.
 Model availability depends on your account.
 
 Windows x64 and macOS Apple Silicon are the CI targets. Intel macOS is unverified.
@@ -76,9 +75,8 @@ node bin/hera.mjs init --list-models
 node bin/hera.mjs init --model "YOUR_MODEL_ID" --language en
 ```
 
-Replace `YOUR_MODEL_ID` with an exact returned catalog ID. To configure GPT workers,
-also set `--worker-model "YOUR_WORKER_MODEL_ID"`. Efforts must be supported by the
-selected model. Catalog listing does not prove entitlement.
+Replace `YOUR_MODEL_ID` with an exact returned catalog ID. Efforts must be
+supported by the selected model. Catalog listing does not prove entitlement.
 OpenAI login supports `--device`; Go key entry is masked and saved in the OS keyring.
 
 **Windows only:** configure the official sandbox in Hera's isolated profile:
@@ -94,8 +92,8 @@ node bin/hera.mjs doctor --json
 node bin/hera.mjs --cwd "PATH_TO_YOUR_PROJECT" --single-agent
 ```
 
-Replace the project path with an existing directory. Start with GPT-only
-single-agent operation, which explicitly disables workers. Missing provider setup
+Replace the project path with an existing directory. The default HERA Design
+mode can run with workers explicitly disabled by `--single-agent`. Missing provider setup
 opens the setup menu. Edits use the native workspace sandbox; additional permissions
 are presented for allow-once or decline. Unrestricted fallback is unavailable.
 
@@ -112,22 +110,25 @@ Headless execution declines interactive permission requests.
 
 | Mode | Main work | Delegated work |
 | --- | --- | --- |
-| `gpt_only` | Your selected GPT model | Selected GPT workers, or none with `--single-agent` |
-| `external_workers` | Your selected GPT model | OpenCode Go · DeepSeek V4.1 Flash |
-| `adaptive` | OpenCode Go · DeepSeek V4.1 Flash | Selected GPT/Astra role for difficult reasoning, planning and design |
+| HERA Development (`external_workers`) | Your selected GPT model | OpenCode Go · DeepSeek V4.1 Flash |
+| HERA Design (`adaptive`, default) | OpenCode Go · DeepSeek V4.1 Flash | Selected GPT/Astra role for difficult reasoning, planning and design |
 
 Use `/mode` to choose. **Workers need local verification** matching runtime, relevant
 code, platform, models, providers, permissions and concurrency. Changing these invalidates the record.
-Mixed/adaptive modes additionally require a reviewed native runtime installed in
+Both modes require a reviewed native runtime installed in
 your Hera home. A key alone does not enable them. There is no automatic provider fallback.
 
 In adaptive mode, `/model main` and `/effort main` configure the GPT reasoning role.
-Fresh conversations carry compact instructions. Coding loads the full pinned
-coding handbook on demand; design/research loads its own guide. A local native MCP
-tool reads only these packaged files, without web access, in the same thread.
-Loaded guides are reused from history. Tool schemas, project
-instructions and existing history still count toward context; later chat does not
-clear a handbook already loaded for coding.
+Fresh conversations carry compact instructions. Only HERA Development loads the
+full coding handbook on demand. HERA Design loads only research guidance; its
+local handbook tool rejects the coding topic. This instruction split does not
+change native sandbox permissions. Guides are read locally, without web access.
+Loaded guidance and existing native history remain in context. Start a new
+session for the new scope; old history is preserved rather than scrubbed.
+
+GPT Balance is retired. Existing `gpt_only` settings remain readable but cannot
+start tasks. Select `/mode` or use `hera init --mode adaptive` (Design) /
+`hera init --mode external_workers` (Development); routes never migrate silently.
 
 The development checkout exposes Go efforts `low`, `high` and `max` through
 `/effort worker`; valid effort changes preserve native v2 qualification. GPT options come
@@ -204,7 +205,7 @@ CI artifacts are not published releases.
 | Situation | What to do |
 | --- | --- |
 | Missing login/key | Use `/providers` or `auth login openai` / `auth login go` |
-| Blocked workers | Inspect `doctor`; use GPT-only `--single-agent` when appropriate |
+| Blocked workers | Inspect `doctor`; use HERA Design `--single-agent` when appropriate |
 | Windows sandbox not ready | Run `sandbox setup`, then `doctor --json` |
 | Existing `hera` command | Use the explicit local launcher or a separate install prefix |
 | Interrupted/uncertain write | Inspect Git changes and native history; do not blindly replay or delete locks |

@@ -1,3 +1,14 @@
+User-authorized mode revision (2026-10-08): only HERA Design (adaptive) and
+HERA Development (external_workers) are selectable. Retire GPT Balance
+(gpt_only); retain legacy settings/history for reading, but block execution
+until the user explicitly selects a supported mode. Default new installations
+to adaptive. Design loads only the research handbook, with no coding workflow
+in its base/developer instructions or MCP handbook topics. Development loads
+the pinned coding handbook on demand and may also load research guidance.
+This changes instruction scope, not native sandbox permissions. Existing native
+history is preserved, not scrubbed. Use a fresh session for the new scope.
+This supersedes earlier instructions to offer GPT-only and routine coding in adaptive.
+
 User-authorized publication amendment (2026-10-08): the original repository was
 renamed to heraAgent-private-archive and preserved privately. The new public
 NotNull92/heraAgent contains the same source history with commit emails replaced

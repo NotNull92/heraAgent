@@ -2,7 +2,7 @@ import {Command} from 'commander';
 import {realpath,readFile} from 'node:fs/promises';
 import {z} from 'zod';
 import {heraHome} from './paths.js';
-import {loadConfig,saveConfig,parseEffort} from './config.js';
+import {loadConfig,saveConfig,parseEffort,activeModeSchema} from './config.js';
 import {errorView,HeraError} from './errors.js';
 import {CodexClient} from './codex/client.js';
 import {CODEX_VERSION} from './codex/launcher.js';
@@ -22,8 +22,9 @@ export async function main(argv=process.argv) {
   const context=async()=>{const home=await heraHome();const cwd=await realpath(program.opts<{cwd:string}>().cwd);return {home,cwd,...await loadConfig(home,cwd)};};
   program.command('research').command('setup').description('install the pinned free Chromium browser without removing existing versions').action(async()=>{const {home}=await context();await installBrowser(home);console.log('무료 Chromium 설치 완료. CAPTCHA는 Hera의 /research open 및 /research resume으로 직접 해결합니다.');});
   program.command('runtime').command('install <binary>').requiredOption('--sha256 <digest>','explicitly reviewed patched App Server SHA-256').action(async(binary:string,opts:{sha256:string})=>{const {home}=await context();console.log(JSON.stringify(await installExternalRuntime(home,binary,opts.sha256)));});
-  program.command('init').option('--list-models').option('--model <id>').option('--worker-model <id>').option('--effort <level>','main reasoning effort, or default').option('--worker-effort <level>','worker reasoning effort, or default').option('--language <language>').action(async(opts:{listModels?:boolean;model?:string;workerModel?:string;effort?:string;workerEffort?:string;language?:string})=>{
+  program.command('init').option('--mode <mode>','adaptive (HERA 설계) or external_workers (HERA 개발)').option('--list-models').option('--model <id>').option('--worker-model <id>').option('--effort <level>','main reasoning effort, or default').option('--worker-effort <level>','worker reasoning effort, or default').option('--language <language>').action(async(opts:{mode?:string;listModels?:boolean;model?:string;workerModel?:string;effort?:string;workerEffort?:string;language?:string})=>{
     const {home,cwd}=await context();const {config}=await loadConfig(home);
+    if(opts.mode){const selected=activeModeSchema.safeParse(opts.mode);if(!selected.success)throw new HeraError('INVALID_MODE','Use adaptive or external_workers.',2);config.mode=selected.data;}
     if(opts.listModels||opts.model||opts.workerModel||opts.effort!==undefined||opts.workerEffort!==undefined){const client=await CodexClient.connect(home,cwd,startupArgs(config));try{const models=await client.models();if(opts.listModels)console.log(JSON.stringify({models,catalogNotEntitlement:true},null,2));if(opts.model)config.main.model=opts.model;if(opts.workerModel)config.workers.gptModel=opts.workerModel;
       for(const [value,target] of [[opts.effort,config.main],[opts.workerEffort,config.workers]] as const)if(value!==undefined)target.reasoningEffort=parseEffort(value);
       if(opts.model||opts.workerModel||opts.effort!==undefined||opts.workerEffort!==undefined)validateModelChoices({...config,mode:'gpt_only'},models);
