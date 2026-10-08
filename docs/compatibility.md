@@ -1,6 +1,19 @@
 # Compatibility and evidence
 
-## Current Windows live checkpoint
+## Current behavior (2026-10-08)
+
+Normal sessions use native workspace-write/on-request, with read-only `/plan` and
+no mandatory `/apply` or phase restart. GPT-only, GPT-root/Go-worker and adaptive
+Go-root/Astra modes have separate Windows live evidence and require matching local
+fingerprints. Design/research requests use native DRD assignment and synthesis
+guidance. See the newest [status](status.md) for the exact source and test receipts.
+macOS automated CI does not qualify live modes; macOS manual/live remains NOT_RUN.
+
+The sections below preserve historical discovery and qualification evidence.
+Their old missing-authentication, apply-phase and blocked-provider statements do
+not describe current Windows behavior.
+
+## Historical Windows live checkpoint
 
 See the current checkpoint in [status](status.md) for observed GPT read/resume,
 interruption, read-only writes, native worker communication/recovery and isolated

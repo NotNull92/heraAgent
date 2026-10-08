@@ -34,6 +34,16 @@ requirements in Sections 1, 8-9, 12-15, 17-18, 21 and Appendix A.
   New native workflow evidence uses separate fingerprints and records, never old
   phase passes. macOS automated and live/manual evidence remain separate.
 
+Additional user decision (2026-10-08): design/architecture/research requests start
+DRD automatically inside the native task, with 3-5 complementary assignments,
+actual public web evidence, source citations and synthesis. Reuse native worker
+controls and the configured concurrency ceiling; no extra classifier inference,
+model loop, mandatory slash command or restored apply phases. Routine edits and
+conversation stay direct. Honor explicit exclusions of web/delegation; single-agent
+mode covers the questions itself. Document prompt guidance separately from hard
+runtime limits and observed verification. The user confirmed the herdr resize fix;
+this does not certify Korean IME or macOS manual/live behavior.
+
 The original specification follows for history and all non-conflicting requirements.
 
 > Document version: 1.2.0 (Windows development revision)  

@@ -11,6 +11,13 @@ Keep explicit GPT-only and GPT-main/Go-worker modes, credentials outside Git,
 per-platform qualification, no provider fallback, and the existing private upload
 checks. This amendment supersedes conflicting phase/fixed-main rules below.
 
+User decision (2026-10-08): design/research requests automatically use 3-5 native
+DRD assignments, public web evidence and synthesis within the same task. Respect
+the configured concurrency ceiling and explicit no-web/no-delegation requests;
+routine edits and conversation remain direct. No separate classifier, model loop,
+mandatory slash command or apply phase. Record guidance versus runtime enforcement
+honestly. The user confirmed the herdr resize fix, not IME or macOS live behavior.
+
 Implement Hera, an independent CLI/TUI coding agent, from this native Windows
 workspace using Codex. Perform development and hands-on/local testing on Windows.
 Windows AND macOS remain required product targets; this is not a Windows-only app.

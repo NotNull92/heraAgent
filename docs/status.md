@@ -1,5 +1,85 @@
 # Implementation status
 
+## Current checkpoint (2026-10-08)
+
+The user confirmed the herdr resize fix. Record this as user-observed resize
+acceptance only; physical Korean IME and macOS manual/live remain NOT_RUN.
+
+Design/architecture/research requests now automatically ask the native root for
+3-5 complementary DRD assignments, public source evidence and synthesis. The
+configured worker ceiling is unchanged; adaptive mode gathers evidence with Go
+and uses Astra for difficult synthesis. No classifier inference, independent model
+loop, /drd requirement or restored apply phases. Explicit no-web/no-delegation
+requests override the guidance. Single-agent operation reports its lack of workers.
+Research coverage is model guidance; runtime/tool limits remain separate guarantees.
+
+Observed native boundary checks (`scripts/live-native-boundaries.mjs --live`):
+
+- Adaptive root `01a118d2-d41b-7c41-9492-29fa0325c722` passed, exit 0.
+- GPT-only root `01a118d4-a49e-7e42-af3a-8e43bed85148` passed, exit 0.
+- GPT-root/Go-worker root `01a118d4-a98d-72e0-8741-6cd12400db8f` passed, exit 0.
+- Each observed three simultaneous workers, the actual native fourth-spawn error,
+  running-child command interruption, idle-tree/background cleanup and a successful
+  subsequent root turn. Configuration was fixture-local; user settings/credentials
+  were not changed. These checks preceded the final DRD prompt correction and used
+  unchanged native runtime, permissions and concurrency settings.
+- After the worker startup fix, adaptive root
+  `01a118df-c4f2-7252-b893-8be3d834ed12` repeated the same boundary/cancellation
+  checks successfully, exit 0, with peak three and the real fourth-spawn rejection.
+
+Initial automatic DRD fixture `01a118d6-29b2-7de3-acf4-a15f8c1f5f19` failed:
+the model merged five requested perspectives into three assignments. Native Go
+document reads and Astra synthesis occurred, but this is not a five-task pass.
+The guidance now preserves explicit counts independently of concurrent worker slots
+and states the existing 6,000-character tool maximum. Fresh qualification is
+reported below; historical passes do not certify this source change.
+
+The second DRD fixture `01a118d8-ead2-7182-8863-378f4e3ce586` exposed a native
+startup race: a newly loaded child can precede its first materialized message.
+NativeWorkers now handles only that exact pinned RPC error with a metadata-only
+read, still validates ownership/routing and counts the child as pending rather
+than idle. Unknown read errors still fail; pending children cannot certify idle
+or cancellation completion. The focused regression passed, including unresolved
+startup cancellation and recovery after history becomes available.
+
+Final automatic DRD fixture `01a118da-f005-7360-af1f-0ad0ce371c13` passed, exit 0:
+five numbered perspectives, peak three active workers, ten successful official
+document fetches, Go evidence gathering and Astra synthesis. No shell execution or
+workspace changes occurred during research. This used known URLs, not live search;
+the report explicitly retained unresolved facts under the two-reads-per-perspective
+budget. It verifies workflow behavior, not exhaustive coverage or research quality.
+
+Final-source native workflow qualification passed, exit 0, for all three modes:
+
+- GPT-only root `01a118db-372a-7d70-b864-6823f887853e`.
+- GPT-root/Go-worker root `01a118db-3c66-7072-aead-0399abd05e64`.
+- Adaptive root `01a118db-43da-7df3-ad7f-f272bb028cca`.
+
+Each included conversation without children, direct edit and observed test command,
+cold resume, worker routing, actual permission decline/allow-once, read-only plan,
+shell cancellation and concurrent workers. Matching native verification records
+were saved with backups outside Git. The public gated Controller.open startup
+then passed for all three configurations without inference. Credentials and user
+configuration were preserved.
+
+Native Windows typecheck/build, all 82 offline tests, isolated native initialization
+and actual Chromium boundary/cache/CAPTCHA/cleanup fixtures passed, exit 0. The
+isolated native smoke intentionally has no login or configured sandbox; it does
+not describe the user's authenticated profile. No live search was rerun by that
+browser fixture. Local archive inspection and clean-prefix Windows installation,
+native initialization, reinstall/settings, OS credential persistence and launcher
+passed, exit 0, for SHA-256
+`7d5faf794055d56ede46be4ce160909ec1263995913afb57665b630c3821249a`.
+
+Prior source `3b01e24` CI 37612842135 passed both OS offline and identical-archive
+installation jobs; feature CI 37610664560 passed after its Windows-only rerun.
+Later UI CI runs 37619226659, 37632048652 and 37632742033 were cancelled, not failed
+or passed. Current-source CI/package receipts must be recorded separately.
+
+The dated sections below are historical receipts. Older missing-login, blocked-Go,
+phase-transition and "remaining work" entries are superseded where later evidence
+or the native-workflow amendment says so. No historical failure is relabeled a pass.
+
 ## Current checkpoint (2026-10-07)
 
 ### Remove the obsolete TUI workflow track

@@ -26,6 +26,7 @@ export function threadBusy(t:NativeThread){return t.status.type==='active'||t.tu
 // Native histories remain the source of truth; only IDs and the current snapshot live here.
 export class NativeWorkers {
   private born=new Map<string,string>();
+  private unmaterialized=new Set<string>();
   snapshot=new Map<string,NativeThread>();
   constructor(readonly root:string,readonly cwd:string,readonly config:Config,private freshRoot=false){}
   turnStarting(){this.freshRoot=false;}
@@ -34,7 +35,7 @@ export class NativeWorkers {
     const p=z.object({threadId:z.string(),item:z.object({type:z.string()}).passthrough()}).safeParse(event.params);if(!p.success)return;
     for(const id of spawnedChildren([p.data.item])){if(!this.born.has(id)&&this.born.size>=512)throw new HeraError('THREAD_INVENTORY_LIMIT','Native worker event inventory exceeds the safety bound.',4,false);this.born.set(id,p.data.threadId);}
   }
-  get activeCount(){return [...this.snapshot.values()].filter(t=>t.id!==this.root&&threadBusy(t)).length;}
+  get activeCount(){return [...this.snapshot.values()].filter(t=>t.id!==this.root&&(threadBusy(t)||this.unmaterialized.has(t.id))).length;}
   get count(){return Math.max(0,this.snapshot.size-1);}
   contractReferences(){return [...this.snapshot.values()].filter(t=>t.id!==this.root).map(t=>{const source=z.object({subAgent:z.object({thread_spawn:z.object({agent_path:z.string()})})}).safeParse(t.source);return {threadId:t.id,nativePath:source.success?source.data.subAgent.thread_spawn.agent_path:null};});}
   validateResults(contracts:z.infer<typeof workerContractsSchema>,baselineHash:string){
@@ -54,7 +55,25 @@ export class NativeWorkers {
   }
   async refresh(client:CodexClient,checkRouting=true){
     // ponytail: bounded full native hydration (512 threads / 32 MiB); use paginated native items for larger trees.
-    let bytes=0;const inventory=new Map<string,NativeThread>();const read=async(id:string)=>{if(inventory.has(id))return inventory.get(id)!;if(inventory.size>=512)throw new HeraError('THREAD_INVENTORY_LIMIT','Native worker tree exceeds 512 retained threads; no phase transition.',4);const value=id===this.root&&this.freshRoot?z.object({thread:z.unknown()}).parse(await client.rpc.request('thread/read',{threadId:id,includeTurns:false})).thread:await client.read(id);const t=thread.parse(value);bytes+=Buffer.byteLength(JSON.stringify(t));if(bytes>32*1024*1024)throw new HeraError('THREAD_INVENTORY_LIMIT','Native worker history exceeds 32 MiB; no phase transition.',4);if(t.id!==id)throw new HeraError('THREAD_ID_MISMATCH','Native read returned another thread.',4,false);if(id===this.root&&this.freshRoot&&threadBusy(t))throw new HeraError('UNEXPECTED_TURN','A new native root became active before Hera submitted a turn.',4,false);inventory.set(id,t);return t;};
+    let bytes=0;const inventory=new Map<string,NativeThread>();const unmaterialized=new Set<string>();
+    const metadata=async(id:string)=>z.object({thread:z.unknown()}).parse(await client.rpc.request('thread/read',{threadId:id,includeTurns:false})).thread;
+    const read=async(id:string)=>{
+      if(inventory.has(id))return inventory.get(id)!;
+      if(inventory.size>=512)throw new HeraError('THREAD_INVENTORY_LIMIT','Native worker tree exceeds 512 retained threads; no phase transition.',4);
+      let value:unknown;
+      try{value=id===this.root&&this.freshRoot?await metadata(id):await client.read(id);}
+      catch(error){
+        // A loaded child can be visible before its first message materializes history.
+        // Keep its ownership/routing metadata, but never count this state as idle.
+        if(id===this.root||!(error instanceof HeraError)||error.errorCode!=='RPC_-32600'||error.message!==`thread ${id} is not materialized yet; includeTurns is unavailable before first user message`)throw error;
+        value=await metadata(id);unmaterialized.add(id);
+      }
+      const t=thread.parse(value);bytes+=Buffer.byteLength(JSON.stringify(t));
+      if(bytes>32*1024*1024)throw new HeraError('THREAD_INVENTORY_LIMIT','Native worker history exceeds 32 MiB; no phase transition.',4);
+      if(t.id!==id)throw new HeraError('THREAD_ID_MISMATCH','Native read returned another thread.',4,false);
+      if(id===this.root&&this.freshRoot&&threadBusy(t))throw new HeraError('UNEXPECTED_TURN','A new native root became active before Hera submitted a turn.',4,false);
+      inventory.set(id,t);return t;
+    };
     const root=await read(this.root);if(root.parentThreadId!==null||!samePath(root.cwd,this.cwd))throw new HeraError('WORKSPACE_MISMATCH','Expected a root thread in this workspace.',4);
     // V2 children may be absent from thread/list and have their own sessionId.
     // Follow native spawn records, parentThreadId and loaded threads, never sessionId equality.
@@ -66,7 +85,7 @@ export class NativeWorkers {
       for(const t of inventory.values())if(t.parentThreadId===parent.id)ids.add(t.id);
       for(const id of ids){const child=await read(id);if(child.parentThreadId!==parent.id||!samePath(child.cwd,this.cwd)||id===this.root)throw new HeraError('WORKER_OWNERSHIP_MISMATCH','Worker reference is outside the owned native tree; no foreign interruption.',4,false);if(!owned.has(id)){owned.set(id,child);queue.push(id);}}
     }
-    this.snapshot=owned;
+    this.snapshot=owned;this.unmaterialized=new Set([...unmaterialized].filter(id=>owned.has(id)));
     if([...owned.values()].some(t=>t.status.type==='systemError'))throw new HeraError('WORKER_STATE_UNKNOWN','A native thread reports a system error.',5,false);
     if(checkRouting)for(const t of owned.values()){
       const main=t.id===this.root;const adaptive=this.config.mode==='adaptive';const external=adaptive?(main||t.modelProvider===GO_PROVIDER):!main&&this.config.mode==='external_workers';const model=external?GO_MODEL:main||adaptive?this.config.main.model:this.config.workers.gptModel;const effort=external?GO_EFFORT:main||adaptive?this.config.main.reasoningEffort:this.config.workers.reasoningEffort;
@@ -77,14 +96,14 @@ export class NativeWorkers {
   }
   async assertIdle(client:CodexClient,clean=false){
     const before=await this.refresh(client);
-    if([...before.values()].some(threadBusy))throw new HeraError('NOT_QUIESCENT','Main or child turns are still active; wait or cancel before applying.',4);
+    if(this.unmaterialized.size||[...before.values()].some(threadBusy))throw new HeraError('NOT_QUIESCENT','Main or child turns are still active; wait or cancel before applying.',4);
     for(const t of before.values())if(t.status.type!=='notLoaded'){
       if(clean)await client.cleanBackgroundTerminals(t.id);
       const terminals=z.object({data:z.array(z.unknown()),nextCursor:z.string().nullable()}).parse(await client.rpc.request('thread/backgroundTerminals/list',{threadId:t.id}));
       if(terminals.data.length||terminals.nextCursor!==null)throw new HeraError('NOT_QUIESCENT','Native background commands remain in the session tree.',4,false);
     }
     const after=await this.refresh(client);
-    if([...after.values()].some(threadBusy)||after.size!==before.size)throw new HeraError('NOT_QUIESCENT','Native tree changed during the quiescence check.',4,false);
+    if(this.unmaterialized.size||[...after.values()].some(threadBusy)||after.size!==before.size)throw new HeraError('NOT_QUIESCENT','Native tree changed during the quiescence check.',4,false);
   }
   async interrupt(client:CodexClient,timeoutMs=10000){
     const deadline=performance.now()+timeoutMs;const sent=new Set<string>();
@@ -101,9 +120,9 @@ export class NativeWorkers {
           if(current.id!==t.id||current.status.type==='systemError'||threadBusy(current))throw error;
         }
       }
-      for(const t of tree.values())if(t.status.type!=='notLoaded')await client.cleanBackgroundTerminals(t.id);
+      for(const t of tree.values())if(t.status.type!=='notLoaded'&&!this.unmaterialized.has(t.id))await client.cleanBackgroundTerminals(t.id);
       const after=await this.refresh(client,false);
-      if(![...after.values()].some(threadBusy)&&after.size===tree.size)return;
+      if(!this.unmaterialized.size&&![...after.values()].some(threadBusy)&&after.size===tree.size)return;
       if(performance.now()>=deadline)throw new HeraError('INTERRUPTED_UNCONFIRMED','The owned native tree did not become idle; preserve workspace ownership.',5,false);
       await delay(50);
     }

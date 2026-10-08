@@ -25,6 +25,17 @@ Send the original research request again to continue. No personal browser profil
 is imported or stored. Search availability is not guaranteed, and GPT/Go usage
 still costs tokens. See [research, limits and actual tests](docs/web-research.md).
 
+Design, architecture and research requests automatically use DRD: the native root
+assigns 3-5 complementary research questions, gathers public sources and synthesizes
+findings, disagreements and uncertainties. The configured worker ceiling still
+applies; workers can be reused between assignments. Adaptive mode uses Go for
+evidence gathering and Astra for difficult synthesis. Routine edits and greetings
+do not start DRD, and explicit no-web/no-delegation requests are respected. In
+single-agent mode the root covers the questions itself and says so. This is native
+model guidance, not a deterministic classifier or a guarantee of research quality.
+Use `/plan` for an enforced read-only turn; ordinary requests retain native workspace
+permissions. Research does not add an `/apply` or extra confirmation step.
+
 See [status](docs/status.md), [compatibility](docs/compatibility.md) and the full
 [specification](docs/implementation-spec.md). Windows x64 and macOS Apple Silicon
 are product targets; automated CI and physical terminal/live checks are distinct.
@@ -102,7 +113,7 @@ effort to clear its override. Changes are validated against the selected model's
 catalog, saved outside the repository, and take effect in a new session. Active
 turns reject setting changes; an uncertain shutdown prevents switching sessions.
 Pasted commands remain literal text, including pasted Enter keys in menus. Normal
-composer Enter still inserts a newline; bare settings commands open menus instead.
+composer Enter sends; bare settings commands open menus instead.
 These settings do not enable gated workers.
 
 `hera doctor` reports the worker verification state for the selected configuration.
@@ -123,8 +134,8 @@ are preserved. Binary/helper integrity is checked before launch, and mismatched 
 missing local acceptance blocks the mode without fallback. `/mode` selects a new
 GPT-only or mixed session. `/model worker` and `/effort worker` in mixed mode show only
 the qualified DeepSeek V4.1 Flash / low setting, preserving the saved GPT worker choice.
-Mixed analysis uses read-only native Go children; reviewed application restarts only
-the GPT root with all spawn paths disabled and without the Go key in its environment.
+Mixed/adaptive children inherit native permissions and coordinate scoped ownership.
+The native session handles edits, checks and approval requests without a phase restart.
 
 Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
 copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses its OS-stored

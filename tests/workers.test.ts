@@ -55,6 +55,16 @@ it('uses metadata-only reads strictly before the first turn of a newly created r
   await tracker.refresh(client);expect(client.read).not.toHaveBeenCalled();expect(client.rpc.request).toHaveBeenCalledWith('thread/read',{threadId:'root',includeTurns:false});
   tracker.turnStarting();await tracker.refresh(client);expect(client.read).toHaveBeenCalledWith('root');
 });
+it('tracks a child before its first message without claiming idle or hiding other read errors',async()=>{
+  const {rows,client,tracker}=fixture();const read=vi.mocked(client.read).getMockImplementation()!;let pending=true;
+  vi.mocked(client.read).mockImplementation(async id=>{if(id==='child'&&pending)throw new HeraError('RPC_-32600',`thread ${id} is not materialized yet; includeTurns is unavailable before first user message`,5,false);return read(id);});
+  vi.mocked(client.rpc.request).mockImplementation(async method=>method==='thread/read'?{thread:{...rows.get('child'),turns:[]}}:{data:[],nextCursor:null});
+  await tracker.refresh(client);expect(tracker.activeCount).toBe(1);expect(tracker.snapshot.get('child')?.parentThreadId).toBe('root');
+  await expect(tracker.assertIdle(client)).rejects.toMatchObject({errorCode:'NOT_QUIESCENT'});
+  await expect(tracker.interrupt(client,0)).rejects.toMatchObject({errorCode:'INTERRUPTED_UNCONFIRMED'});
+  pending=false;await tracker.assertIdle(client);expect(tracker.activeCount).toBe(0);
+  vi.mocked(client.read).mockRejectedValueOnce(new HeraError('RPC_-32600','unrelated read error',5,false));await expect(tracker.refresh(client)).rejects.toThrow('unrelated read error');
+});
 it('accepts only complete current worker contracts and never promotes worker test claims',async()=>{
   const {tracker,client,rows}=fixture();await tracker.refresh(client);
   const assignment={taskId:'task',contractVersion:1,contractHash:'current',goal:'inspect',scope:['sum.cjs'],sharedInterfaces:[],forbiddenChanges:['writes'],baseline:{gitHead:null,relevantFilesHash:'baseline'},output:'analysis' as const,completionCriteria:['read file']};

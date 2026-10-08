@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {mkdtemp,writeFile,readdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {Controller} from '../dist/session/controller.js';
+import {CodexClient} from '../dist/codex/client.js';
+import {acquireWorkspace} from '../dist/session/workspace-lock.js';
+import {heraHome} from '../dist/paths.js';
+import {loadConfig} from '../dist/config.js';
+import {GO_PROVIDER} from '../dist/codex/external-runtime.js';
+
+if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: automatic DRD, 5 assignments, public Node.js documents, at most 3 concurrent workers, 300 seconds.');
+const home=await heraHome();const {config}=await loadConfig(home);config.mode='adaptive';
+const cwd=await mkdtemp(join(tmpdir(),'hera-native-research-'));
+const client=await CodexClient.session(home,cwd,config,'workspace-write',true,true);
+const controller=new Controller(client,home,cwd,config,true,true);
+let timer;let peak=0;let expired=false;
+try{
+  controller.lock=await acquireWorkspace(home,cwd);await controller.start();
+  const root=controller.metadata.codexThreadId;
+  controller.on('workers',()=>{peak=Math.max(peak,controller.workers.activeCount);});
+  console.log(JSON.stringify({stage:'automatic-DRD',root,cwd,deadlineSeconds:300}));
+  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;void controller.interrupt().catch(()=>{});reject(new Error('DRD fixture exceeded 300 seconds'));},300000);});void deadline.catch(()=>{});
+  await Promise.race([controller.run('Node.js 24 서버에서 CPU 작업을 분리하는 설계를 조사해줘. 다섯 관점으로 나눠서 이벤트 루프 응답성, worker_threads, child_process, 오류 격리, 취소 방법을 비교하고 한국어로 짧은 권고안을 줘. 출처는 https://nodejs.org/docs/latest-v24.x/api/worker_threads.html 및 https://nodejs.org/docs/latest-v24.x/api/child_process.html 로 한정하고, 알려진 URL을 직접 읽어줘. 관점당 필요한 부분만 최대 두 번 읽고 한두 문장으로 정리해줘. 파일 수정, 셸 명령, 구현은 요청하지 않는다.'),deadline]);
+  await controller.workers.assertIdle(client,true);assert.equal(expired,false);
+  const threads=[...controller.workers.snapshot.values()];const rootThread=threads.find(t=>t.id===root);
+  const final=rootThread.turns.at(-1).items.filter(i=>i.type==='agentMessage').map(i=>i.text).join('\n');
+  for(let n=1;n<=5;n++)assert(final.includes(`DRD-${n}`),`Missing DRD-${n} in the final synthesis`);
+  const calls=threads.flatMap(t=>t.turns.flatMap(turn=>turn.items).map(i=>({thread:t.id,item:i})));
+  assert(!calls.some(({item:i})=>['commandExecution','fileChange'].includes(i.type)),'Research must not execute shell or change files');
+  const fetches=calls.filter(({item:i})=>i.type==='mcpToolCall'&&i.server==='hera_web'&&i.tool==='web_fetch');
+  const successful=fetches.filter(({item:i})=>i.status==='completed'&&!i.error&&i.result?.content?.some(c=>c.type==='text'&&JSON.parse(c.text).status==='ok'));
+  assert(successful.length>=5,'Require actual source reading across five assignments');
+  assert(new Set(successful.filter(c=>c.thread!==root).map(c=>c.thread)).size>=3,'Require complementary native worker research');
+  assert(threads.some(t=>t.id!==root&&t.modelProvider==='openai'&&t.model===config.main.model),'Require Astra synthesis');
+  assert(threads.some(t=>t.id!==root&&t.modelProvider===GO_PROVIDER),'Require Go evidence gathering');
+  assert(peak<=config.workers.maxConcurrent);assert(final.includes('https://nodejs.org/'));
+  assert.deepEqual(await readdir(cwd),[]);await writeFile(join(cwd,'verified-report.txt'),final);
+  console.log(JSON.stringify({automaticResearch:'pass',root,nativeThreadIds:threads.map(t=>t.id),assignments:5,peak,successfulFetches:successful.length,report:join(cwd,'verified-report.txt'),liveSearch:'not_run: known official URLs',writes:'none'}));
+}finally{clearTimeout(timer);if(!await controller.close())process.exitCode=5;}

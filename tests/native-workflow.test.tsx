@@ -23,6 +23,7 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     const turn=vi.spyOn(client,'turn');
     try{await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
       await controller.run('plan',undefined,true);expect(turn.mock.calls[1]?.[0]).toMatchObject({approvalPolicy:'never',sandboxPolicy:{type:'readOnly',networkAccess:false}});
+      await controller.run('ordinary edit');expect(turn.mock.calls[2]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite'},input:[expect.objectContaining({text:'ordinary edit'})]});
     }finally{await controller.close();}
   }
 });

@@ -36,17 +36,20 @@ completion, and checks readiness in a fresh runtime. It does not request elevati
 A failure or timeout is not retried automatically; inspect `doctor --json` first.
 Do not select unrestricted mode. `hera.cmd auth login go` stores the second required
 provider credential in Windows Credential Manager. `/providers` offers both setup flows.
-`hera.cmd --single-agent` explicitly chooses analysis without workers; `/apply` then
-offers reviewed main-only changes and tests. Plain `hera.cmd` requires a matching local
-GPT worker verification record; `doctor` reports readiness. A different runtime,
-model/effort, worker limit or OS requires fresh verification. External Go workers are
-still blocked; stored credentials and a direct Go response alone do not enable them.
+`hera.cmd --single-agent` explicitly chooses native editing and checks without
+workers. No `/apply` step is required; `/plan` is read-only. Plain `hera.cmd` requires
+a matching local native-workflow verification record; `doctor` reports readiness.
+A different runtime, relevant code, model/effort, worker limit or OS requires fresh
+verification. Mixed/adaptive modes additionally require the reviewed local runtime;
+credentials alone do not enable them. Design/research requests automatically use
+DRD source gathering; single-agent operation reports that no delegation occurred.
 
 TUI: Enter sends, backslash+Enter or Ctrl+J inserts a newline, Escape interrupts a turn
 (twice clears the composer), Ctrl+C interrupts a turn or, when idle, exits on the second
 press, `/quit` exits. Pasted slash text is literal, not a command.
 Use `run --single-agent --prompt-file <file>` for a reliable multiline/non-TTY path.
-Physical Korean IME and herdr manual checks are still outstanding.
+The user confirmed the herdr resize fix on 2026-10-08. Physical Korean IME and other
+terminal input checks remain separately unverified; resize confirmation is not IME evidence.
 
 Close active Hera sessions before update. Reinstall the new checked tarball in the
 same prefix. Roll back with the previous checked tarball in that prefix. Neither

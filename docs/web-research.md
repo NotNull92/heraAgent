@@ -60,9 +60,30 @@ model loop. Self-hosted metasearch would not eliminate upstream blocks.
   Chromium receives no model credentials. Browser startup is lazy, so missing
   Chromium does not block unrelated local-only session startup.
 
-The requested 3-5 complementary DRD research assignments remain a subsequent
-workflow layer. This supplies search/reading, not enforced research coverage or
-a measured percentage reduction in model tokens.
+## Automatic DRD (2026-10-08)
+
+The user selected automatic research for design, architecture and research requests.
+The native root defines 3-5 complementary numbered assignments (default 3; preserve
+an explicitly requested count), delegates through its existing worker routes and
+synthesizes cited findings, disagreements and uncertainties. Adaptive mode uses Go
+for source gathering and Astra for difficult synthesis. A limit of 3 permits five
+total assignments through follow-up/reuse or closing finished workers before the
+next spawn; it does not permit five simultaneous workers. Workers do not delegate.
+
+There is no extra classifier call, model loop, research database or mandatory slash
+command. Greetings/routine edits stay direct, explicit no-web/no-delegation requests
+are honored, and single-agent mode covers the questions without claiming workers.
+Each assignment must use public source reads/search, reuse shared results and report
+blocked or unperformed work honestly. The existing CAPTCHA/rate-limit boundary is
+unchanged. An implementation request can continue after research in the same task
+without an /apply phase. `/plan` provides an enforced native read-only turn; normal
+requests keep workspace permissions, with research-only actions requested by guidance.
+
+Task classification, assignment coverage and synthesis are model instructions,
+not deterministic enforcement or a guarantee of quality/token savings. Source
+tool limits and native concurrency restrictions are enforced separately. The opt-in
+`node scripts/live-native-research.mjs --live` checks a natural five-perspective
+design request against actual native worker/source events; see status.md for results.
 
 ## Current Windows evidence
 
