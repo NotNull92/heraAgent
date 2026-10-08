@@ -33,7 +33,12 @@ verified the old tip is unavailable there (HTTP 422), and confirmed no old Actio
 runs/artifacts were carried over. Converted only the new repository to public.
 The original repository and its five unscanned binary artifacts remain private.
 Historical Actions links below refer to the private archive and require access.
-Current public CI results will be recorded separately when observed.
+The first public [CI run 37722082111](https://github.com/NotNull92/heraAgent/actions/runs/37722082111)
+started on both platforms without the previous billing block. Each passed 85/86
+tests; the repository test still mocked private visibility and hit the new public
+visibility guard before its intended wrong-origin assertion. Updated that fixture
+to public; all three repository checks passed locally on Windows. Replacement CI
+results will be recorded separately when observed.
 See [GitHub's removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
 No release, npm publication or new live/manual model checks were performed.
 
