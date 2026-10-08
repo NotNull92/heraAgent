@@ -130,3 +130,10 @@ it('never completes pasted commands or opens the menu during active work',async(
   const active=render(<Composer language="ko" busy send={text=>sent.push(text)} cancel={()=>{}}/>);
   try{await tick();active.stdin.write('/');await tick();expect(active.lastFrame()).not.toContain('Tab 완성');active.stdin.write('\r');await tick();expect(sent).toEqual([' /quit',' /quit']);}finally{active.unmount();}
 });
+it('renders closed markdown bold in model output without asterisks and keeps user text literal',async()=>{
+  const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
+  session.add('You: keep **mine** as typed\nHera: **Use PostgreSQL.** It fits, 2 ** 3 stays\n**-> Next:** start small\nopen **only\n');
+  const ui=render(<App session={session}/>);await tick();const frame=ui.lastFrame()!;
+  expect(frame).toContain('You: keep **mine** as typed');expect(frame).toContain('Hera: Use PostgreSQL. It fits, 2 ** 3 stays');expect(frame).toContain('-> Next: start small');expect(frame).toContain('open **only');
+  ui.unmount();
+});

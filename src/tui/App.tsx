@@ -28,10 +28,18 @@ function Role({label,children,windows,fallback,reset,language}:{label:string;chi
     return <Text key={i}><Text color={c.iron}>{i?' · ':''}</Text>{name(w.windowDurationMins)} <Text bold color={left>=50?c.moss:left>=20?c.gold:c.blood}>{left}%</Text>{ko?' 남음':' left'}{when&&<Text color={c.iron}>{ko?` (${when} 리셋)`:` (resets ${when})`}</Text>}</Text>;
   }):<Text color={c.iron}>{fallback}</Text>}</Text>;
 }
+// Markdown bold in model output: a closed **pair** on one line becomes bold text without the asterisks.
+// ponytail: per line and unaware of code fences, so a line like 2**3**4 loses its asterisks; track fences if that bites.
+export function emphasis(text:string){
+  const parts:React.ReactNode[]=[];let at=0;
+  for(const match of text.matchAll(/\*\*(\S(?:.*?\S)?)\*\*/g)){parts.push(text.slice(at,match.index),<Text key={match.index} bold>{match[1]}</Text>);at=match.index+match[0].length;}
+  return at?[...parts,text.slice(at)]:text;
+}
 function Line({text}:{text:string}){
   const {c}=useTheme();const speaker=/^(You|Hera): /.exec(text);
-  if(speaker)return <Text><Text bold color={speaker[1]==='You'?c.frost:c.gold}>{speaker[0]}</Text>{text.slice(speaker[0].length)}</Text>;
-  return <Text color={text.startsWith('Tool exit: ')?c.iron:undefined}>{text||' '}</Text>;
+  // What the user typed stays literal.
+  if(speaker)return <Text><Text bold color={speaker[1]==='You'?c.frost:c.gold}>{speaker[0]}</Text>{speaker[1]==='You'?text.slice(speaker[0].length):emphasis(text.slice(speaker[0].length))}</Text>;
+  return <Text color={text.startsWith('Tool exit: ')?c.iron:undefined}>{text?emphasis(text):' '}</Text>;
 }
 // Printed once at the top of the session, then it scrolls away with the conversation.
 function Banner({width,cwd,greeting,language}:{width:number;cwd:string;greeting:string;language:'ko'|'en'}){

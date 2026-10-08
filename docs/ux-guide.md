@@ -62,6 +62,9 @@ Bindings follow Claude Code.
 - The conversation flows into the terminal's own scrollback like Codex or Claude Code:
   a finished line is written once and never repainted; only the unfinished line is live.
 - Speaker labels: `You: ` in frost, `Hera: ` in gold; `Tool exit: ` lines in iron.
+- Markdown bold in model output is drawn bold: a closed `**pair**` on one line loses its
+  asterisks. Text the user typed (`You: ` lines) stays literal. No other Markdown is
+  interpreted.
 - On a terminal resize the screen and scrollback are cleared and the conversation is
   printed again at the new width.
 

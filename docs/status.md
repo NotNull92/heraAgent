@@ -1368,3 +1368,12 @@ coding-topic request in Design. Both current configurations report ready:
 User settings and running user sessions were not changed. Windows/macOS CI remains
 configured; macOS live/manual checks for this revision are NOT_RUN. CI results
 must be checked separately for the pushed commit.
+
+Bold rendering at the user's request: a closed Markdown `**pair**` on one line of model
+output is drawn bold without the asterisks; `You: ` lines stay literal and unpaired or
+space-padded asterisks are left alone. The match is per line and unaware of code fences.
+Windows local: typecheck, build and 92 offline tests passed (exit 0); a color-enabled
+test render showed the bold escape around the emphasized words. Viewing it in a real
+terminal is NOT_RUN. Separately, the user enabled a personal answer-style file at
+`~/.hera/codex/AGENTS.md` (outside the repository); one live `hera run` question in the
+HERA Design mode returned an answer-first reply with bold lead-ins from DeepSeek.
