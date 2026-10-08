@@ -1276,3 +1276,45 @@ Footer label at the user's request: the adaptive mode now reads `Astra + DeepSee
 matching the order of the two role lines below it (deep reasoning, then routine work);
 the root that receives the conversation in that mode is still DeepSeek. Windows local:
 typecheck and the 16 TUI tests passed (exit 0); the full suite was not rerun.
+
+Command prefix at the user's request: commands start with `/` only, on Windows and
+macOS alike. A leading backslash is ordinary text: it no longer runs a command, opens
+the command list or gets the pasted-command space guard. Backslash+Enter still inserts
+a newline. The web-research note, `/help` text and the tests that used the
+backslash alias were updated. Windows local: typecheck, build and 86 offline tests
+passed (exit 0). Real-terminal behavior is NOT_RUN. Two command-list defects found in
+the same review remain open: typing `/mode` in full and pressing Enter runs `/model`,
+and recalling a sent command from history reopens the list and traps Up/Down.
+
+Command list follow-up at the user's request: descriptions on unselected rows are now
+iron so command names read first. The owner confirmed four list behaviors as intended
+(no "no match" row, the hint row, the six-row cap, Latin letters only); they are
+recorded with the other TUI decisions in the new `docs/ux-guide.md`, which the new root
+`CLAUDE.md` references alongside `AGENTS.md`. Windows local: typecheck and 86 offline
+tests passed (exit 0). The color change was not viewed in a real terminal (NOT_RUN).
+
+Go effort probe at the user's request (live, 2026-10-08, 20 direct non-streaming
+`/responses` requests to the Go route with `deepseek-v4.1-flash`, no retries; not run
+through the native runtime): the gateway returned 200 and echoed the effort for `none`,
+`minimal`, `low`, `medium`, `high`, `xhigh` and `max`, and 422 for an invalid value.
+`none` produced 0 reasoning tokens and a wrong answer to a simple sum. For `minimal`
+through `high` the reasoning-token counts were indistinguishable (easy sum 46-60;
+mid-difficulty question 225-242); `max` gave 278 and 300 on that question (two samples,
+not conclusive). A harder question hit the 2000-token output cap at every effort.
+Native Go turns with tools at any effort other than `low` remain NOT_RUN, so
+`GO_EFFORT` is unchanged.
+
+Selectable Go worker effort at the user's request: `workers.goReasoningEffort`
+(`low`, `high`, `max`; default `low`) replaces the fixed `low`. `/effort worker` and the
+effort picker offer the three levels in the Go modes and reject anything else; the
+selected value feeds the Go role file, the adaptive root turn effort, worker routing
+checks and the footer. The saved GPT worker choice is untouched. Because the
+verification fingerprint covers these sources and the worker settings, all three
+native verification records became stale, as expected. Windows local: typecheck, build
+and 86 offline tests passed (exit 0). Live, with the user's go-ahead and the Go effort
+saved as `high` (main `gpt-6-astra`/high): `scripts/live-native-workflow.mjs --live
+--record` passed all seven checks (conversation, editTest, resume, routing, approval,
+cancel, concurrency) for `adaptive`, `external_workers` and `gpt_only`, and all three
+modes report ready again. `low` and `max` were not re-verified with this code (NOT_RUN);
+changing the Go effort makes the records stale until the suite is run again. macOS
+NOT_RUN.

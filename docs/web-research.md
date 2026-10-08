@@ -26,7 +26,7 @@ model loop. Self-hosted metasearch would not eliminate upstream blocks.
 
 - Install with `hera research setup` or `/research setup`. The pinned local
   Playwright installer uses `--no-remove` outside Git; no global plugin/Codex change.
-- `/research` opens a Korean setup/status/open/resume picker; backslash also works.
+- `/research` opens a Korean setup/status/open/resume picker.
   On CAPTCHA, finish the model turn, run `/research open`, solve it yourself,
   then `/research resume`. The checked result enters the cache; send the original
   request again. No automatic model-turn replay occurs.

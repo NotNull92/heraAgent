@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import {externalRuntime,installExternalRuntime} from '../src/codex/external-runtime.js';
 import {atomicJson} from '../src/paths.js';
 import {workerCapability} from '../src/codex/capabilities.js';
-import {defaults} from '../src/config.js';
+import {defaults,loadConfig} from '../src/config.js';
 import {InteractiveSession} from '../src/session/interactive.js';
 
 it('rejects runtime tampering and never treats installed binaries as live acceptance',async()=>{
@@ -22,9 +22,11 @@ it('rejects runtime tampering and never treats installed binaries as live accept
   await writeFile(join(directory,'helper.txt'),'unexpected executable helper');await expect(externalRuntime(home)).rejects.toMatchObject({errorCode:'EXTERNAL_RUNTIME_MISMATCH'});
   await expect(installExternalRuntime(home,join(directory,path),'0'.repeat(64))).rejects.toMatchObject({errorCode:'EXTERNAL_RUNTIME_MISMATCH'});
 });
-it('shows only qualified Go choices without replacing the saved GPT worker configuration',async()=>{
+it('offers the Go model with low, high and max effort without replacing the saved GPT worker configuration',async()=>{
   const home=await mkdtemp(join(tmpdir(),'hera-go-menu-'));const config=structuredClone(defaults);config.mode='external_workers';config.workers.gptModel='saved-gpt';config.workers.reasoningEffort='max';
   const session=new InteractiveSession(home,home,config,false);await session.submit('/model worker');
-  expect(session.selection?.options.map(o=>o.value)).toEqual(['deepseek-v4.1-flash']);await session.selectOption('deepseek-v4.1-flash');expect(session.selection?.options.map(o=>o.value)).toEqual(['low']);await session.selectOption('low');
-  expect(config.workers.gptModel).toBe('saved-gpt');expect(config.workers.reasoningEffort).toBe('max');expect(session.transcript).toContain('deepseek-v4.1-flash / low');
+  expect(session.selection?.options.map(o=>o.value)).toEqual(['deepseek-v4.1-flash']);await session.selectOption('deepseek-v4.1-flash');expect(session.selection?.options.map(o=>o.value)).toEqual(['low','high','max']);expect(session.selection?.current).toBe('low');await session.selectOption('high');
+  expect(config.workers.gptModel).toBe('saved-gpt');expect(config.workers.reasoningEffort).toBe('max');expect(config.workers.goReasoningEffort).toBe('high');expect((await loadConfig(home)).config.workers.goReasoningEffort).toBe('high');expect(session.transcript).toContain('deepseek-v4.1-flash / high');
+  await session.submit('/effort worker max');expect(config.workers.goReasoningEffort).toBe('max');const saved=await readFile(join(home,'config.json'),'utf8');
+  for(const command of ['/effort worker medium','/effort worker default','/model worker saved-gpt high']){await session.submit(command);expect(session.status).toBe('UNSUPPORTED_GO_SETTING');expect(await readFile(join(home,'config.json'),'utf8')).toBe(saved);}
 });

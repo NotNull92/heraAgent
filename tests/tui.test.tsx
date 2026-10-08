@@ -100,7 +100,7 @@ it('greets with one pooled line per start and keeps it across re-renders',async(
   random.mockReturnValue(0);session.status='Working';session.emit('change');await tick();expect(ui.lastFrame()).toContain('Working');expect(ui.lastFrame()).toContain(GREETINGS.at(-1));expect(ui.lastFrame()).not.toContain(GREETINGS[0]);
   ui.unmount();random.mockRestore();
 });
-it('keeps pasted backslash commands literal',async()=>{const submitted:string[]=[];const ui=render(<Composer language="ko" busy={false} send={t=>submitted.push(t)} cancel={()=>{}}/>);await tick();ui.stdin.write('\x1b[200~\\workers 8\x1b[201~');await tick();ui.stdin.write('\r');await tick();expect(submitted).toEqual([' \\workers 8']);ui.unmount();});
+it('sends pasted backslash text unchanged because only a slash starts a command',async()=>{const submitted:string[]=[];const ui=render(<Composer language="ko" busy={false} send={t=>submitted.push(t)} cancel={()=>{}}/>);await tick();ui.stdin.write('\x1b[200~\\workers 8\x1b[201~');await tick();ui.stdin.write('\r');await tick();expect(submitted).toEqual(['\\workers 8']);ui.unmount();});
 it('lists, filters and selects commands below the input, with Tab for arguments',async()=>{
   const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
   const key=async(value:string)=>{ui.stdin.write(value);await tick();};
@@ -112,15 +112,16 @@ it('lists, filters and selects commands below the input, with Tab for arguments'
     await key('adaptive');await key('\r');expect(sent).toEqual(['/model','/mode adaptive']);
   }finally{ui.unmount();}
 });
-it('scrolls a short command menu, dismisses it and completes backslash plans before sending',async()=>{
+it('scrolls a short command menu, dismisses it, ignores a backslash and completes plans before sending',async()=>{
   const sent:string[]=[];const ui=render(<Composer language="en" rows={2} busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
   const key=async(value:string)=>{ui.stdin.write(value);await tick();};
   try{
     await tick();await key('/');await key('\x1b[A');expect(ui.lastFrame()).toContain('› /quit');expect(ui.lastFrame()).toContain('12/12');expect(ui.lastFrame()).not.toContain('/help');
     await key('\x1b');expect(ui.lastFrame()).toContain('> /');expect(ui.lastFrame()).not.toContain('Tab complete');expect(sent).toEqual([]);
-    await key('\x15');await key('\\pl');await key('\r');expect(sent).toEqual([]);expect(ui.lastFrame()).toContain('> \\plan');
-    await key('한글 계획');await key('\r');expect(sent).toEqual(['\\plan 한글 계획']);
-    await key('\x1b[A');await key('\r');expect(sent).toEqual(['\\plan 한글 계획','\\plan 한글 계획']);
+    await key('\x15');await key('\\pl');expect(ui.lastFrame()).not.toContain('Tab complete');
+    await key('\x15');await key('/pl');await key('\r');expect(sent).toEqual([]);expect(ui.lastFrame()).toContain('> /plan');
+    await key('한글 계획');await key('\r');expect(sent).toEqual(['/plan 한글 계획']);
+    await key('\x1b[A');await key('\r');expect(sent).toEqual(['/plan 한글 계획','/plan 한글 계획']);
   }finally{ui.unmount();}
 });
 it('never completes pasted commands or opens the menu during active work',async()=>{

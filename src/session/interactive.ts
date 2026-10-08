@@ -9,13 +9,13 @@ import type {ModelView} from '../codex/client.js';
 import {startupArgs,validateModelChoices} from '../codex/config-compiler.js';
 import {Controller} from './controller.js';
 import type {Config} from '../config.js';
-import {saveConfig,parseEffort,configSchema,projectSchema} from '../config.js';
+import {saveConfig,parseEffort,configSchema,projectSchema,goEffortSchema} from '../config.js';
 import {listMetadata} from '../metadata.js';
 import {safeText,HeraError,errorView} from '../errors.js';
 import {capabilityReport} from '../codex/capabilities.js';
 import {providerStatus,loginOpenAI} from '../providers/accounts.js';
 import {saveGoCredential} from '../providers/go-credentials.js';
-import {externalRuntime,GO_EFFORT} from '../codex/external-runtime.js';
+import {externalRuntime} from '../codex/external-runtime.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
 import {parseLimits,mergeLimits} from './limits.js';
 import type {LimitSnapshot} from './limits.js';
@@ -66,15 +66,21 @@ export class InteractiveSession extends EventEmitter {
     try{await menu.choose(value);this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}
   }
   private async saveModelChoice(role:Role,model:string,effort:Config['main']['reasoningEffort'],models:ModelView[]){
-    if(role==='worker'&&this.config.mode!=='gpt_only'){if(model!==GO_MODEL||effort!==GO_EFFORT)throw new HeraError('UNSUPPORTED_GO_SETTING','현재 검증된 Go 워커 설정은 DeepSeek V4.1 Flash / low입니다.',2);this.add(`\nGo 워커: ${GO_MODEL} / ${GO_EFFORT}\n`);return;}
-    const candidate=structuredClone(this.config);if(role==='main')candidate.main={model,reasoningEffort:effort};else{candidate.workers.gptModel=model;candidate.workers.reasoningEffort=effort;}
-    validateModelChoices(candidate,models);await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);
+    const candidate=structuredClone(this.config);
+    // The Go route has one model and its own effort setting; the saved GPT worker choice is left untouched.
+    if(role==='worker'&&this.config.mode!=='gpt_only'){const level=goEffortSchema.safeParse(effort);if(model!==GO_MODEL||!level.success)throw new HeraError('UNSUPPORTED_GO_SETTING','Go 워커는 DeepSeek V4.1 Flash 모델과 low, high, max effort만 지원합니다.',2);candidate.workers.goReasoningEffort=level.data;}
+    else{if(role==='main')candidate.main={model,reasoningEffort:effort};else{candidate.workers.gptModel=model;candidate.workers.reasoningEffort=effort;}validateModelChoices(candidate,models);}
+    await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);
     this.add(this.config.language==='ko'?`\n${role==='main'?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'일상 작업':'워커')} 설정 저장: ${model} / ${effort??'기본값'} · 다음 세션부터 적용됩니다.\n`:`\nSaved ${role}: ${model} / ${effort??'default'}; applies to the next session.\n`);
   }
   private async openSettings(action:'model'|'effort',role?:Role){
     const ko=this.config.language==='ko';
-    if(!role){this.selection={title:ko?'설정할 역할 선택':'Choose a role',current:null,options:[{value:'main',label:`${ko?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'Reasoning':'Main')} · ${this.config.main.model??'—'} / ${this.config.main.reasoningEffort??'default'}`},{value:'worker',label:`${ko?(this.config.mode==='adaptive'?'일상 작업':'워커'):(this.config.mode==='adaptive'?'Routine':'Worker')} · ${this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel??'—'} / ${this.config.mode!=='gpt_only'?GO_EFFORT:this.config.workers.reasoningEffort??'default'}`}],choose:async value=>this.openSettings(action,value as Role)};return;}
-    if(role==='worker'&&this.config.mode!=='gpt_only'){this.selection={title:ko?'Go 워커 · 검증된 설정':'Go worker · verified settings',current:action==='model'?GO_MODEL:GO_EFFORT,options:[{value:action==='model'?GO_MODEL:GO_EFFORT,label:action==='model'?GO_MODEL:GO_EFFORT}],choose:async()=>{if(action==='model')await this.openSettings('effort','worker');else this.add(`\nGo 워커: ${GO_MODEL} / ${GO_EFFORT}\n`);}};return;}
+    if(!role){this.selection={title:ko?'설정할 역할 선택':'Choose a role',current:null,options:[{value:'main',label:`${ko?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'Reasoning':'Main')} · ${this.config.main.model??'—'} / ${this.config.main.reasoningEffort??'default'}`},{value:'worker',label:`${ko?(this.config.mode==='adaptive'?'일상 작업':'워커'):(this.config.mode==='adaptive'?'Routine':'Worker')} · ${this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel??'—'} / ${this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort??'default'}`}],choose:async value=>this.openSettings(action,value as Role)};return;}
+    if(role==='worker'&&this.config.mode!=='gpt_only'){
+      const name=ko?(this.config.mode==='adaptive'?'일상 작업':'워커'):(this.config.mode==='adaptive'?'Routine':'Worker');
+      this.selection=action==='model'?{title:ko?`${name} 모델 선택`:`Choose ${name.toLowerCase()} model`,current:GO_MODEL,options:[{value:GO_MODEL,label:GO_MODEL}],choose:async()=>this.openSettings('effort','worker')}
+        :{title:`${name} · ${GO_MODEL} · effort`,current:this.config.workers.goReasoningEffort,options:goEffortSchema.options.map(value=>({value,label:value})),choose:async value=>this.saveModelChoice('worker',GO_MODEL,parseEffort(value),[])};
+      return;}
     const models=await this.models();const model=role==='main'?this.config.main.model:this.config.workers.gptModel;
     if(action==='model'){
       if(!models.length)throw new HeraError('MODEL_UNAVAILABLE','The native model catalog is empty.',2);
@@ -101,9 +107,9 @@ export class InteractiveSession extends EventEmitter {
     const shown=new Set<string|number>();this.controller.on('requests',()=>{const request=this.controller!.requests.values().next().value;if(request&&!shown.has(request.id)){shown.add(request.id);this.add(`\n${request.summary}\n`);}for(const id of shown)if(!this.controller!.requests.has(id))shown.delete(id);this.emit('change');});
     this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));
   }
-  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(/^[\\/]/.test(text)){
+  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(text.startsWith('/')){
       // Echo the command like any other input; /providers arguments are rejected, so they are never echoed.
-      const typed='/'+text.trim().slice(1);this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
+      const typed=text.trim();this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
     case '/research':{
       if(args.length>1)throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
@@ -117,7 +123,7 @@ export class InteractiveSession extends EventEmitter {
       throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
     }
     case '/providers':if(args.length)throw new HeraError('INVALID_COMMAND','/providers에서 선택하세요. 키를 명령 인수에 넣지 마세요.',2);await this.openProviders();break;
-    case '/help':this.add('\n/providers /research [setup|status|open|resume] /help /mode [gpt_only|external_workers|adaptive] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Commands accept / or backslash. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
+    case '/help':this.add('\n/providers /research [setup|status|open|resume] /help /mode [gpt_only|external_workers|adaptive] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
     case '/mode':{if(!args[0]){this.selection={title:'모드 선택 · 다음 세션부터 적용',current:this.config.mode,options:[{value:'gpt_only',label:'GPT 전용 · 공식 엔진'},{value:'external_workers',label:'GPT 메인 + DeepSeek 워커 · 전용 엔진'},{value:'adaptive',label:'DeepSeek 일상 작업 + Astra 깊은 추론 · 전용 엔진'}],choose:async value=>this.command(`/mode ${value}`)};break;}if(args.length!==1||!['gpt_only','external_workers','adaptive'].includes(args[0]))throw new HeraError('INVALID_MODE','Use gpt_only, external_workers or adaptive.',2);if(args[0]!=='gpt_only'&&!await externalRuntime(this.home))throw new HeraError('EXTERNAL_RUNTIME_MISSING','혼합 모드용 검증 엔진을 먼저 설치하세요. GPT로 자동 전환하지 않습니다.',4);const candidate={...this.config,mode:args[0] as Config['mode']};await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);this.add(`\n모드: ${this.config.mode} · 다음 세션부터 적용. /doctor에서 검증 상태를 확인하세요.\n`);break;}
     case '/model':case '/effort':{
       if(!args.length){await this.openSettings(command==='/model'?'model':'effort');break;}
@@ -126,13 +132,13 @@ export class InteractiveSession extends EventEmitter {
       if(command==='/effort'&&args.length!==1||command==='/model'&&args.length>2)throw new HeraError('INVALID_COMMAND','Use /model [main|worker] [ID] [effort] or /effort [main|worker] [level].',2);
       const model=command==='/model'?args[0]!:(role==='main'?this.config.main.model:this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel);
       if(!model)throw new HeraError('MODEL_NOT_SELECTED','Select a model with /model first.',2);
-      const value=command==='/effort'?args[0]:args[1];const effort=value===undefined?(role==='main'?this.config.main.reasoningEffort:this.config.mode!=='gpt_only'?GO_EFFORT:this.config.workers.reasoningEffort):parseEffort(value);
+      const value=command==='/effort'?args[0]:args[1];const effort=value===undefined?(role==='main'?this.config.main.reasoningEffort:this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort):parseEffort(value);
       await this.saveModelChoice(role,model,effort,await this.models());break;
     }
     case '/workers':{
       if(!args.length){const project=projectSchema.parse(await existsJson(join(this.cwd,'.hera.json'))??{});const ceiling=project.maxConcurrent??8;this.selection={title:this.config.language==='ko'?'워커 수 선택 (변경 후 검증 상태 확인)':'Choose worker limit (check verification after changes)',current:String(this.config.workers.maxConcurrent),options:Array.from({length:ceiling},(_,i)=>({value:String(i+1),label:String(i+1)})),choose:async value=>this.command(`/workers ${value}`)};break;}
       if(args.length){if(args.length!==1||!/^\d+$/.test(args[0]!))throw new HeraError('INVALID_COMMAND','Use /workers [1-8].',2);const limit=configSchema.shape.workers.shape.maxConcurrent.safeParse(Number(args[0]));if(!limit.success)throw new HeraError('INVALID_WORKER_LIMIT','Worker limit must be 1-8.',2);const project=projectSchema.parse(await existsJson(join(this.cwd,'.hera.json'))??{});if(project.maxConcurrent!==undefined&&limit.data>project.maxConcurrent)throw new HeraError('PROJECT_WORKER_LIMIT','Requested worker count exceeds the project ceiling.',2);const candidate=structuredClone(this.config);candidate.workers.maxConcurrent=limit.data;await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);}
-      this.add(`\n워커 상한: ${this.config.workers.maxConcurrent} · 모델: ${this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel??'미선택'} / ${this.config.mode!=='gpt_only'?GO_EFFORT:this.config.workers.reasoningEffort??'default'}. /doctor에서 현재 설정의 검증 상태를 확인하세요.\n`);break;
+      this.add(`\n워커 상한: ${this.config.workers.maxConcurrent} · 모델: ${this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel??'미선택'} / ${this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort??'default'}. /doctor에서 현재 설정의 검증 상태를 확인하세요.\n`);break;
     }
     case '/plan':await this.connect();await this.controller!.run(`Plan only; do not modify files.\n${args.join(' ')}`,undefined,true);break;
     case '/apply':this.add('\n별도 /apply는 필요하지 않습니다. 원하는 수정 작업을 입력하면 수정과 테스트를 이어서 진행합니다.\n');break;

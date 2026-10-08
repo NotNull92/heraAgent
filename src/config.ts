@@ -6,16 +6,18 @@ const model=z.string().min(1).max(200).nullable();
 // Accepted levels come from the selected model's native catalog, not a global enum.
 export const effortSchema=z.string().min(1).max(64).regex(/^[a-z][a-z0-9_-]*$/).nullable();
 export function parseEffort(value:string){const parsed=effortSchema.safeParse(value==='default'?null:value);if(!parsed.success)throw new HeraError('UNSUPPORTED_EFFORT','Choose an advertised effort or default.',2);return parsed.data;}
+// DeepSeek distinguishes these three levels; other requested values are mapped onto them by the provider.
+export const goEffortSchema=z.enum(['low','high','max']);
 export const configSchema=z.strictObject({
   schemaVersion:z.literal(1),language:z.enum(['ko','en']),mode:z.enum(['gpt_only','external_workers','adaptive']),backend:z.literal('codex_app_server'),
   main:z.strictObject({model,reasoningEffort:effortSchema}),
-  workers:z.strictObject({gptModel:model,reasoningEffort:effortSchema.default(null),externalProfile:z.literal('opencode_go_deepseek'),maxConcurrent:z.number().int().min(1).max(8),implementationStyle:z.literal('patch_proposals')}),
+  workers:z.strictObject({gptModel:model,reasoningEffort:effortSchema.default(null),goReasoningEffort:goEffortSchema.default('low'),externalProfile:z.literal('opencode_go_deepseek'),maxConcurrent:z.number().int().min(1).max(8),implementationStyle:z.literal('patch_proposals')}),
   providers:z.strictObject({opencode_go_deepseek:z.strictObject({baseUrl:z.literal('https://opencode.ai/zen/go/v1'),model:z.literal('deepseek-v4.1-flash'),apiKeyEnv:z.literal('HERA_OPENCODE_GO_API_KEY'),transport:z.literal('auto_probe'),billingPolicy:z.literal('subscription_preferred_no_client_fallback')})}),
   safety:z.strictObject({strategy:z.literal('phased_single_writer'),approvalPolicy:z.literal('on-request'),automaticProviderFallback:z.literal(false),allowUnverifiedExternalMode:z.literal(false)}),
   ui:z.strictObject({color:z.enum(['auto','never']),reducedMotion:z.boolean()})
 });
 export type Config=z.infer<typeof configSchema>;
-export const defaults:Config={schemaVersion:1,language:'ko',mode:'gpt_only',backend:'codex_app_server',main:{model:null,reasoningEffort:null},workers:{gptModel:null,reasoningEffort:null,externalProfile:'opencode_go_deepseek',maxConcurrent:3,implementationStyle:'patch_proposals'},providers:{opencode_go_deepseek:{baseUrl:'https://opencode.ai/zen/go/v1',model:'deepseek-v4.1-flash',apiKeyEnv:'HERA_OPENCODE_GO_API_KEY',transport:'auto_probe',billingPolicy:'subscription_preferred_no_client_fallback'}},safety:{strategy:'phased_single_writer',approvalPolicy:'on-request',automaticProviderFallback:false,allowUnverifiedExternalMode:false},ui:{color:'auto',reducedMotion:false}};
+export const defaults:Config={schemaVersion:1,language:'ko',mode:'gpt_only',backend:'codex_app_server',main:{model:null,reasoningEffort:null},workers:{gptModel:null,reasoningEffort:null,goReasoningEffort:'low',externalProfile:'opencode_go_deepseek',maxConcurrent:3,implementationStyle:'patch_proposals'},providers:{opencode_go_deepseek:{baseUrl:'https://opencode.ai/zen/go/v1',model:'deepseek-v4.1-flash',apiKeyEnv:'HERA_OPENCODE_GO_API_KEY',transport:'auto_probe',billingPolicy:'subscription_preferred_no_client_fallback'}},safety:{strategy:'phased_single_writer',approvalPolicy:'on-request',automaticProviderFallback:false,allowUnverifiedExternalMode:false},ui:{color:'auto',reducedMotion:false}};
 export const projectSchema=z.strictObject({language:z.enum(['ko','en']).optional(),ui:configSchema.shape.ui.partial().optional(),mode:configSchema.shape.mode.optional(),modelProfile:z.string().optional(),maxConcurrent:z.number().int().min(1).max(8).optional(),testCommands:z.array(z.string()).optional()});
 export async function loadConfig(home:string,cwd?:string) {
   const stored=await existsJson(join(home,'config.json'));

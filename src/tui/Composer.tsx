@@ -35,13 +35,13 @@ export function caret(value:string,cursor:number,width:number){
 // Key bindings follow Claude Code: Enter sends; backslash+Enter, Shift/Alt+Enter or Ctrl+J add a line;
 // Escape interrupts active work or, pressed twice, clears the input; Ctrl+C interrupts, then clears
 // and arms exit, and a second Ctrl+C exits; Up/Down recall sent input; Ctrl+A/E/U/K/W edit the line.
-// A leading command prefix opens suggestions: Up/Down select, Tab completes, Escape dismisses.
+// A leading slash opens suggestions (a backslash is ordinary text): Up/Down select, Tab completes, Escape dismisses.
 // Pasted text never submits or exits by itself, and a pasted leading slash stays literal text.
 export function Composer({busy,send,cancel,quit,language,rows=6}:{busy:boolean;send:(text:string)=>void;cancel:()=>void;quit?:()=>void;language:'ko'|'en';rows?:number}){
   const [state,renderState]=useState({value:'',cursor:0});const current=useRef(state);const pasteRef=useRef(false);
   const [menu,renderMenu]=useState({index:0,hidden:false});const menuRef=useRef(menu);
   const setMenu=(next:typeof menu)=>{menuRef.current=next;renderMenu(next);};
-  const matches=()=>!busy&&!pasteRef.current&&!menuRef.current.hidden&&/^[\\/][a-z]*$/i.test(current.current.value)&&current.current.cursor===current.current.value.length?commands.filter(([name])=>name.startsWith(current.current.value.slice(1).toLowerCase())):[];
+  const matches=()=>!busy&&!pasteRef.current&&!menuRef.current.hidden&&/^\/[a-z]*$/i.test(current.current.value)&&current.current.cursor===current.current.value.length?commands.filter(([name])=>name.startsWith(current.current.value.slice(1).toLowerCase())):[];
   const [armed,renderArmed]=useState(false);const armedRef=useRef(false);const lastEscape=useRef(0);const history=useRef({items:[] as string[],at:-1,draft:''});
   const setState=(next:typeof state|((s:typeof state)=>typeof state))=>{const previous=current.current.value;current.current=typeof next==='function'?next(current.current):next;if(previous!==current.current.value)setMenu({index:0,hidden:false});renderState(current.current);};
   const arm=(value:boolean)=>{if(armedRef.current!==value){armedRef.current=value;renderArmed(value);}};
@@ -68,7 +68,7 @@ export function Composer({busy,send,cancel,quit,language,rows=6}:{busy:boolean;s
       if(busy||!value.trim())return;
       if(selected?.[0]==='plan'){replace(value[0]+'plan ');return;}
       const text=selected?value[0]+selected[0]:value;
-      const submitted=pasteRef.current&&/^[\\/]/.test(text)?` ${text}`:text;
+      const submitted=pasteRef.current&&text.startsWith('/')?` ${text}`:text;
       send(submitted);history.current.items=[...history.current.items,submitted].slice(-100);history.current.at=-1;reset();return;
     }
     if(key.ctrl){
@@ -104,7 +104,7 @@ export function Composer({busy,send,cancel,quit,language,rows=6}:{busy:boolean;s
   return <>
     <Box ref={row} borderStyle="single" borderLeft={false} borderRight={false} {...(c.gold?{borderColor:c.gold}:{})}><Text wrap="hard"><Text bold color={c.gold}>&gt; </Text>{state.value||(armed?<Text color={c.blood}>See you later codingborn.</Text>:<Text color={c.iron}>I can do anything with you.</Text>)}</Text></Box>
     {options.length>0&&<Box flexDirection="column">
-      {options.slice(start,start+visible).map(([name,ko,en],i)=><Text key={name} wrap="truncate-end" bold={start+i===menu.index} color={start+i===menu.index?c.gold:undefined}>{start+i===menu.index?'› ':'  '}{state.value[0]}{name.padEnd(11)}{language==='ko'?ko:en}</Text>)}
+      {options.slice(start,start+visible).map(([name,ko,en],i)=><Text key={name} wrap="truncate-end" bold={start+i===menu.index} color={start+i===menu.index?c.gold:undefined}>{start+i===menu.index?'› ':'  '}{state.value[0]}{name.padEnd(11)}<Text color={start+i===menu.index?c.gold:c.iron}>{language==='ko'?ko:en}</Text></Text>)}
       <Text color={c.iron} wrap="truncate-end">{menu.index+1}/{options.length} · {language==='ko'?'↑↓ 이동 · Tab 완성 · Enter 선택 · Esc 닫기':'↑↓ move · Tab complete · Enter select · Esc close'}</Text>
     </Box>}
   </>;

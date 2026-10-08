@@ -17,7 +17,7 @@ import {GO_URL,GO_MODEL} from '../providers/opencode-go.js';
 export const GO_PROVIDER='hera_opencode_go';
 export const GO_ROLE='hera_go';
 export const ASTRA_ROLE='hera_astra';
-export const GO_EFFORT='low'; // Only this effort has passed the native Go qualification.
+export const GO_EFFORT='low'; // Default Go effort; the selected one is config.workers.goReasoningEffort.
 const sha=z.string().regex(/^[a-f0-9]{64}$/);
 const receiptSchema=z.strictObject({schemaVersion:z.literal(1),platform:z.string(),patchSha256:sha,binarySha256:sha,bundleSha256:sha});
 const pinPath=fileURLToPath(new URL('../../assets/codex-provider/manifest.json',import.meta.url));
@@ -62,7 +62,7 @@ export async function launchExternal(home:string,cwd:string,config:Config,mode:'
   if(!catalog.models.some(m=>m.slug===config.main.model))throw new HeraError('MODEL_UNAVAILABLE','Refresh the official main model catalog before mixed mode.',4);
   const profile='hera-mixed-'+randomUUID();const directory=join(home,'runtime-profiles',profile);await mkdir(directory,{recursive:true,mode:0o700});
   const rolePath=join(directory,'go.toml');const catalogPath=join(directory,'models.json');const profilePath=join(codexHome,profile+'.config.toml');
-  const role=`model = "${GO_MODEL}"\nmodel_provider = "${GO_PROVIDER}"\nmodel_reasoning_effort = "${GO_EFFORT}"\n`;
+  const role=`model = "${GO_MODEL}"\nmodel_provider = "${GO_PROVIDER}"\nmodel_reasoning_effort = "${config.workers.goReasoningEffort}"\n`;
   const astraPath=join(directory,'astra.toml');
   const profileContents=`cli_auth_credentials_store = "keyring"\nsubagent_model_provider_allowlist = ${JSON.stringify(config.mode==='adaptive'?[GO_PROVIDER,'openai']:[GO_PROVIDER])}\n`+[GO_ROLE,'default','worker','explorer'].map(name=>`[agents.${name}]\ndescription = "Hera DeepSeek routine task worker"\nconfig_file = ${JSON.stringify(rolePath)}\n`).join('')+(config.mode==='adaptive'?`[agents.${ASTRA_ROLE}]\ndescription = "Deep reasoning, product planning, architecture and difficult design decisions"\nconfig_file = ${JSON.stringify(astraPath)}\n`:'');
   const catalogContents=JSON.stringify({models:catalog.models.map(m=>m.slug===config.main.model?{...m,multi_agent_version:'v1'}:m)});
@@ -70,7 +70,7 @@ export async function launchExternal(home:string,cwd:string,config:Config,mode:'
   if(config.mode==='adaptive')owned.push([astraPath,`model = ${JSON.stringify(config.main.model)}\nmodel_provider = "openai"\nmodel_catalog_json = ${JSON.stringify(catalogPath)}\n`+(config.main.reasoningEffort?`model_reasoning_effort = ${JSON.stringify(config.main.reasoningEffort)}\n`:'')]);
   for(const [path,contents] of owned)await writeFile(path,contents,{flag:'wx',mode:0o600});
   const settings={...nativeSettings({...config,workers:{...config.workers,gptModel:null,reasoningEffort:null}},mode,workers,searchUrl,nativeFlow),model_catalog_json:catalogPath,
-    ...(config.mode==='adaptive'?{model_provider:GO_PROVIDER,model_reasoning_effort:GO_EFFORT}:{}),
+    ...(config.mode==='adaptive'?{model_provider:GO_PROVIDER,model_reasoning_effort:config.workers.goReasoningEffort}:{}),
     'features.multi_agent_v2':false,'agents.max_depth':1,
     [`model_providers.${GO_PROVIDER}`]:{name:'Hera OpenCode Go',base_url:GO_URL,env_key:'HERA_OPENCODE_GO_API_KEY',wire_api:'responses',requires_openai_auth:false,request_max_retries:0,stream_max_retries:0,stream_idle_timeout_ms:20000,supports_websockets:false,http_headers:{'User-Agent':'hera/0.1.0-alpha.1','x-opencode-session':randomUUID()}}};
   function args(values:Record<string,unknown>,prefix=''):string[]{return Object.entries(values).flatMap(([k,v])=>v&&typeof v==='object'&&!Array.isArray(v)?args(v as Record<string,unknown>,prefix+k+'.'):['-c',`${prefix+k}=${JSON.stringify(v)}`]);}

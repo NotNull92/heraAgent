@@ -8,7 +8,6 @@ import {SettingsPicker} from './SettingsPicker.js';
 import {NativePrompt} from './NativePrompt.js';
 import {Glint,Ornate,Text,ThemeContext,palette,useTheme} from './theme.js';
 import {safeText} from '../errors.js';
-import {GO_EFFORT} from '../codex/external-runtime.js';
 import {windowsFor} from '../session/limits.js';
 import type {LimitWindow} from '../session/limits.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
@@ -88,7 +87,7 @@ export function App({session}:{session:InteractiveSession}){
       <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{adaptive?'Astra + DeepSeek':external?'GPT + DeepSeek':'GPT'}</Text>
         {session.controller?.collaborationEnabled&&<Text><Text color={c.iron}> · {ko?'워커':'Workers'} </Text><Text color={c.frost}>{'◆'.repeat(Math.min(active,limit))}</Text><Text color={c.iron}>{'◇'.repeat(Math.max(0,limit-active))}</Text>{ko?` ${active} 활성 / 상한 ${limit}`:` ${active} active / limit ${limit}`}</Text>}</Box>
       <Role label={adaptive?(ko?'깊은 추론':'Reasoning'):(ko?'메인':'Main')} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language}>{safeText(session.config.main.model??unset)}<Text color={c.iron}> · effort </Text>{session.config.main.reasoningEffort??'default'}</Role>
-      <Role label={adaptive?(ko?'일상 작업':'Routine'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(external?GO_EFFORT:session.config.workers.reasoningEffort)??'default'}</Role>
+      <Role label={adaptive?(ko?'일상 작업':'Routine'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(external?session.config.workers.goReasoningEffort:session.config.workers.reasoningEffort)??'default'}</Role>
     </Box>
   </ThemeContext.Provider>;
 }
