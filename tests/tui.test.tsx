@@ -101,3 +101,31 @@ it('greets with one pooled line per start and keeps it across re-renders',async(
   ui.unmount();random.mockRestore();
 });
 it('keeps pasted backslash commands literal',async()=>{const submitted:string[]=[];const ui=render(<Composer language="ko" busy={false} send={t=>submitted.push(t)} cancel={()=>{}}/>);await tick();ui.stdin.write('\x1b[200~\\workers 8\x1b[201~');await tick();ui.stdin.write('\r');await tick();expect(submitted).toEqual([' \\workers 8']);ui.unmount();});
+it('lists, filters and selects commands below the input, with Tab for arguments',async()=>{
+  const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  const key=async(value:string)=>{ui.stdin.write(value);await tick();};
+  try{
+    await tick();await key('/');expect(ui.lastFrame()).toContain('명령어 도움말');expect(ui.lastFrame()!.indexOf('> /')).toBeLessThan(ui.lastFrame()!.indexOf('› /help'));
+    await key('\x1b[B');await key('\r');expect(sent).toEqual(['/model']);
+    await key('/mo');expect(ui.lastFrame()).toContain('/model');expect(ui.lastFrame()).toContain('/mode');expect(ui.lastFrame()).not.toContain('/help');
+    await key('\x1b[B');await key('\t');expect(ui.lastFrame()).toContain('> /mode');expect(ui.lastFrame()).not.toContain('Tab 완성');
+    await key('adaptive');await key('\r');expect(sent).toEqual(['/model','/mode adaptive']);
+  }finally{ui.unmount();}
+});
+it('scrolls a short command menu, dismisses it and completes backslash plans before sending',async()=>{
+  const sent:string[]=[];const ui=render(<Composer language="en" rows={2} busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  const key=async(value:string)=>{ui.stdin.write(value);await tick();};
+  try{
+    await tick();await key('/');await key('\x1b[A');expect(ui.lastFrame()).toContain('› /quit');expect(ui.lastFrame()).toContain('12/12');expect(ui.lastFrame()).not.toContain('/help');
+    await key('\x1b');expect(ui.lastFrame()).toContain('> /');expect(ui.lastFrame()).not.toContain('Tab complete');expect(sent).toEqual([]);
+    await key('\x15');await key('\\pl');await key('\r');expect(sent).toEqual([]);expect(ui.lastFrame()).toContain('> \\plan');
+    await key('한글 계획');await key('\r');expect(sent).toEqual(['\\plan 한글 계획']);
+    await key('\x1b[A');await key('\r');expect(sent).toEqual(['\\plan 한글 계획','\\plan 한글 계획']);
+  }finally{ui.unmount();}
+});
+it('never completes pasted commands or opens the menu during active work',async()=>{
+  const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  try{await tick();ui.stdin.write('\x1b[200~/quit\x1b[201~');await tick();expect(ui.lastFrame()).not.toContain('Tab 완성');ui.stdin.write('\r');await tick();expect(sent).toEqual([' /quit']);ui.stdin.write('\x1b[A');await tick();expect(ui.lastFrame()).not.toContain('Tab 완성');ui.stdin.write('\r');await tick();expect(sent).toEqual([' /quit',' /quit']);}finally{ui.unmount();}
+  const active=render(<Composer language="ko" busy send={text=>sent.push(text)} cancel={()=>{}}/>);
+  try{await tick();active.stdin.write('/');await tick();expect(active.lastFrame()).not.toContain('Tab 완성');active.stdin.write('\r');await tick();expect(sent).toEqual([' /quit',' /quit']);}finally{active.unmount();}
+});

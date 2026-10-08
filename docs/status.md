@@ -1,5 +1,17 @@
 # Implementation status
 
+## Command suggestions (2026-10-08)
+
+Typing `/` or the existing backslash alias opens a localized command list below
+the composer. Prefix typing filters it; Up/Down navigate, Tab completes for
+arguments, Enter selects, and Escape dismisses. `/plan` completion waits for its
+request text. The list uses at most six rows and scrolls within shorter terminals.
+Existing backslash+Enter newline handling, input history, IME caret placement,
+busy cancellation and literal pasted commands are preserved.
+Native Windows typecheck/build and all 19 TUI tests passed, including three new
+keyboard/filter/scroll/paste regressions. No live model calls or new physical
+terminal acceptance were performed. New push CI is reported separately.
+
 ## Runtime label (2026-10-08)
 
 The TUI banner and CLI version output now display `api v0.161.0`, using the
