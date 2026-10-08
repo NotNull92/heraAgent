@@ -27,11 +27,30 @@ try{
   const usage=events.findLast(e=>e.method==='thread/tokenUsage/updated'&&e.params.threadId===controller.metadata.codexThreadId)?.params.tokenUsage.last;
   console.log(JSON.stringify({stage:'conversation-metrics',mode,effort:mode==='adaptive'?config.workers.goReasoningEffort:config.main.reasoningEffort,elapsedMs:Math.round(performance.now()-greetingStarted),usage}));
   const edit=await run('edit-test','sum.cjs의 덧셈 버그를 고치고 node check.cjs로 실제 테스트해줘. 이 작은 작업은 직접 처리하고 다른 파일은 수정하지 마.');
+  const items=edit.turns.at(-1).items;const guideIndex=items.findIndex(i=>i.type==='mcpToolCall'&&i.status==='completed'&&i.tool==='load_instructions'&&i.arguments.topic==='coding');
+  assert(guideIndex>=0,'Coding must load the handbook without an explicit user hint');
+  const handbook=await readFile(new URL('../assets/codex/coding-instructions.md',import.meta.url),'utf8');
+  assert.equal(items[guideIndex].result.content[0].text,handbook,'Full handbook must load without truncation or encoding loss');
+  // Read only this fixture's native trace: app-server events alone can contain
+  // a full raw result even when the model-facing output has been truncated.
+  assert.equal(typeof edit.path,'string');
+  const trace=(await readFile(edit.path,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
+  const representations=[handbook,JSON.stringify(handbook).slice(1,-1)];
+  assert(trace.some(e=>{
+    if(e.type!=='response_item'||!['function_call_output','custom_tool_call_output'].includes(e.payload.type))return false;
+    const texts=Array.isArray(e.payload.output)?e.payload.output.map(item=>item.text):[e.payload.output];
+    return texts.some(text=>typeof text==='string'&&representations.some(full=>text.includes(full)));
+  }),'The full handbook must be in model-visible native tool output');
+  assert(items.findIndex(i=>i.type==='fileChange'||i.type==='commandExecution'&&/Set-Content|Out-File|apply_patch|node check\.cjs/.test(i.command))>guideIndex,'Load the handbook before edits or tests');
+  console.log(JSON.stringify({stage:'coding-handbook',loaded:'complete',beforeEdits:true,threadId:controller.metadata.codexThreadId}));
   assert.equal((await import('node:child_process')).spawnSync(process.execPath,['check.cjs'],{cwd,windowsHide:true}).status,0);
   assert(edit.turns.at(-1).items.some(i=>i.type==='commandExecution'&&i.exitCode===0&&i.command.includes('check.cjs')));checks.editTest='pass';
   const saved=structuredClone(controller.metadata);assert.equal(await controller.close(),true);await start(saved);assert.equal(controller.metadata.codexThreadId,saved.codexThreadId);
   await run('resume','방금 수정한 파일과 실행한 테스트 이름만 알려줘. 파일을 바꾸거나 도구를 실행하지 마.');checks.resume='pass';
-  if(mode==='adaptive'){await run('planning','할 일 앱에 오프라인 동기화를 넣으려 해. 충돌 해결과 데이터 모델을 깊이 검토해서 설계안을 두 문장으로 제시해줘. 파일 수정, 셸, 웹 검색은 필요 없어.');assert([...controller.workers.snapshot.values()].some(t=>t.id!==controller.metadata.codexThreadId&&t.modelProvider==='openai'&&t.model===config.main.model&&t.reasoningEffort===config.main.reasoningEffort));}
+  const followup=await run('coding-followup','node check.cjs를 한 번 더 실행해줘. 추가 수정은 하지 마.');
+  assert(followup.turns.at(-1).items.some(i=>i.type==='commandExecution'&&i.exitCode===0&&i.command.includes('check.cjs')));
+  assert(!followup.turns.at(-1).items.some(i=>i.type==='mcpToolCall'&&i.tool==='load_instructions'&&i.arguments.topic==='coding'),'Reuse the handbook already present in resumed native history');
+  if(mode==='adaptive'){await run('planning','할 일 앱에 오프라인 동기화를 넣으려 해. 충돌 해결과 데이터 모델을 깊이 검토해서 설계안을 두 문장으로 제시해줘. 파일 수정이나 웹 검색은 필요 없어.');assert(events.some(e=>e.method==='item/completed'&&e.params.item.type==='mcpToolCall'&&e.params.item.status==='completed'&&e.params.item.tool==='load_instructions'&&e.params.item.arguments.topic==='research'));assert([...controller.workers.snapshot.values()].some(t=>t.id!==controller.metadata.codexThreadId&&t.modelProvider==='openai'&&t.model===config.main.model&&t.reasoningEffort===config.main.reasoningEffort));}
   else await run('routing','Use exactly one native worker to read sum.cjs and report its purpose in one sentence. Wait for completion. No files, shell, web or extra workers.');
   await controller.workers.refresh(controller.client);assert(controller.workers.count>0);checks.routing='pass';
   await run('permissions',`Permission test in a disposable fixture. Using the native shell tool, request sandbox_permissions=require_escalated with a short justification to write the word test to ${JSON.stringify(join(outside,'denied.txt'))}. This explicitly exercises the client's approval UI. Do not use another tool or attempt an alternative if declined. No workers.`);

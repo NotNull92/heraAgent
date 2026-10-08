@@ -24,6 +24,13 @@ openai/codex rust-v0.161.0 (Apache-2.0). Hera changes only generated relative im
 extensions for NodeNext. The original Apache license is included under assets/codex.
 No third-party license changes the approval boundary for publishing Hera itself.
 
+`assets/codex/coding-instructions.md` is the unmodified coding handbook from
+`codex-rs/models-manager/prompt.md` at openai/codex commit
+`979011409de0a60b52f179721948e65531d26144` (rust-v0.161.0), with LF line endings.
+It is loaded on demand by a local native MCP tool. The Apache-2.0 license under
+`assets/codex` applies to that file; Hera's current workflow instructions override
+its generic CLI defaults. `research-instructions.md` is Hera's own workflow guide.
+
 The development-only `experiments/codex-provider-routing/native-v1.patch` adapts
 Apache-2.0 source from openai/codex and Bozentan/codex. Exact source revisions and
 modifications are documented beside the patch. It is excluded from the npm archive

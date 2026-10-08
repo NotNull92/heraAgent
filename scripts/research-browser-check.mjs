@@ -20,7 +20,7 @@ try{
     return route.fulfill({status:200,contentType:'text/html',body:'<title>Fixture</title><nav>Discard navigation</nav><main>Public document evidence.</main><script>throw new Error("must not run")</script>'});
   });
   await client.connect(new StreamableHTTPClientTransport(new URL(server.url)));
-  assert.deepEqual((await client.listTools()).tools.map(t=>t.name).sort(),['web_fetch','web_search']);
+  assert.deepEqual((await client.listTools()).tools.map(t=>t.name).sort(),['load_instructions','web_fetch','web_search']);
   const read=async url=>{const value=await client.callTool({name:'web_fetch',arguments:{url}});assert.notEqual(value.isError,true);return JSON.parse(value.content[0].text);};
   assert.equal((await fetch(server.url,{method:'POST',headers:{origin:'https://example.com'}})).status,403);
   const first=await read('https://document.example.com/a');assert.equal(first.status,'ok');assert.equal(first.text,'Public document evidence.');

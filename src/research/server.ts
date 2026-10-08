@@ -1,5 +1,6 @@
 import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type {Transport} from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -12,6 +13,7 @@ export async function startResearch(home:string){
     if(req.url!==path||req.method!=='POST'||req.headers.origin||req.headers.host!==new URL(url).host){res.writeHead(403);res.end();return;}
     const mcp=new McpServer({name:'hera-local-research',version:'1.0.0'});connections.add(mcp);
     const annotations={readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true};
+    mcp.registerTool('load_instructions',{description:'Load the full trusted Hera handbook before coding/workspace work or design/research. Local packaged text only, no web access. Skip for casual conversation; reuse loaded instructions from history.',inputSchema:{topic:z.enum(['coding','research'])},annotations:{...annotations,openWorldHint:false}},async({topic})=>({content:[{type:'text',text:await readFile(new URL(`../../assets/codex/${topic}-instructions.md`,import.meta.url),'utf8')}]}));
     mcp.registerTool('web_search',{description:'Search public web pages in a local browser. Three compact results; shared queue/cache. Stop on CAPTCHA or blocking; no paid API.',inputSchema:{query:z.string().trim().min(1).max(500)},annotations},async({query})=>({content:[{type:'text',text:JSON.stringify(await browser.search(query))}]}));
     mcp.registerTool('web_fetch',{description:'Read a public HTTPS document. Reuse its URL and request only needed text; no private/local addresses.',inputSchema:{url:z.string().url().max(4096),offset:z.number().int().min(0).max(100000).default(0),maxCharacters:z.number().int().min(100).max(6000).default(3000)},annotations},async({url,offset,maxCharacters})=>({content:[{type:'text',text:JSON.stringify(await browser.fetch(url,offset,maxCharacters))}]}));
     const transport=new StreamableHTTPServerTransport({enableJsonResponse:true});

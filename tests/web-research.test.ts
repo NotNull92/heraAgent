@@ -1,7 +1,32 @@
-import {it,expect} from 'vitest';
+import {it,expect,vi} from 'vitest';
+import {mkdtemp,readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type {Transport} from '@modelcontextprotocol/sdk/shared/transport.js';
+import {startResearch} from '../src/research/server.js';
 import {defaults} from '../src/config.js';
 import {nativeSettings} from '../src/codex/config-compiler.js';
 import {SEARCH_SERVER,SEARCH_TOOLS,searchProfile,verifySearchConfig,verifySearchInventory,permittedSearchItem} from '../src/codex/web-research.js';
+
+it('loads complete UTF-8 packaged handbooks locally and rejects arbitrary paths',async()=>{
+  const server=await startResearch(await mkdtemp(join(tmpdir(),'hera-guides-')));
+  const client=new Client({name:'guide-fixture',version:'1'});
+  const search=vi.spyOn(server.browser,'search');const fetch=vi.spyOn(server.browser,'fetch');
+  try{
+    await client.connect(new StreamableHTTPClientTransport(new URL(server.url)) as Transport);
+    expect((await client.listTools()).tools.map(t=>t.name).sort()).toEqual([...SEARCH_TOOLS].sort());
+    for(const topic of ['coding','research']){
+      const result=await client.callTool({name:'load_instructions',arguments:{topic}});
+      expect(result.isError).not.toBe(true);
+      expect(result.content).toEqual([{type:'text',text:await readFile(new URL(`../assets/codex/${topic}-instructions.md`,import.meta.url),'utf8')}]);
+    }
+    expect((await client.callTool({name:'load_instructions',arguments:{topic:'../../config'}})).isError).toBe(true);
+    expect(search).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
+    expect(searchProfile(true).tools.load_instructions.output_token_limit).toBe(8000);
+  }finally{await client.close();await server.close();}
+});
 
 it('restricts analysis to the owned local search profile and disables it for writes',()=>{
   for(const enabled of [true,false]){

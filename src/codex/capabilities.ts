@@ -32,7 +32,9 @@ export async function nativeCapability(home:string|undefined,config:Config){
   // Keep legacy evidence exact; v2 requires fresh native qualification, never migration.
   const profile={...config,main:{...config.main,reasoningEffort:null},workers:{...config.workers,reasoningEffort:null,goReasoningEffort:'low' as const}};
   const legacy=await workerCapability(home,profile);const runtime=config.mode!=='gpt_only'&&home?await externalRuntime(home):null;
-  const fingerprint=createHash('sha256').update(legacy.fingerprint).update('native-workspace-v2').update(JSON.stringify(config.providers)).update(JSON.stringify(runtime?.receipt??null)).digest('hex');
+  const hash=createHash('sha256').update(legacy.fingerprint).update('native-workspace-v2').update(JSON.stringify(config.providers)).update(JSON.stringify(runtime?.receipt??null));
+  for(const guide of ['coding-instructions.md','research-instructions.md'])hash.update(guide).update(await readFile(join(assets,guide)));
+  const fingerprint=hash.digest('hex');
   const parsed=nativeEvidence.safeParse(home?await existsJson(join(home,'metadata',`native-${config.mode}-verification.json`)):undefined);
   const ready=parsed.success&&parsed.data.fingerprint===fingerprint&&(config.mode==='gpt_only'||runtime!==null);
   return {ready,fingerprint,checkedAt:ready?parsed.data.checkedAt:null,reason:ready?'Native workspace execution verified on this platform and configuration.':'Native workspace verification is missing or stale; phased evidence does not qualify this workflow.'};

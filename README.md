@@ -122,6 +122,13 @@ Mixed/adaptive modes additionally require a reviewed native runtime installed in
 your Hera home. A key alone does not enable them. There is no automatic provider fallback.
 
 In adaptive mode, `/model main` and `/effort main` configure the GPT reasoning role.
+Fresh conversations carry compact instructions. Coding loads the full pinned
+coding handbook on demand; design/research loads its own guide. A local native MCP
+tool reads only these packaged files, without web access, in the same thread.
+Loaded guides are reused from history. Tool schemas, project
+instructions and existing history still count toward context; later chat does not
+clear a handbook already loaded for coding.
+
 The development checkout exposes Go efforts `low`, `high` and `max` through
 `/effort worker`; valid effort changes preserve native v2 qualification. GPT options come
 from the model catalog. `/workers` sets a ceiling of 1–8, capped by the project,

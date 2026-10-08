@@ -1,10 +1,10 @@
 import React from 'react';
 import {it,expect,vi} from 'vitest';
 import {spawn} from 'node:child_process';
-import {mkdtemp,open} from 'node:fs/promises';
+import {mkdtemp,open,readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {render} from 'ink-testing-library';
 import {CodexClient} from '../src/codex/client.js';
 import {Controller,NATIVE_BASE_INSTRUCTIONS} from '../src/session/controller.js';
@@ -25,7 +25,14 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     const start=vi.spyOn(client,'start').mockRejectedValueOnce(new Error('capture native params'));
     await expect(Reflect.apply(Reflect.get(controller,'startNative'),controller,[])).rejects.toThrow('capture native params');
     expect(start.mock.calls[0]?.[0]).toMatchObject({baseInstructions:NATIVE_BASE_INSTRUCTIONS,approvalPolicy:'on-request',sandbox:'workspace-write'});
-    expect(NATIVE_BASE_INSTRUCTIONS.length).toBeLessThan(1200);start.mockRestore();
+    const handbook=await readFile(new URL('../assets/codex/coding-instructions.md',import.meta.url),'utf8');
+    expect(createHash('sha256').update(handbook).digest('hex')).toBe('ac8ae107a0d72fe3476b430afb161ea4e67da2e446d778aefc44828160559807');
+    expect(handbook.length).toBe(20751);
+    const initial=JSON.stringify(start.mock.calls[0]?.[0]);
+    expect(initial).not.toContain('## Task execution');expect(initial).not.toContain('DRD-1');
+    expect(NATIVE_BASE_INSTRUCTIONS).toContain('load_instructions');
+    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1500);
+    expect(NATIVE_BASE_INSTRUCTIONS.length).toBeLessThan(1500);start.mockRestore();
       await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
       await controller.run('plan',undefined,true);expect(turn.mock.calls[1]?.[0]).toMatchObject({approvalPolicy:'never',sandboxPolicy:{type:'readOnly',networkAccess:false}});
       await controller.run('ordinary edit');expect(turn.mock.calls[2]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite'},input:[expect.objectContaining({text:'ordinary edit'})]});

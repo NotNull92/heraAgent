@@ -2,6 +2,24 @@
 
 ## Authorized workflow amendment — 2026-10-07
 
+Progressive instruction loading (2026-10-08, supersedes the prompt-replacement
+part of the correction below): fresh native threads carry compact conversation
+and routing instructions. Before workspace/code work, the model calls the local
+`hera_web.load_instructions(topic="coding")` native MCP tool for the full pinned
+Codex coding handbook; design/research loads `topic="research"`. Greetings do
+not load either. Keep a single native thread/tool loop, no classifier inference,
+keyword router, copied conversation store or fixed greeting. Only the instruction
+tool has an 8,000-token output budget; shell and web output limits remain unchanged.
+The tool reads two fixed packaged UTF-8 files, accepts no paths, and uses no web
+or browser. This avoids Windows sandbox shell encoding loss and output truncation.
+The model follows loading instructions; this is not a pre-execution security gate.
+Permissions remain enforced by the native runtime. Loaded guides remain in native
+history and are reused until absent after compaction; later casual turns do not
+erase existing history. Native tool schemas, project instructions and skills still
+contribute to input size. Include handbook content in qualification fingerprints
+and packages, and verify actual complete reads before editing, not just a request
+to read a filename. Keep the effort qualification correction below.
+
 Latency/settings correction (2026-10-08): native threads use a compact Hera base
 instruction through the pinned `baseInstructions` API. Keep project instructions,
 native tools, skills, permissions, provider routing and conversation storage.
