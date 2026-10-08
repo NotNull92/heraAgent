@@ -41,8 +41,13 @@ controls and the configured concurrency ceiling; no extra classifier inference,
 model loop, mandatory slash command or restored apply phases. Routine edits and
 conversation stay direct. Honor explicit exclusions of web/delegation; single-agent
 mode covers the questions itself. Document prompt guidance separately from hard
-runtime limits and observed verification. The user confirmed the herdr resize fix;
-this does not certify Korean IME or macOS manual/live behavior.
+runtime limits and observed verification. The user confirmed the herdr resize fix
+and subsequently Korean IME inspection as Windows manual acceptance.
+
+The user explicitly chose to complete Windows before beginning macOS login,
+live model and physical terminal verification. Defer those checks to the next
+phase; they do not block the Windows milestone. Retain macOS support and automated
+CI, and label unperformed macOS manual/live checks NOT_RUN rather than passed.
 
 The original specification follows for history and all non-conflicting requirements.
 

@@ -2,8 +2,13 @@
 
 ## Current checkpoint (2026-10-08)
 
-The user confirmed the herdr resize fix. Record this as user-observed resize
-acceptance only; physical Korean IME and macOS manual/live remain NOT_RUN.
+The user confirmed the herdr resize fix and subsequently completed Korean IME
+inspection on 2026-10-08. Record both as user-confirmed Windows manual acceptance,
+not agent-observed tests. macOS manual/live remains NOT_RUN.
+
+The user explicitly deferred macOS login, live model and physical terminal checks
+until after Windows completion. These are next-phase work, not blockers for the
+Windows milestone. Preserve macOS support and automated CI; deferral is not a pass.
 
 Design/architecture/research requests now automatically ask the native root for
 3-5 complementary DRD assignments, public source evidence and synthesis. The
@@ -71,10 +76,31 @@ native initialization, reinstall/settings, OS credential persistence and launche
 passed, exit 0, for SHA-256
 `7d5faf794055d56ede46be4ce160909ec1263995913afb57665b630c3821249a`.
 
+Final implementation commit `41c48c38b4885ca41f7d722907da1da270d88778`, including
+DRD commit `dc6f298`, passed all four jobs in
+[CI 37707243321](https://github.com/NotNull92/heraAgent/actions/runs/37707243321):
+Windows x64/macOS arm64 offline checks and identical-archive installation on both
+platforms. Each offline run passed 82 tests. The exact Windows-built archive was
+downloaded and passed local Windows installation, native initialization,
+reinstall/settings preservation, OS credential persistence and launcher checks,
+exit 0. The archive SHA-256 matched both CI installation logs:
+`b7216e7e9e6d51e7d19159e27f968732e89adcfd0bcb13dacc3182d4d28db5f6`.
+The local receipt is `.artifacts/ci-41c48c3/verification.json` (not tracked).
+Its manual-check fields predate the user's later IME confirmation and macOS deferral
+recorded above. CI/package checks do not establish macOS live/manual acceptance.
+
+The preceding DRD CI 37707162418 was cancelled when Windows package smoke reached
+the 15-minute job deadline; its installed-package job was skipped. This remains a
+cancelled run, not a pass. The subsequent implementation run above passed.
+The current Windows implementation/verification scope is complete; remaining
+macOS manual/live work is explicitly deferred. Release publication is not authorized.
+This documentation closeout changes no runtime or package inputs. Local live-model,
+package and manual checks were not repeated for these documentation-only edits.
+
 Prior source `3b01e24` CI 37612842135 passed both OS offline and identical-archive
 installation jobs; feature CI 37610664560 passed after its Windows-only rerun.
 Later UI CI runs 37619226659, 37632048652 and 37632742033 were cancelled, not failed
-or passed. Current-source CI/package receipts must be recorded separately.
+or passed. These historical runs are separate from the final receipts above.
 
 The dated sections below are historical receipts. Older missing-login, blocked-Go,
 phase-transition and "remaining work" entries are superseded where later evidence

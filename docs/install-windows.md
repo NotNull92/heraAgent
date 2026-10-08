@@ -48,8 +48,8 @@ TUI: Enter sends, backslash+Enter or Ctrl+J inserts a newline, Escape interrupts
 (twice clears the composer), Ctrl+C interrupts a turn or, when idle, exits on the second
 press, `/quit` exits. Pasted slash text is literal, not a command.
 Use `run --single-agent --prompt-file <file>` for a reliable multiline/non-TTY path.
-The user confirmed the herdr resize fix on 2026-10-08. Physical Korean IME and other
-terminal input checks remain separately unverified; resize confirmation is not IME evidence.
+The user confirmed the herdr resize fix and Korean IME inspection on 2026-10-08.
+These are user-confirmed Windows manual results; macOS manual/live remains unverified.
 
 Close active Hera sessions before update. Reinstall the new checked tarball in the
 same prefix. Roll back with the previous checked tarball in that prefix. Neither

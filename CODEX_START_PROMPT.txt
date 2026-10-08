@@ -16,7 +16,10 @@ DRD assignments, public web evidence and synthesis within the same task. Respect
 the configured concurrency ceiling and explicit no-web/no-delegation requests;
 routine edits and conversation remain direct. No separate classifier, model loop,
 mandatory slash command or apply phase. Record guidance versus runtime enforcement
-honestly. The user confirmed the herdr resize fix, not IME or macOS live behavior.
+honestly. The user confirmed the herdr resize fix and subsequently Korean IME.
+Complete Windows first; the user explicitly deferred macOS login, live model and
+physical terminal checks until the next phase. These do not block the Windows
+milestone. Preserve macOS support/CI and keep unperformed checks labeled NOT_RUN.
 
 Implement Hera, an independent CLI/TUI coding agent, from this native Windows
 workspace using Codex. Perform development and hands-on/local testing on Windows.
