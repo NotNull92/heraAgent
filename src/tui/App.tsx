@@ -28,18 +28,44 @@ function Role({label,children,windows,fallback,reset,language}:{label:string;chi
     return <Text key={i}><Text color={c.iron}>{i?' · ':''}</Text>{name(w.windowDurationMins)} <Text bold color={left>=50?c.moss:left>=20?c.gold:c.blood}>{left}%</Text>{ko?' 남음':' left'}{when&&<Text color={c.iron}>{ko?` (${when} 리셋)`:` (resets ${when})`}</Text>}</Text>;
   }):<Text color={c.iron}>{fallback}</Text>}</Text>;
 }
-// Markdown bold in model output: a closed **pair** on one line becomes bold text without the asterisks.
-// ponytail: per line and unaware of code fences, so a line like 2**3**4 loses its asterisks; track fences if that bites.
+// Only prose gets bold; preserve code spans, including an unfinished span while streaming.
 export function emphasis(text:string){
-  const parts:React.ReactNode[]=[];let at=0;
-  for(const match of text.matchAll(/\*\*(\S(?:.*?\S)?)\*\*/g)){parts.push(text.slice(at,match.index),<Text key={match.index} bold>{match[1]}</Text>);at=match.index+match[0].length;}
-  return at?[...parts,text.slice(at)]:text;
+  const parts:React.ReactNode[]=[];let at=0,cursor=0;
+  const prose=(end:number)=>{
+    for(const match of text.slice(at,end).matchAll(/\*\*(\S(?:.*?\S)?)\*\*/g)){
+      const start=at+match.index;parts.push(text.slice(cursor,start),<Text key={start} bold>{match[1]}</Text>);cursor=start+match[0].length;
+    }
+    parts.push(text.slice(cursor,end));
+  };
+  const ticks=[...text.matchAll(/`+/g)];
+  for(let i=0;i<ticks.length;i++){
+    const start=ticks[i]!;prose(start.index);
+    let end=i+1;while(end<ticks.length&&ticks[end]![0].length!==start[0].length)end++;
+    at=end<ticks.length?ticks[end]!.index+ticks[end]![0].length:text.length;
+    parts.push(text.slice(start.index,at));cursor=at;i=end;
+  }
+  prose(text.length);return parts;
 }
-function Line({text}:{text:string}){
+type TextFormat={fence:string;user:boolean};
+type TranscriptLine={text:string;literal:boolean};
+function formatLine(text:string,state:TextFormat):TranscriptLine{
+  const speaker=/^(You|Hera): /.exec(text);
+  if(speaker&&(speaker[1]==='You'||!state.fence)){state.fence='';state.user=speaker[1]==='You';}
+  const body=state.fence?text:text.slice(speaker?.[0].length??0);
+  if(state.user)return {text,literal:true};
+  const fence=/^ {0,3}(`{3,}|~{3,})(.*)$/.exec(body);
+  if(state.fence){
+    if(fence&&fence[1]![0]===state.fence[0]&&fence[1]!.length>=state.fence.length&&!fence[2]!.trim())state.fence='';
+    return {text,literal:true};
+  }
+  if(fence&&(fence[1]![0]==='~'||!fence[2]!.includes('`'))){state.fence=fence[1]!;return {text,literal:true};}
+  return {text,literal:/^( {4}|\t)/.test(body)};
+}
+function Line({text,literal}:TranscriptLine){
   const {c}=useTheme();const speaker=/^(You|Hera): /.exec(text);
   // What the user typed stays literal.
-  if(speaker)return <Text><Text bold color={speaker[1]==='You'?c.frost:c.gold}>{speaker[0]}</Text>{speaker[1]==='You'?text.slice(speaker[0].length):emphasis(text.slice(speaker[0].length))}</Text>;
-  return <Text color={text.startsWith('Tool exit: ')?c.iron:undefined}>{text?emphasis(text):' '}</Text>;
+  if(speaker)return <Text><Text bold color={speaker[1]==='You'?c.frost:c.gold}>{speaker[0]}</Text>{literal?text.slice(speaker[0].length):emphasis(text.slice(speaker[0].length))}</Text>;
+  return <Text color={text.startsWith('Tool exit: ')?c.iron:undefined}>{text?(literal?text:emphasis(text)):' '}</Text>;
 }
 // Printed once at the top of the session, then it scrolls away with the conversation.
 function Banner({width,cwd,greeting,language}:{width:number;cwd:string;greeting:string;language:'ko'|'en'}){
@@ -64,11 +90,11 @@ export function App({session}:{session:InteractiveSession}){
   // The conversation flows into the terminal's own scrollback like a shell session: every finished
   // line is written once above the live area, and only the unfinished line stays live. The session
   // keeps a sliding window, so its running character count tells which text is new.
-  const log=useRef({seen:0,tail:'',lines:[] as string[]});
+  const log=useRef({seen:0,tail:'',lines:[] as TranscriptLine[],format:{fence:'',user:false} as TextFormat});
   if(session.written>log.current.seen){
     const fresh=session.written-log.current.seen;const parts=(log.current.tail+session.transcript.slice(-Math.min(fresh,session.transcript.length))).split('\n');
-    const before=log.current.lines;const next=[...before,...parts.slice(0,-1)];for(let i=Math.max(0,before.length-KEPT_LINES);i<next.length-KEPT_LINES;i++)next[i]='';
-    log.current={seen:session.written,tail:parts.at(-1)!,lines:next};
+    const before=log.current.lines;const format={...log.current.format};const next=[...before,...parts.slice(0,-1).map(text=>formatLine(text,format))];for(let i=Math.max(0,before.length-KEPT_LINES);i<next.length-KEPT_LINES;i++)next[i]={text:'',literal:true};
+    log.current={seen:session.written,tail:parts.at(-1)!,lines:next,format};
   }
   const items=useMemo(()=>[null,...log.current.lines],[log.current.lines]);
   const approval=safeText(session.approval);const rows=height-5-Number(!!approval);
@@ -82,9 +108,9 @@ export function App({session}:{session:InteractiveSession}){
   const shared=workerWindows.length>0&&JSON.stringify(workerWindows)===JSON.stringify(mainWindows);
   const workerNote=external?(ko?'한도: OpenCode 콘솔':'limits: OpenCode console'):shared?(ko?'메인과 한도 공유':'shares the main limit'):unread;
   return <ThemeContext.Provider value={theme}>
-    <Static key={epoch} items={items}>{(line,i)=>line===null?<Banner key={i} width={width} cwd={session.cwd} greeting={greeting} language={session.config.language}/>:<Line key={i} text={line}/>}</Static>
+    <Static key={epoch} items={items}>{(line,i)=>line===null?<Banner key={i} width={width} cwd={session.cwd} greeting={greeting} language={session.config.language}/>:<Line key={i} {...line}/>}</Static>
     <Box flexDirection="column">
-      {log.current.tail!==''&&<Line text={log.current.tail}/>}
+      {log.current.tail!==''&&<Line {...formatLine(log.current.tail,{...log.current.format})}/>}
       {approval&&<Text bold color={c.gold}>◆ {approval}</Text>}
       {session.providerKeyInput?<ProviderKeyInput language={session.config.language} save={key=>{void session.saveProviderKey(key);}} cancel={()=>session.cancelProviderKey()}/>
         :session.providerLoginText?<ProviderLogin text={session.providerLoginText} cancel={()=>{void session.interrupt();}} quit={quit}/>

@@ -1,6 +1,7 @@
-import {mkdir,readdir,readFile,unlink,writeFile} from 'node:fs/promises';
+import {readdir,readFile,unlink} from 'node:fs/promises';
 import {join} from 'node:path';
 import {HeraError} from '../errors.js';
+import {atomicWrite} from '../paths.js';
 // Answer voices are user-owned Markdown files in <home>/output-styles. The chosen one is copied into the
 // isolated runtime's AGENTS.md between these markers; anything else in that file is preserved.
 const START=/<!-- hera-style:start ([a-z0-9_-]+) -->/i;const END='<!-- hera-style:end -->';
@@ -32,7 +33,7 @@ export async function setStyle(home:string,name:string|null){
   }
   const next=[rest,block].filter(Boolean).join('\n\n');
   if(!next){await unlink(target(home)).catch((e:NodeJS.ErrnoException)=>{if(e.code!=='ENOENT')throw e;});return;}
-  await mkdir(join(home,'codex'),{recursive:true,mode:0o700});await writeFile(target(home),next.endsWith('\n')?next:next+'\n',{mode:0o600});
+  await atomicWrite(target(home),next.endsWith('\n')?next:next+'\n');
 }
 // Hera names for the three published voices; a user's own file shows its file name.
 export function styleLabel(name:string,ko:boolean){

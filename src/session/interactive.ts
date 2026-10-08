@@ -146,7 +146,7 @@ export class InteractiveSession extends EventEmitter {
     case '/style':{
       const ko=this.config.language==='ko';const names=await listStyles(this.home);
       if(!args.length){
-        if(!names.length){this.add(ko?`\n고를 화법이 없습니다. ${stylesDir(this.home)} 폴더에 화법 파일(.md)을 넣으세요.\n`:`\nNo voices found. Put voice files (.md) in ${stylesDir(this.home)}.\n`);break;}
+        if(!names.length)this.add(ko?`\n설치된 화법이 없습니다. ${stylesDir(this.home)} 폴더에 화법 파일(.md)을 넣거나 본래 목소리를 선택하세요.\n`:`\nNo voices installed. Put voice files (.md) in ${stylesDir(this.home)}, or choose Own voice.\n`);
         this.selection={title:ko?'화법 선택 · 다음 세션부터 적용':'Choose a voice · applies to the next session',current:await activeStyle(this.home)??'default',options:[...names.map(name=>({value:name,label:styleLabel(name,ko)})),{value:'default',label:ko?'[본래 목소리] 화법 없음':'[Own voice] no style'}],choose:async value=>this.command(`/style ${value}`)};break;}
       const name=args[0]!.toLowerCase();if(args.length!==1||name!=='default'&&!names.includes(name))throw new HeraError('INVALID_STYLE',ko?'/style에서 고를 수 있는 화법 이름이나 default를 입력하세요.':'Use a voice listed by /style, or default.',2);
       await setStyle(this.home,name==='default'?null:name);

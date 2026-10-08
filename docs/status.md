@@ -1430,3 +1430,20 @@ keep the paste-safe behavior. Windows local: typecheck, build and 94 offline tes
 passed (exit 0). The cause was derived from the input handler and the existing
 embedded-control test, not reproduced in a real terminal; whether this covers every
 occurrence the user saw is NOT_RUN.
+
+Attention Span integration review fixes (2026-10-08): prose-only bold rendering
+preserves inline code, backtick/tilde fenced blocks, indented code and user
+continuation lines. Completed transcript lines retain their formatting flags;
+only completed lines advance fence state, so streaming and resize keep code
+literal. Voice saves reuse the existing serialized temporary-file/fsync/rename
+writer (now shared by JSON and text), preserving prior AGENTS.md contents if a
+write or replacement fails. The voice picker always offers Own voice, even after
+the active voice's source file is removed.
+
+Windows local: typecheck, build and 98 offline tests across 19 files passed
+(exit 0). Regression checks cover streamed code and resize, source-file deletion
+followed by picker reset, and injected partial-write/rename failures with original
+instructions retained and temporary files removed. No user voice files or live
+runtime settings were changed. Live model calls and physical terminal checks are
+NOT_RUN for this change; Windows/macOS CI results are recorded separately from
+these local results. No dependencies or bundled third-party voice texts were added.

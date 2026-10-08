@@ -58,6 +58,9 @@ only the command name.
 - Picker entries use Hera names: `[현자]` (attention-kind: answer first, short and kind),
   `[전사]` (spartan: blunt, signal only), `[전령]` (rundown: summary, checklist, numbered
   choices) and `[본래 목소리]` (no voice). A user's own file shows its file name.
+- The own-voice option remains available when no voice files are installed, including
+  when the active voice's source file was deleted. Saving a voice uses a temporary
+  file and atomic replacement so a failed write leaves existing instructions intact.
 
 ## Input panel
 
@@ -88,8 +91,9 @@ Bindings follow Claude Code.
   a finished line is written once and never repainted; only the unfinished line is live.
 - Speaker labels: `You: ` in frost, `Hera: ` in gold; `Tool exit: ` lines in iron.
 - Markdown bold in model output is drawn bold: a closed `**pair**` on one line loses its
-  asterisks. Text the user typed (`You: ` lines) stays literal. No other Markdown is
-  interpreted.
+  asterisks. Inline code, fenced/indented code blocks and user text (including
+  continuation lines) stay literal. Fence state survives streaming and resize.
+  No other Markdown is interpreted.
 - On a terminal resize the screen and scrollback are cleared and the conversation is
   printed again at the new width.
 

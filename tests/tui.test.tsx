@@ -137,6 +137,21 @@ it('renders closed markdown bold in model output without asterisks and keeps use
   expect(frame).toContain('You: keep **mine** as typed');expect(frame).toContain('Hera: Use PostgreSQL. It fits, 2 ** 3 stays');expect(frame).toContain('-> Next: start small');expect(frame).toContain('open **only');
   ui.unmount();
 });
+it('preserves inline and fenced code across streamed chunks and resize while still emphasizing prose',async()=>{
+  const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
+  session.add('You: **literal**\ncontinued **literal**\nHera: **Answer** `2**3**4` and ``**/src/** `tick` ``\n```js\n2**');
+  const ui=render(<App session={session}/>);
+  try{
+    await tick();expect(ui.lastFrame()).toContain('continued **literal**');expect(ui.lastFrame()).toContain('Hera: Answer `2**3**4` and ``**/src/** `tick` ``');
+    session.add('3**4\nHera: **literal inside code**\n```');await tick();expect(ui.lastFrame()).toContain('2**3**4');expect(ui.lastFrame()).toContain('Hera: **literal inside code**');
+    session.add('\n**After**\n~~~~\n**/src/**\n~~~\n**still code**\n~~~~\n**Done**\n    **indented code**\nUnfinished `**span**');await tick();
+    const verify=()=>{
+      const frame=ui.lastFrame()!;expect(frame).toContain('2**3**4');expect(frame).toContain('**/src/**');expect(frame).toContain('**still code**');
+      expect(frame).toContain('\nAfter\n');expect(frame).toContain('\nDone\n');expect(frame).toContain('    **indented code**');expect(frame).toContain('Unfinished `**span**');
+    };
+    verify();Object.defineProperty(ui.stdout,'columns',{get:()=>100});ui.stdout.emit('resize');await tick();verify();
+  }finally{ui.unmount();}
+});
 it('treats a short typed run that arrives together with Enter as text plus Enter, but not a paste-like chunk',async()=>{
   const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
   const key=async(value:string)=>{ui.stdin.write(value);await tick();};
