@@ -116,7 +116,7 @@ it('scrolls a short command menu, dismisses it, ignores a backslash and complete
   const sent:string[]=[];const ui=render(<Composer language="en" rows={2} busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
   const key=async(value:string)=>{ui.stdin.write(value);await tick();};
   try{
-    await tick();await key('/');await key('\x1b[A');expect(ui.lastFrame()).toContain('› /quit');expect(ui.lastFrame()).toContain('12/12');expect(ui.lastFrame()).not.toContain('/help');
+    await tick();await key('/');await key('\x1b[A');expect(ui.lastFrame()).toContain('› /quit');expect(ui.lastFrame()).toContain('13/13');expect(ui.lastFrame()).not.toContain('/help');
     await key('\x1b');expect(ui.lastFrame()).toContain('> /');expect(ui.lastFrame()).not.toContain('Tab complete');expect(sent).toEqual([]);
     await key('\x15');await key('\\pl');expect(ui.lastFrame()).not.toContain('Tab complete');
     await key('\x15');await key('/pl');await key('\r');expect(sent).toEqual([]);expect(ui.lastFrame()).toContain('> /plan');

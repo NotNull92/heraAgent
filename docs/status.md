@@ -1377,3 +1377,45 @@ test render showed the bold escape around the emphasized words. Viewing it in a 
 terminal is NOT_RUN. Separately, the user enabled a personal answer-style file at
 `~/.hera/codex/AGENTS.md` (outside the repository); one live `hera run` question in the
 HERA Design mode returned an answer-first reply with bold lead-ins from DeepSeek.
+
+Voice picker at the user's request: `/style` lists the user's own Markdown voice files
+in `<Hera home>/output-styles/` plus "own voice", and writes the chosen one into the
+isolated runtime's `AGENTS.md` between `hera-style` markers, preserving other text
+there; it applies from the next session. The three published voices are shown under
+Hera names (현자, 전사, 전령). No voice text is bundled: the upstream files are AGPL-3.0
+and stay in the user's home. Windows local: typecheck, build and 93 offline tests passed
+(exit 0), including marker handling, frontmatter stripping, rejection of unknown or
+path-like names and removal of an emptied file. On this machine the three upstream
+files were placed in the Hera home and 현자 re-applied through the new code. NOT_RUN:
+the picker in a real terminal; a live turn after switching voices; whether worker
+threads also read the voice; the README files (three languages) do not mention `/style`.
+The native verification records stay ready (these files are outside the fingerprint).
+
+Voice checks at the user's request (live, 2026-10-08, HERA Design mode, root
+`deepseek-v4.1-flash`, one `hera run` question per voice in a fresh scratch workspace,
+voice switched through `setStyle`): 전사 (spartan) returned a blunt answer-first reply
+in arrow paragraphs; 전령 (rundown) returned a TL;DR line, a ✅/🟡/⬜/🔴 checklist and
+numbered next moves; 현자 (attention-kind) was confirmed earlier. Observed defects of
+the voices themselves: an English heading ("Your move:") inside a Korean reply, and
+em-dashes the spartan text does not forbid. Workers do read the voice: in a run that
+spawned one Go worker, the worker thread's session record (source `thread_spawn`, role
+`worker`) contained the voice text and its report used the arrow/bold format. Emoji
+column alignment in a real terminal and the `/style` picker in a real terminal remain
+NOT_RUN. The active voice was left at 현자.
+
+Voice follow-up at the user's request (no mixed English, a shorter 전사, no formatting in
+worker reports): every applied voice is now wrapped by two Hera-owned lines, one before
+the voice text (human-facing replies only, user's language, workers report in plain
+text) and one after it (English labels are placeholders to translate). Windows local:
+typecheck, build and 93 offline tests passed (exit 0). Live rechecks (one `hera run`
+each, HERA Design, DeepSeek root): 전령 answered with 요약 and 다음 행동 instead of TL;DR
+and "Your move"; 현자 had no English label; a one-worker run returned the worker's part
+as plain sentences without arrows or bold. A first attempt with only the leading line
+still produced "TL;DR", "Your move" and "Also found", which is why the trailing line
+exists. The 전사 length change is a local edit to the user's own
+`~/.hera/output-styles/spartan.md` (a cap of line one plus four short points), not part
+of the repository; the same question went from eight points to four. These are single
+samples, not a measured rate. Technical terms such as PostgreSQL stay in English.
+A later local edit to the same user file added a curt-register rule (plain Korean
+endings, no politeness markers); one live rerun of the question returned line one plus
+three flat statements in plain endings.

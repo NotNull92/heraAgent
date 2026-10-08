@@ -9,6 +9,7 @@ const commands=[
   ['mode','에이전트 모드 선택','Choose agent mode'],
   ['effort','추론 강도 선택','Choose reasoning effort'],
   ['workers','동시 워커 수 선택','Choose worker limit'],
+  ['style','화법 선택','Choose answer voice'],
   ['providers','로그인 및 API 키 관리','Manage sign-in and API keys'],
   ['research','웹 리서치 설정 및 상태','Web research setup and status'],
   ['plan','읽기 전용 계획 작성 · 요청 입력','Read-only plan · enter a request'],

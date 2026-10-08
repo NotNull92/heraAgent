@@ -17,6 +17,7 @@ import {providerStatus,loginOpenAI} from '../providers/accounts.js';
 import {saveGoCredential} from '../providers/go-credentials.js';
 import {externalRuntime} from '../codex/external-runtime.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
+import {listStyles,activeStyle,setStyle,styleLabel,stylesDir} from './styles.js';
 import {parseLimits,mergeLimits} from './limits.js';
 import type {LimitSnapshot} from './limits.js';
 import {installBrowser} from '../research/browser.js';
@@ -123,7 +124,7 @@ export class InteractiveSession extends EventEmitter {
       throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
     }
     case '/providers':if(args.length)throw new HeraError('INVALID_COMMAND','/providers에서 선택하세요. 키를 명령 인수에 넣지 마세요.',2);await this.openProviders();break;
-    case '/help':this.add('\n/providers /research [setup|status|open|resume] /help /mode [adaptive|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /plan TEXT /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
+    case '/help':this.add('\n/providers /research [setup|status|open|resume] /help /mode [adaptive|external_workers] /model [main|worker] [ID] [effort] /effort [main|worker] level /workers [1-8] /style [NAME|default] /plan TEXT /diff /resume [ID] /doctor /quit\nBare /model, /effort and /workers open selection menus. Effort default clears the override. Enter sends; backslash+Enter, Shift+Enter or Ctrl+J inserts a line. Escape interrupts active work; press it twice to clear input. Ctrl+C interrupts active work, otherwise clears input, and a second Ctrl+C exits; Ctrl+Q exits after cleanup. Up/Down recall sent input.\n');break;
     case '/mode':{if(!args[0]){this.selection={title:'모드 선택 · 다음 세션부터 적용',current:this.config.mode,options:[{value:'adaptive',label:'[HERA 설계] Astra 깊은 추론 + DeepSeek 설계·조사'},{value:'external_workers',label:'[HERA 개발] Astra 깊은 추론 + DeepSeek 개발 작업'}],choose:async value=>this.command(`/mode ${value}`)};break;}if(args.length!==1||!activeModeSchema.safeParse(args[0]).success)throw new HeraError('INVALID_MODE','Use adaptive or external_workers.',2);if(!await externalRuntime(this.home))throw new HeraError('EXTERNAL_RUNTIME_MISSING','혼합 모드용 검증 엔진을 먼저 설치하세요. GPT로 자동 전환하지 않습니다.',4);const candidate={...this.config,mode:args[0] as Config['mode']};await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);this.add(`\n모드: ${this.config.mode} · 다음 세션부터 적용. /doctor에서 검증 상태를 확인하세요.\n`);break;}
     case '/model':case '/effort':{
       if(!args.length){await this.openSettings(command==='/model'?'model':'effort');break;}
@@ -142,6 +143,14 @@ export class InteractiveSession extends EventEmitter {
     }
     case '/plan':await this.connect();await this.controller!.run(`Plan only; do not modify files.\n${args.join(' ')}`,undefined,true);break;
     case '/apply':this.add('\n별도 /apply는 필요하지 않습니다. 원하는 수정 작업을 입력하면 수정과 테스트를 이어서 진행합니다.\n');break;
+    case '/style':{
+      const ko=this.config.language==='ko';const names=await listStyles(this.home);
+      if(!args.length){
+        if(!names.length){this.add(ko?`\n고를 화법이 없습니다. ${stylesDir(this.home)} 폴더에 화법 파일(.md)을 넣으세요.\n`:`\nNo voices found. Put voice files (.md) in ${stylesDir(this.home)}.\n`);break;}
+        this.selection={title:ko?'화법 선택 · 다음 세션부터 적용':'Choose a voice · applies to the next session',current:await activeStyle(this.home)??'default',options:[...names.map(name=>({value:name,label:styleLabel(name,ko)})),{value:'default',label:ko?'[본래 목소리] 화법 없음':'[Own voice] no style'}],choose:async value=>this.command(`/style ${value}`)};break;}
+      const name=args[0]!.toLowerCase();if(args.length!==1||name!=='default'&&!names.includes(name))throw new HeraError('INVALID_STYLE',ko?'/style에서 고를 수 있는 화법 이름이나 default를 입력하세요.':'Use a voice listed by /style, or default.',2);
+      await setStyle(this.home,name==='default'?null:name);
+      this.add(ko?`\n화법: ${name==='default'?'본래 목소리':styleLabel(name,true)} · 다음 세션부터 적용됩니다.\n`:`\nVoice: ${name==='default'?'own voice':styleLabel(name,false)}; applies to the next session.\n`);break;}
     case '/diff':{const result=await exec('git',['--no-pager','diff','--no-ext-diff','--no-textconv'],{cwd:this.cwd,windowsHide:true,maxBuffer:1024*1024});const status=await exec('git',['status','--short'],{cwd:this.cwd,windowsHide:true,maxBuffer:1024*1024});this.add(`\n${result.stdout||'(No unstaged tracked diff)'}\nStatus (includes staged/untracked):\n${status.stdout||'(clean)'}\n`);break;}
     case '/resume':{const rows=await listMetadata(this.home,this.cwd);if(!args[0]){this.add('\n'+JSON.stringify(rows.map(s=>({id:s.heraSessionId,status:s.status})),null,2)+'\n');break;}await this.newSession();await this.connect(args[0]);this.add('\nNative thread resumed; no prior turn replayed.\n');break;}
     case '/doctor':{const client=await CodexClient.connect(this.home,this.cwd,startupArgs(this.config));try{this.add('\n'+JSON.stringify({account:await client.account(),capabilities:await capabilityReport(this.config,this.home)},null,2)+'\n');}finally{await client.close();}break;}

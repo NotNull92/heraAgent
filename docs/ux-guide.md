@@ -38,6 +38,27 @@ name uses the default text color and its description is iron (dimmed), so names 
 
 The list does not open while a turn is running or for pasted text.
 
+## Voices (`/style`)
+
+`/style` picks the voice Hera answers in. A voice only changes how answers are worded
+and laid out, never how the work is done. The product word is 화법 (voice); "style" is
+only the command name.
+
+- Voice files are the user's own Markdown files in `<Hera home>/output-styles/`. Hera
+  ships none: the three published voices come from a third-party AGPL-3.0 project and
+  must not be copied into this repository.
+- The chosen voice is written into the isolated runtime's `AGENTS.md` between
+  `hera-style` markers; other text in that file is preserved. It applies from the next
+  session.
+- Hera wraps every applied voice with its own two lines (`SCOPE` before, `LABELS` after
+  in `src/session/styles.ts`): replies stay entirely in the user's language, including
+  the labels a voice spells in English (TL;DR becomes 요약, "Your move" becomes 다음 행동),
+  and a worker reporting to another agent ignores the voice and writes plain text without
+  arrows, bold or emoji.
+- Picker entries use Hera names: `[현자]` (attention-kind: answer first, short and kind),
+  `[전사]` (spartan: blunt, signal only), `[전령]` (rundown: summary, checklist, numbered
+  choices) and `[본래 목소리]` (no voice). A user's own file shows its file name.
+
 ## Input panel
 
 - Gold rules above and below, no side borders, a bold gold `> ` prompt.
