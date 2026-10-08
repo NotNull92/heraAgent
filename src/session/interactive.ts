@@ -42,7 +42,7 @@ export class InteractiveSession extends EventEmitter {
     this.emit('change');
   }
   cancelSelection(){if(this.busy)return;if(this.providerSetupRequired){this.add('\n먼저 OpenAI와 OpenCode Go를 설정하세요. 종료하려면 Ctrl+Q를 누르세요.\n');return;}this.selection=null;this.emit('change');}
-  async initializeProviders(){if(this.busy)return;this.providerSetupRequired=true;this.busy=true;this.status='Checking providers';this.emit('change');try{await this.openProviders(true);this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);this.providerMenu(null,null);}finally{this.busy=false;this.emit('change');}}
+  async initializeProviders(){if(this.busy)return;this.providerSetupRequired=true;this.busy=true;this.status='Checking providers';this.emit('change');try{await this.openProviders(true);if(!this.providerSetupRequired){this.status=this.config.language==='ko'?'런타임 준비 중':'Starting runtime';this.emit('change');await this.connect();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);if(this.providerSetupRequired)this.providerMenu(null,null);}finally{this.busy=false;this.emit('change');}}
   private async openProviders(startup=false){const status=await providerStatus(this.home,this.cwd,this.config);this.providerSetupRequired=!status.openai.ready||!status.go.credentialStored;if(startup&&!this.providerSetupRequired){this.selection=null;return;}this.providerMenu(status.openai.ready,status.go.credentialStored);}
   private providerMenu(openai:boolean|null,go:boolean|null){
     const ko=this.config.language==='ko';this.approval=this.providerSetupRequired?(ko?'두 제공자 설정을 완료해 주세요. Ctrl+Q: 종료':'Complete both providers to continue. Ctrl+Q: quit'):'';this.selection={title:ko?'제공자 설정 · OpenAI / OpenCode Go':'Providers · OpenAI / OpenCode Go',current:null,
@@ -95,10 +95,11 @@ export class InteractiveSession extends EventEmitter {
   }
   async connect(id?:string){
     if(this.controller)return;
-    const ready=await providerStatus(this.home,this.cwd,this.config);this.providerSetupRequired=!ready.openai.ready||!ready.go.credentialStored;
-    if(this.providerSetupRequired){this.providerMenu(ready.openai.ready,ready.go.credentialStored);throw new HeraError('PROVIDER_SETUP_REQUIRED','먼저 /providers에서 OpenAI 로그인과 Go 키 저장을 완료하세요.',3);}
+    if(this.providerSetupRequired)throw new HeraError('PROVIDER_SETUP_REQUIRED','먼저 /providers에서 OpenAI 로그인과 Go 키 저장을 완료하세요.',3);
     const previous=id?(await listMetadata(this.home,this.cwd)).find(s=>s.heraSessionId===id):undefined;if(id&&!previous)throw new HeraError('SESSION_NOT_FOUND','No matching workspace session.',2);
-    this.controller=await Controller.open(this.home,this.cwd,this.config,this.singleAgent,previous);
+    // Controller.open checks live credentials, models and permissions; do not launch a second discovery runtime first.
+    try{this.controller=await Controller.open(this.home,this.cwd,this.config,this.singleAgent,previous);}
+    catch(error){if(errorView(error).errorCode==='PROVIDER_SETUP_REQUIRED'){this.providerSetupRequired=true;await this.openProviders().catch(()=>this.providerMenu(null,null));}throw error;}
     this.controller.on('event',event=>{
       if(event.method==='item/agentMessage/delta'){const p=z.object({threadId:z.string(),delta:z.string()}).safeParse(event.params);if(p.success&&p.data.threadId===this.controller?.metadata?.codexThreadId)this.add(p.data.delta);}
       else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);}

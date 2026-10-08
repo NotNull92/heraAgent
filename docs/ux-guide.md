@@ -92,6 +92,9 @@ Bindings follow Claude Code.
 - Speaker labels: `You: ` in frost, `Hera: ` in gold; `Tool exit: ` lines in iron.
 - Submitted input is echoed before runtime connection/authentication begins, and
   remains visible if setup fails. The Hera reply label appears after connection.
+- Once provider setup is complete at startup, prepare the native session before
+  showing Ready. Preparation performs no model turn; the first prompt reuses that
+  session. Show runtime preparation explicitly rather than deferring it to a greeting.
 - Markdown bold in model output is drawn bold: a closed `**pair**` on one line loses its
   asterisks. Inline code, fenced/indented code blocks and user text (including
   continuation lines) stay literal. Fence state survives streaming and resize.

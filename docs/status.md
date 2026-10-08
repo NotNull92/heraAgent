@@ -1458,3 +1458,27 @@ settings commands) passed, exit 0. A deferred-connection UI fixture verified
 Korean typing, Enter echo while connection remains pending, and preservation
 after connection failure. No live model calls or physical terminal checks ran;
 cross-platform CI results remain separate from these local checks.
+
+First-reply latency diagnosis (2026-10-08): the existing greeting rollout used
+DeepSeek Flash/high in Design, with no tools/workers, 10,051 input tokens (9,856
+cached), first token at 2,560 ms and native turn completion at 3,365 ms. Compact
+Hera base instructions do not remove native tools, skills, permissions, project
+AGENTS.md or the user's separately installed voice. No new inference was invoked
+for this investigation and no model/effort/voice settings were changed.
+
+A disposable-workspace, no-turn native startup measurement took 13,691 ms:
+InteractiveSession performed provider discovery before Controller.open repeated
+the required live credential/model checks. Removed that redundant discovery from
+connect; Controller retains authentication, model, capability and sandbox checks,
+and a credential failure still reopens provider setup. Configured TUI startup now
+prepares the native session before reporting Ready, with a visible preparation
+status, so the first greeting reuses the prepared session without a startup wait.
+A subsequent no-turn sample took 8,862 ms cold and less than 1 ms to reuse the
+prepared connection. These are single local samples, not a controlled provider
+benchmark or a claim that model/network latency disappeared. Model response speed
+after the change and physical terminal behavior were not remeasured.
+
+Windows local: typecheck, build and all 100 offline tests (19 files) passed,
+exit 0. Tests cover pending preparation, Ready ordering, native gate propagation,
+missing-credential recovery and submitted-input echo. No native qualification
+fingerprint inputs changed. CI results remain separate from local evidence.
