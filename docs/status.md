@@ -1,5 +1,13 @@
 # Implementation status
 
+## Runtime label (2026-10-08)
+
+The TUI banner and CLI version output now display `api v0.161.0`, using the
+existing pinned runtime constant. Native Windows build, CLI output check and
+16 existing TUI tests passed, exit 0. This presentation-only change made no model
+calls; the runtime qualification recorded below remains applicable. New push CI
+results must be checked separately.
+
 ## Codex 0.161.0 upgrade (2026-10-08, Windows live qualified; all CI passed)
 
 The user requested that Hera's fixed runtime match the installed Codex 0.161.0.

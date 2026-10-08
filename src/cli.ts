@@ -18,7 +18,7 @@ import {installExternalRuntime} from './codex/external-runtime.js';
 import {installBrowser} from './research/browser.js';
 export const VERSION='0.1.0-alpha.1';
 export async function main(argv=process.argv) {
-  const program=new Command().name('hera').description('Hera local coding agent').version(`${VERSION} (Codex ${CODEX_VERSION})`).option('--cwd <path>','workspace',process.cwd()).option('--single-agent','explicit single-agent operation with native workspace permissions').exitOverride();
+  const program=new Command().name('hera').description('Hera local coding agent').version(`${VERSION} (api v${CODEX_VERSION})`).option('--cwd <path>','workspace',process.cwd()).option('--single-agent','explicit single-agent operation with native workspace permissions').exitOverride();
   const context=async()=>{const home=await heraHome();const cwd=await realpath(program.opts<{cwd:string}>().cwd);return {home,cwd,...await loadConfig(home,cwd)};};
   program.command('research').command('setup').description('install the pinned free Chromium browser without removing existing versions').action(async()=>{const {home}=await context();await installBrowser(home);console.log('무료 Chromium 설치 완료. CAPTCHA는 Hera의 /research open 및 /research resume으로 직접 해결합니다.');});
   program.command('runtime').command('install <binary>').requiredOption('--sha256 <digest>','explicitly reviewed patched App Server SHA-256').action(async(binary:string,opts:{sha256:string})=>{const {home}=await context();console.log(JSON.stringify(await installExternalRuntime(home,binary,opts.sha256)));});

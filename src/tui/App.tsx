@@ -40,7 +40,7 @@ function Banner({width,cwd,greeting,language}:{width:number;cwd:string;greeting:
   return <Box flexDirection="column" width={width}>
     <Box><Ornate text={'╾'+'━'.repeat(side>>1)+'◇━━━━ ◆ '}/><Text bold>H E R A</Text><Ornate text={' ◆ ━━━━◇'+'━'.repeat(side-(side>>1))+'╼'}/></Box>
     <Box flexDirection="column" alignItems="center" paddingY={1}>{EMBLEM.map((line,i)=><Ornate key={i} text={line} bold/>)}<Text> </Text><Text color={c.iron}>{greeting}</Text></Box>
-    <Text wrap="truncate-middle"><Text color={c.iron}>◇ {language==='ko'?'작업 폴더':'Workspace'}  </Text>{safeText(cwd)}<Text color={c.iron}> · Codex {CODEX_VERSION}</Text></Text>
+    <Text wrap="truncate-middle"><Text color={c.iron}>◇ {language==='ko'?'작업 폴더':'Workspace'}  </Text>{safeText(cwd)}<Text color={c.iron}> · api v{CODEX_VERSION}</Text></Text>
   </Box>;
 }
 export function App({session}:{session:InteractiveSession}){
