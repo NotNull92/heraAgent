@@ -90,6 +90,8 @@ Bindings follow Claude Code.
 - The conversation flows into the terminal's own scrollback like Codex or Claude Code:
   a finished line is written once and never repainted; only the unfinished line is live.
 - Speaker labels: `You: ` in frost, `Hera: ` in gold; `Tool exit: ` lines in iron.
+- Submitted input is echoed before runtime connection/authentication begins, and
+  remains visible if setup fails. The Hera reply label appears after connection.
 - Markdown bold in model output is drawn bold: a closed `**pair**` on one line loses its
   asterisks. Inline code, fenced/indented code blocks and user text (including
   continuation lines) stay literal. Fence state survives streaming and resize.

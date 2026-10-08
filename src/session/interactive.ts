@@ -110,7 +110,7 @@ export class InteractiveSession extends EventEmitter {
   }
   async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(text.startsWith('/')){
       // Echo the command like any other input; /providers arguments are rejected, so they are never echoed.
-      const typed=text.trim();this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{await this.connect();this.add(`\nYou: ${text}\nHera: `);await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
+      const typed=text.trim();this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{this.add(`\nYou: ${text}\n`);await this.connect();this.add('Hera: ');await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
     case '/research':{
       if(args.length>1)throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);

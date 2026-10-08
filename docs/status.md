@@ -1447,3 +1447,14 @@ instructions retained and temporary files removed. No user voice files or live
 runtime settings were changed. Live model calls and physical terminal checks are
 NOT_RUN for this change; Windows/macOS CI results are recorded separately from
 these local results. No dependencies or bundled third-party voice texts were added.
+
+Immediate submitted-input echo (2026-10-08): normal TUI submissions now append
+the user's text before awaiting provider readiness and runtime connection. The
+composer previously cleared while `connect()` ran, leaving no visible submitted
+message until startup finished. The Hera reply prefix is still added only after
+connection succeeds; failed connections keep the user's message visible.
+Windows local: typecheck, build and 29 targeted tests (TUI, provider setup and
+settings commands) passed, exit 0. A deferred-connection UI fixture verified
+Korean typing, Enter echo while connection remains pending, and preservation
+after connection failure. No live model calls or physical terminal checks ran;
+cross-platform CI results remain separate from these local checks.
