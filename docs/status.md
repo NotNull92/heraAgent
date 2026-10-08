@@ -1,6 +1,6 @@
 # Implementation status
 
-## Codex 0.161.0 upgrade (2026-10-08, Windows live qualified; CI pending)
+## Codex 0.161.0 upgrade (2026-10-08, Windows live qualified; all CI passed)
 
 The user requested that Hera's fixed runtime match the installed Codex 0.161.0.
 Updated the project dependency/lock, generated protocol and official config schema,
@@ -60,15 +60,16 @@ CI `37715214835` passed both platforms' offline checks, but Windows reached the
 15-minute job limit during package smoke; downstream archive jobs were skipped.
 The combined offline/package job now allows 30 minutes with all checks retained.
 Follow-up source commit `a656fdbad659301bdf55300953579b911347192e` is verified on
-the private remote. CI `37716932924` has passed both platforms' offline checks,
-Windows package smoke and macOS clean-prefix installation of that Windows-built
-archive; the second clean-prefix Windows install remains pending.
+the private remote. [CI `37716932924`](https://github.com/NotNull92/heraAgent/actions/runs/37716932924)
+completed successfully: both platforms' offline checks, Windows package smoke,
+and clean-prefix Windows/macOS installation of the same Windows-built archive.
 Downloaded archive SHA-256 matched its CI checksum file:
 `419ddc54794eca6901d584ffae7999070309b36b6b30a3e7aa6309e86c5a5d17`.
 Superseded native workflow `37715231091` was cancelled
-following its macOS fresh-home pass. Replacement native CI `37716968069` passed
-macOS build and official/patched/official profile round trip; Windows is pending.
-The follow-up status/qualification README commit is documentation-only and skips
+following its macOS fresh-home pass. Replacement [native CI `37716968069`](https://github.com/NotNull92/heraAgent/actions/runs/37716968069)
+completed successfully: Windows and macOS builds and official/patched/official
+profile round trips. No CI jobs remain pending for this executable source.
+The follow-up status/qualification README commits are documentation-only and skip
 duplicate CI; the runs above target executable source commit `a656fdb`.
 Historical passes below do not certify this upgrade. No release was published.
 
