@@ -116,15 +116,16 @@ node bin/hera.mjs --cwd "PATH_TO_YOUR_PROJECT" run --single-agent --prompt-file 
 | `adaptive` | OpenCode Go · DeepSeek V4.1 Flash | 어려운 추론·계획·설계는 선택한 GPT/Astra 역할 |
 
 `/mode`로 선택합니다. **워커는 로컬 검증이 필요합니다.** 런타임, 관련 코드, 플랫폼, 모델,
-추론 강도, 동시 실행 수가 검증 기록과 일치해야 하며 변경하면 기록이 무효화됩니다.
+제공자, 권한, 동시 실행 수가 검증 기록과 일치해야 하며 변경하면 기록이 무효화됩니다.
 혼합·adaptive 모드는 검토된 네이티브 런타임을 Hera 홈에 별도로 설치해야 합니다.
 키를 저장하는 것만으로 활성화되지 않으며, 실패 시 다른 제공자로 자동 전환하지 않습니다.
 
 adaptive에서 `/model main`과 `/effort main`은 GPT 추론 역할을 설정합니다.
 현재 개발 체크아웃은 `/effort worker`에서 Go의 `low`, `high`, `max`를 제공하며,
-각 변경에는 새로운 네이티브 검증이 필요합니다. GPT 선택지는 모델 카탈로그를 따릅니다.
+유효한 추론 강도 변경은 v2 검증을 유지합니다. GPT 선택지는 모델 카탈로그를 따릅니다.
 `/workers`는 프로젝트 제한 내에서 1–8의 동시 실행 상한을 설정하며 실제 실행 수를 나타내지 않습니다.
-설정은 새 세션에 적용되고 작업 진행 중에는 변경할 수 없습니다.
+설정은 다음 입력의 새 네이티브 세션부터 적용되며 Hera를 재시작할 필요가 없습니다.
+작업 진행 중에는 변경할 수 없고, 이전 v1 검증 기록은 새 검증이 필요합니다.
 
 [네이티브 런타임 설치·검증](experiments/codex-provider-routing/README.md)과
 [호환성](docs/compatibility.md)을 참고하세요. 개발자의 검증 결과가 다른 PC의 기능을

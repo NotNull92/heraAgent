@@ -7,7 +7,7 @@ import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {render} from 'ink-testing-library';
 import {CodexClient} from '../src/codex/client.js';
-import {Controller} from '../src/session/controller.js';
+import {Controller,NATIVE_BASE_INSTRUCTIONS} from '../src/session/controller.js';
 import {defaults} from '../src/config.js';
 import {nativeSettings} from '../src/codex/config-compiler.js';
 import {NativePrompt} from '../src/tui/NativePrompt.js';
@@ -21,7 +21,12 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     let observed:unknown;controller.on('event',e=>{if(e.method==='fixture/decision')observed=e.params;});
     if(decision!=='headless')controller.on('requests',()=>{for(const request of controller.requests.values())controller.answerRequest(request.id,decision);});
     const turn=vi.spyOn(client,'turn');
-    try{await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
+    try{
+    const start=vi.spyOn(client,'start').mockRejectedValueOnce(new Error('capture native params'));
+    await expect(Reflect.apply(Reflect.get(controller,'startNative'),controller,[])).rejects.toThrow('capture native params');
+    expect(start.mock.calls[0]?.[0]).toMatchObject({baseInstructions:NATIVE_BASE_INSTRUCTIONS,approvalPolicy:'on-request',sandbox:'workspace-write'});
+    expect(NATIVE_BASE_INSTRUCTIONS.length).toBeLessThan(1200);start.mockRestore();
+      await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
       await controller.run('plan',undefined,true);expect(turn.mock.calls[1]?.[0]).toMatchObject({approvalPolicy:'never',sandboxPolicy:{type:'readOnly',networkAccess:false}});
       await controller.run('ordinary edit');expect(turn.mock.calls[2]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite'},input:[expect.objectContaining({text:'ordinary edit'})]});
     }finally{await controller.close();}

@@ -71,7 +71,7 @@ export class InteractiveSession extends EventEmitter {
     if(role==='worker'&&this.config.mode!=='gpt_only'){const level=goEffortSchema.safeParse(effort);if(model!==GO_MODEL||!level.success)throw new HeraError('UNSUPPORTED_GO_SETTING','Go 워커는 DeepSeek V4.1 Flash 모델과 low, high, max effort만 지원합니다.',2);candidate.workers.goReasoningEffort=level.data;}
     else{if(role==='main')candidate.main={model,reasoningEffort:effort};else{candidate.workers.gptModel=model;candidate.workers.reasoningEffort=effort;}validateModelChoices(candidate,models);}
     await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);
-    this.add(this.config.language==='ko'?`\n${role==='main'?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'일상 작업':'워커')} 설정 저장: ${model} / ${effort??'기본값'} · 다음 세션부터 적용됩니다.\n`:`\nSaved ${role}: ${model} / ${effort??'default'}; applies to the next session.\n`);
+    this.add(this.config.language==='ko'?`\n${role==='main'?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'일상 작업':'워커')} 설정 저장: ${model} / ${effort??'기본값'} · 다음 입력부터 적용됩니다.\n`:`\nSaved ${role}: ${model} / ${effort??'default'}; applies to the next input.\n`);
   }
   private async openSettings(action:'model'|'effort',role?:Role){
     const ko=this.config.language==='ko';
@@ -133,7 +133,7 @@ export class InteractiveSession extends EventEmitter {
       const model=command==='/model'?args[0]!:(role==='main'?this.config.main.model:this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel);
       if(!model)throw new HeraError('MODEL_NOT_SELECTED','Select a model with /model first.',2);
       const value=command==='/effort'?args[0]:args[1];const effort=value===undefined?(role==='main'?this.config.main.reasoningEffort:this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort):parseEffort(value);
-      await this.saveModelChoice(role,model,effort,await this.models());break;
+      await this.saveModelChoice(role,model,effort,role==='worker'&&this.config.mode!=='gpt_only'?[]:await this.models());break;
     }
     case '/workers':{
       if(!args.length){const project=projectSchema.parse(await existsJson(join(this.cwd,'.hera.json'))??{});const ceiling=project.maxConcurrent??8;this.selection={title:this.config.language==='ko'?'워커 수 선택 (변경 후 검증 상태 확인)':'Choose worker limit (check verification after changes)',current:String(this.config.workers.maxConcurrent),options:Array.from({length:ceiling},(_,i)=>({value:String(i+1),label:String(i+1)})),choose:async value=>this.command(`/workers ${value}`)};break;}

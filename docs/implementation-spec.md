@@ -2,6 +2,18 @@
 
 ## Authorized workflow amendment — 2026-10-07
 
+Latency/settings correction (2026-10-08): native threads use a compact Hera base
+instruction through the pinned `baseInstructions` API. Keep project instructions,
+native tools, skills, permissions, provider routing and conversation storage.
+This reduces the fixed prompt; it does not claim tool schemas are loaded lazily.
+Validated effort levels are tuning within a qualified native profile, not a new
+permission/tool profile. Native v2 evidence excludes effort values but still binds
+code, runtime, platform, models, providers, safety and concurrency. Old evidence is
+not promoted. Model catalog/Go enum checks and effective runtime checks remain.
+Settings close the idle native session; the next input starts a session using the
+saved effort without restarting Hera. Prior histories remain available under their
+original settings. Qualification does not claim identical model quality at every effort.
+
 The user explicitly selected immediate Codex-style editing and verification and
 removed the mandatory `/apply` workflow. This amendment takes precedence over
 conflicting fixed-root, phased, proposal-contract, baseline and single-writer

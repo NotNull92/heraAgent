@@ -117,15 +117,16 @@ Headless execution declines interactive permission requests.
 | `adaptive` | OpenCode Go · DeepSeek V4.1 Flash | Selected GPT/Astra role for difficult reasoning, planning and design |
 
 Use `/mode` to choose. **Workers need local verification** matching runtime, relevant
-code, platform, models, efforts and concurrency. Changing these invalidates the record.
+code, platform, models, providers, permissions and concurrency. Changing these invalidates the record.
 Mixed/adaptive modes additionally require a reviewed native runtime installed in
 your Hera home. A key alone does not enable them. There is no automatic provider fallback.
 
 In adaptive mode, `/model main` and `/effort main` configure the GPT reasoning role.
 The development checkout exposes Go efforts `low`, `high` and `max` through
-`/effort worker`; each change needs fresh native verification. GPT options come
+`/effort worker`; valid effort changes preserve native v2 qualification. GPT options come
 from the model catalog. `/workers` sets a ceiling of 1–8, capped by the project,
-not a measured running count. Settings apply to a new session; active turns reject changes.
+not a measured running count. Settings apply to a new native session on the next input;
+Hera does not need restarting. Active turns reject changes. Old v1 records need fresh qualification.
 
 See [native runtime installation and qualification](experiments/codex-provider-routing/README.md)
 and [compatibility](docs/compatibility.md). Maintainer verification does not unlock
