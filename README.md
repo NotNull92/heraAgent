@@ -1,151 +1,237 @@
-# Hera
+<p align="center">
+  <img src="assets/branding/hera-hero.png" alt="Hera, an original anime coding partner in an office suit, presenting a terminal against a city skyline" width="960">
+</p>
 
-Independent local TypeScript / React / Ink client for the Codex App Server.
-Repository: `heraAgent`. Package: `hera-agent`. Command: `hera`.
+<h1 align="center">Hera</h1>
+<p align="center"><strong>Your coding partner, right in your terminal.</strong></p>
+<p align="center"><strong>English</strong> · <a href="README.ko.md">한국어</a> · <a href="README.jp.md">日本語</a></p>
+<p align="center"><a href="https://github.com/NotNull92/heraAgent/actions/workflows/ci.yml"><img src="https://github.com/NotNull92/heraAgent/actions/workflows/ci.yml/badge.svg" alt="Windows and macOS CI"></a></p>
 
-Development prerelease. Native protocol initialization, catalog discovery, official
-isolated login, native workspace sessions, resume, Korean/English Ink UI and offline
-checks are implemented. Ask for a change and Hera edits and tests in the same task;
-there is no `/apply` step or whole-workspace baseline scan. Native extra permissions
-are presented for allow-once/decline; headless requests are declined. `/plan` remains
-read-only. Workers inherit native permissions and coordinate file ownership.
-**Collaboration requires matching native-workflow verification; mixed/adaptive modes
-also require the reviewed local runtime.** A catalog entry is not proof of model entitlement.
-No provider fallback. macOS live/manual checks have not been performed.
+Hera is a local CLI/TUI coding agent for **Windows and macOS**. Describe a change,
+and Hera reads your project, edits files, runs checks and reports the result in the
+same conversation. It uses the **Codex App Server** for native tools, sessions and
+collaboration, with explicit GPT and OpenCode Go modes.
 
-Public web research uses local Playwright/Chromium through native MCP: no search
-API key, paid search service or paid fallback. Run `hera research setup` once to
-install Chromium, or choose setup in `/research`. Main and workers share a queue
-and ten-minute memory cache. Search returns three links; page reads default to
-3,000 characters. Native tasks retain this bounded search/fetch service.
-Public queries go to DuckDuckGo and requested pages go to their sites; never send
-secrets or private project content. CAPTCHA pauses requests: `/research open` opens
-a separate browser for you to solve it, then `/research resume` caches the result.
-Send the original research request again to continue. No personal browser profile
-is imported or stored. Search availability is not guaranteed, and GPT/Go usage
-still costs tokens. See [research, limits and actual tests](docs/web-research.md).
+**Development preview · 0.1.0-alpha.1 · pinned Codex API runtime 0.161.0.**
+Source is public; no npm package or GitHub release has been published.
+Start from source below. Hera runs locally; model inference uses your provider
+accounts. It is not an offline model runner.
 
-Design, architecture and research requests automatically use DRD: the native root
-assigns 3-5 complementary research questions, gathers public sources and synthesizes
-findings, disagreements and uncertainties. The configured worker ceiling still
-applies; workers can be reused between assignments. Adaptive mode uses Go for
-evidence gathering and Astra for difficult synthesis. Routine edits and greetings
-do not start DRD, and explicit no-web/no-delegation requests are respected. In
-single-agent mode the root covers the questions itself and says so. This is native
-model guidance, not a deterministic classifier or a guarantee of research quality.
-Use `/plan` for an enforced read-only turn; ordinary requests retain native workspace
-permissions. Research does not add an `/apply` or extra confirmation step.
+## What Hera does
 
-See [status](docs/status.md), [compatibility](docs/compatibility.md) and the full
-[specification](docs/implementation-spec.md). Windows x64 and macOS Apple Silicon
-are product targets; automated CI and physical terminal/live checks are distinct.
+- **Edits and checks in one task:** no separate `/apply` step.
+- **Read-only planning:** `/plan` plans before editing; `/diff` shows actual Git changes.
+- **Explicit model routing:** GPT-only, GPT with Go workers, or DeepSeek with GPT reasoning support.
+- **Public web research:** local Playwright/Chromium search and page reads without a paid search API.
+- **Native session continuity:** resume conversations without a second Hera conversation database.
+- **Terminal interaction:** slash-command suggestions, model/effort menus, Korean input and Korean/English presentation.
 
-Install/update/rollback: [Windows](docs/install-windows.md), [macOS](docs/install-macos.md).
-Node 24.x is required; installation downloads pinned npm dependencies. Prepared private
-tarballs and SHA256SUMS.txt are local/CI artifacts, not an npm or GitHub release.
+## Quick start
+
+You need **Git**, **Node.js 24.x with npm**, a terminal, OpenAI access through the
+official login flow, and an OpenCode Go key. **The current TUI checks both providers,
+including in GPT-only mode.** Use your own accounts; credentials are not included.
+Model availability depends on your account.
+
+Windows x64 and macOS Apple Silicon are the CI targets. Intel macOS is unverified.
+The interface supports Korean and English; the Japanese README is a translation,
+not a Japanese UI option.
+
+### 1. Clone and build
+
+**Windows — native PowerShell:**
 
 ```powershell
+git clone https://github.com/NotNull92/heraAgent.git
+if ($LASTEXITCODE -ne 0) { throw 'Clone failed' }
+Set-Location heraAgent
 npm.cmd ci
 if ($LASTEXITCODE -ne 0) { throw 'Install failed' }
 npm.cmd run build
 if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
-node bin/hera.mjs doctor --json
-node bin/hera.mjs init --list-models
-node bin/hera.mjs auth login openai
-node bin/hera.mjs auth login go
-# Choose exact returned IDs; no model is silently selected.
-node bin/hera.mjs init --model <id> --effort high --worker-model <id> --worker-effort max
-# Windows only: official sandbox setup in the isolated Hera profile.
-node bin/hera.mjs sandbox setup
-node bin/hera.mjs --single-agent
+node bin/hera.mjs --version
 ```
 
-Composer keys follow Claude Code. Enter sends; backslash+Enter, Shift+Enter (where the
-terminal reports it) or Ctrl+J inserts a line. Escape interrupts active work and,
-pressed twice, clears the input. Ctrl+C interrupts active work; when idle it clears
-the input and arms exit, and a second Ctrl+C exits after the existing session cleanup.
-Up/Down recall sent input. Ctrl+Q exits directly through the same cleanup. Dialogs
-retain their cancel behavior.
-Use `/help` for commands. `run --single-agent --prompt-file <file>` supports non-TTY
-and multiline input. Paste never executes a slash action. A Windows sandbox notConfigured result
-requires official setup; unrestricted fallback is unavailable.
+**macOS — Terminal:**
 
-On entry, Hera checks both OpenAI login and a stored OpenCode Go key. Missing setup
-opens the provider menu before agent work. Use `/providers` or `\providers` at any
-time to sign in again or replace the Go key. Only OpenAI and OpenCode Go are supported.
-Go key input is masked, is not added to the conversation, and is saved in Windows
-Credential Manager or macOS Keychain. New terminals load it automatically for the
-same user and HERA_HOME. Saving a key does not verify provider access or enable the
-still-gated external worker mode. No inference is performed during setup/status.
+```sh
+git clone https://github.com/NotNull92/heraAgent.git
+cd heraAgent
+npm ci
+npm run build
+node bin/hera.mjs --version
+```
 
-Normal requests use Codex's workspace sandbox and on-request approval policy.
-Use `/diff` for actual Git changes and `/resume <ID>` to continue native history.
-Failed or interrupted writes are never automatically replayed. The old `/apply`
-command only explains that an ordinary edit request is sufficient.
+Explicit launch paths avoid collisions with other tools named `hera`.
+Hera's project-local runtime does not replace your global Codex installation.
 
-Select `/mode adaptive` for DeepSeek routine execution and native Astra delegation
-for deep reasoning, planning and design. `/model main` and `/effort main` configure
-the reasoning role in that mode; Go uses its qualified fixed model/effort. No extra
-classifier model or second agent loop runs. GPT-only and GPT-main/Go-worker modes
-remain explicit choices. Saved schema-1 phase labels are legacy compatibility data;
-the native workspace policy above controls normal product sessions.
+### 2. Sign in and choose a model
 
-Inside the TUI, type `/model`, `/effort` or `/workers` and press Enter to open a
-selection menu. Use Up/Down and Enter to choose, or Escape to cancel without saving.
-`/model` asks for main/worker, then model, then that model's supported effort.
-`/effort` asks for main/worker and lists the current model's supported efforts only.
-Options come from the native model catalog: `ultra` appears only when advertised.
-Current selections are marked; final choices are revalidated before saving.
-
-`/` and `\` prefixes are equivalent. Explicit command arguments also remain supported:
+Run from the cloned directory on either platform:
 
 ```text
-\model main <catalog-id> high
-\model worker <catalog-id> max
-\effort main high
-\effort worker max
-\workers 3
+node bin/hera.mjs auth login openai
+node bin/hera.mjs auth login go
+node bin/hera.mjs init --list-models
+node bin/hera.mjs init --model "YOUR_MODEL_ID" --language en
 ```
 
-`/workers` selects the configured limit (1-8, capped by the project), not an observed
-running count. Use `default` for
-effort to clear its override. Changes are validated against the selected model's
-catalog, saved outside the repository, and take effect in a new session. Active
-turns reject setting changes; an uncertain shutdown prevents switching sessions.
-Pasted commands remain literal text, including pasted Enter keys in menus. Normal
-composer Enter sends; bare settings commands open menus instead.
-These settings do not enable gated workers.
+Replace `YOUR_MODEL_ID` with an exact returned catalog ID. To configure GPT workers,
+also set `--worker-model "YOUR_WORKER_MODEL_ID"`. Efforts must be supported by the
+selected model. Catalog listing does not prove entitlement.
+OpenAI login supports `--device`; Go key entry is masked and saved in the OS keyring.
 
-`hera doctor` reports the worker verification state for the selected configuration.
-Acceptance is scoped to runtime/code, OS/architecture, models/efforts and worker limit.
-Changing these invalidates the local record; it is never copied from Windows to macOS
-or inferred from CI/mocks. A verified profile can use plain `hera`; other profiles can
-explicitly use `--single-agent`. See [verification evidence](docs/status.md) for the
-maintainer live fixtures and current gaps. Native histories remain the source of truth;
-there is no Hera conversation database. Worker test claims never count as executed tests.
+**Windows only:** configure the official sandbox in Hera's isolated profile:
 
-Mixed mode uses a separately installed, reviewed native App Server patch. GPT-only
-continues using the official pinned package. Build instructions and the pinned source
-are in [native runtime qualification](experiments/codex-provider-routing/README.md).
-Install the resulting executable with `hera runtime install <binary> --sha256 <reviewed-hash>`.
-This copies the binary and matching official helpers into the Hera user home; it never
-changes global Codex, imports credentials or enables inference. Existing runtime slots
-are preserved. Binary/helper integrity is checked before launch, and mismatched or
-missing local acceptance blocks the mode without fallback. `/mode` selects a new
-GPT-only or mixed session. `/model worker` and `/effort worker` in mixed mode show only
-the qualified DeepSeek V4.1 Flash / low setting, preserving the saved GPT worker choice.
-Mixed/adaptive children inherit native permissions and coordinate scoped ownership.
-The native session handles edits, checks and approval requests without a phase restart.
+```text
+node bin/hera.mjs sandbox setup
+```
 
-Credentials stay outside this repository in the isolated Hera home/OS keyring. Never
-copy tokens into fixtures or logs. See [security](SECURITY.md). Go uses its OS-stored
-key by default. An explicitly supplied HERA_OPENCODE_GO_API_KEY overrides it for that
-process; `hera auth login go --from-env` imports that value into the OS store.
-`hera auth status go` prints presence/source only; `hera auth logout go` removes only
-the saved Hera Go entry (it does not remove an environment override). All Go requests
-use the OpenCode Go subscription route; `doctor external`
-does no paid work, while `doctor external --live` explicitly permits one bounded probe.
+### 3. Check and start
 
-If another installed tool provides `hera`, use explicit local paths or an isolated
-installation prefix until command routing is resolved. No public license or
-registry/release publication is authorized.
+```text
+node bin/hera.mjs doctor --json
+node bin/hera.mjs --cwd "PATH_TO_YOUR_PROJECT" --single-agent
+```
+
+Replace the project path with an existing directory. Start with GPT-only
+single-agent operation, which explicitly disables workers. Missing provider setup
+opens the setup menu. Edits use the native workspace sandbox; additional permissions
+are presented for allow-once or decline. Unrestricted fallback is unavailable.
+
+For multiline/non-interactive input:
+
+```text
+node bin/hera.mjs --cwd "PATH_TO_YOUR_PROJECT" run --single-agent --prompt-file "request.txt"
+```
+
+Use an absolute prompt-file path when it is outside the launcher directory.
+Headless execution declines interactive permission requests.
+
+## Choose a mode
+
+| Mode | Main work | Delegated work |
+| --- | --- | --- |
+| `gpt_only` | Your selected GPT model | Selected GPT workers, or none with `--single-agent` |
+| `external_workers` | Your selected GPT model | OpenCode Go · DeepSeek V4.1 Flash |
+| `adaptive` | OpenCode Go · DeepSeek V4.1 Flash | Selected GPT/Astra role for difficult reasoning, planning and design |
+
+Use `/mode` to choose. **Workers need local verification** matching runtime, relevant
+code, platform, models, efforts and concurrency. Changing these invalidates the record.
+Mixed/adaptive modes additionally require a reviewed native runtime installed in
+your Hera home. A key alone does not enable them. There is no automatic provider fallback.
+
+In adaptive mode, `/model main` and `/effort main` configure the GPT reasoning role.
+The development checkout exposes Go efforts `low`, `high` and `max` through
+`/effort worker`; each change needs fresh native verification. GPT options come
+from the model catalog. `/workers` sets a ceiling of 1–8, capped by the project,
+not a measured running count. Settings apply to a new session; active turns reject changes.
+
+See [native runtime installation and qualification](experiments/codex-provider-routing/README.md)
+and [compatibility](docs/compatibility.md). Maintainer verification does not unlock
+other machines. Never copy credentials or acceptance records to bypass a gate.
+
+## Commands and keys
+
+Type `/` for suggestions. Type to filter, Up/Down to choose, Tab to complete,
+Enter to select and Escape to dismiss. **Only `/` starts a command.** A leading
+backslash is ordinary text; pasted commands remain literal text.
+
+| Command | Purpose |
+| --- | --- |
+| `/help` | Command help |
+| `/model`, `/effort`, `/workers` | Model, reasoning effort and worker-limit menus |
+| `/mode`, `/providers` | Agent mode and provider sign-in |
+| `/research` | Research setup, status and CAPTCHA controls |
+| `/plan <request>` | Read-only planning |
+| `/diff`, `/resume <ID>` | Git changes and session continuation |
+| `/doctor`, `/quit` | Readiness and exit |
+
+Menus use Up/Down, Enter and Escape. Explicit arguments such as
+`/model main <catalog-id> high` and `/workers 3` are also supported.
+
+| Key | Action |
+| --- | --- |
+| Enter | Send input |
+| Backslash + Enter / Ctrl+J | Insert a newline |
+| Shift/Alt + Enter | Newline when reported by the terminal |
+| Up / Down | Recall sent input; navigate an open menu |
+| Escape | Interrupt work; press twice to clear input |
+| Ctrl+C | Interrupt work; when idle, clear/arm exit, then press again to quit |
+| Ctrl+Q | Quit after session cleanup |
+
+## Public web research
+
+Run `node bin/hera.mjs research setup` once to install Chromium, or use `/research`.
+Search uses DuckDuckGo; page reads visit the requested public sites. No search API
+key or paid search fallback is used. Model usage still consumes provider quota.
+Requests share a bounded queue and ten-minute cache.
+
+For CAPTCHA, use `/research open`, solve it yourself, then `/research resume` and
+resend the original request. Your personal browser profile is not imported.
+Never put secrets or private project content in public queries.
+
+Design/research tasks use DRD guidance: complementary assignments, public evidence
+and synthesis in the native task. Worker limits and explicit no-web/no-delegation
+requests are respected; single-agent operation handles the work without workers.
+This is model guidance, not a guarantee of research quality.
+[Details and limits](docs/web-research.md).
+
+## Updates and troubleshooting
+
+Close Hera and preserve local changes before updating a source checkout:
+
+```text
+git pull --ff-only
+npm ci
+npm run build
+```
+
+Use `npm.cmd` on Windows. **There is no `hera update` command.** `codex update`
+changes the separate global CLI, not Hera's pinned runtime. Mixed runtimes and
+verification must match the new version. For checked `.tgz` installs and rollback,
+see [Windows](docs/install-windows.md) / [macOS](docs/install-macos.md).
+CI artifacts are not published releases.
+
+| Situation | What to do |
+| --- | --- |
+| Missing login/key | Use `/providers` or `auth login openai` / `auth login go` |
+| Blocked workers | Inspect `doctor`; use GPT-only `--single-agent` when appropriate |
+| Windows sandbox not ready | Run `sandbox setup`, then `doctor --json` |
+| Existing `hera` command | Use the explicit local launcher or a separate install prefix |
+| Interrupted/uncertain write | Inspect Git changes and native history; do not blindly replay or delete locks |
+
+Settings and native sessions use the isolated Hera home (default `~/.hera`).
+Keep `HERA_HOME` outside your project. OpenAI uses its isolated native login;
+Go uses Windows Credential Manager or macOS Keychain.
+`HERA_OPENCODE_GO_API_KEY` overrides the saved Go key for that process.
+`auth status go` reports presence/source; `auth logout go` removes the saved entry,
+not an environment override. See [security](SECURITY.md).
+
+## Verification and development
+
+[Public CI evidence](docs/public-transition-2026-10-08.md) records Windows x64 and
+macOS arm64 offline checks (86 tests each) and installation of the same package on
+both systems. It names the tested commit and does not cover later uncommitted work.
+Windows live results are separate. **macOS manual terminal and live-model checks
+remain unperformed.**
+
+Development checks: `npm run typecheck`, `npm test`, `npm run build`.
+Live checks are opt-in and can consume provider quota.
+See [status](docs/status.md) and the [specification](docs/implementation-spec.md).
+
+## The Hera family
+
+This project is the terminal coding agent; its siblings provide live editor tools:
+
+- [hera-agent-unity](https://github.com/NotNull92/hera-agent-unity) — Unity editor control.
+- [hera-agent-godot](https://github.com/NotNull92/hera-agent-godot) — Godot editor control.
+- [hebe-agent-unity](https://github.com/NotNull92/hebe-agent-unity) — lightweight Unity execution.
+
+Hera's original adult office-wear character shares the family's gold-star motif
+with a new identity. [Artwork notes](docs/branding.md).
+
+## License
+
+Currently **UNLICENSED**. Public visibility does not grant an open-source license.
+See [third-party notices](THIRD_PARTY_NOTICES.md) for dependency terms.
