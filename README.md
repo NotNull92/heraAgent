@@ -242,5 +242,8 @@ with a new identity. [Artwork notes](docs/branding.md).
 
 ## License
 
-Currently **UNLICENSED**. Public visibility does not grant an open-source license.
-See [third-party notices](THIRD_PARTY_NOTICES.md) for dependency terms.
+Hera's original code and documentation are licensed under [Apache-2.0](LICENSE).
+See [NOTICE](NOTICE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+The [character artwork](assets/branding/LICENSE) is excluded from this grant.
+Optional Attention Span styles retain AGPL-3.0 and are installed separately;
+their original texts are not bundled or relicensed by Hera.

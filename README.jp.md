@@ -240,5 +240,8 @@ Windows の実モデル検証は別に記録されています。**macOS の実�
 
 ## ライセンス
 
-現在は **UNLICENSED** です。リポジトリの公開はオープンソースライセンスの付与ではありません。
-依存ソフトウェアの条件は[サードパーティー通知](THIRD_PARTY_NOTICES.md)を参照してください。
+Hera 独自のコードとドキュメントには [Apache-2.0](LICENSE) を適用します。
+[NOTICE](NOTICE) と [サードパーティーの告知](THIRD_PARTY_NOTICES.md) を参照してください。
+[キャラクター画像](assets/branding/LICENSE) はこの許諾の対象外です。
+別途インストールする Attention Span のスタイル原文は AGPL-3.0 を維持し、
+Hera への同梱や Hera のライセンスへの変更は行いません。

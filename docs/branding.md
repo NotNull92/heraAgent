@@ -19,7 +19,9 @@ motifs and language navigation, rather than reused as the new character's identi
 - [hera-agent-godot](https://github.com/NotNull92/hera-agent-godot): `docs/assets/hera_godot_logo.png`.
 - [hebe-agent-unity](https://github.com/NotNull92/hebe-agent-unity): `docs/logo/hebe_logo.png`.
 
-The repository remains UNLICENSED; this note does not grant a new artwork license.
+Hera's Apache-2.0 grant covers its original code and documentation, not this artwork.
+See [the artwork notice](../assets/branding/LICENSE); no separate artwork reuse
+license has been granted.
 
 ## Generation prompt
 

@@ -237,5 +237,8 @@ Windows 실사용 검증은 별도로 기록합니다. **macOS 실제 터미널�
 
 ## 라이선스
 
-현재 **UNLICENSED**입니다. 저장소 공개 자체가 오픈소스 라이선스 부여를 의미하지 않습니다.
-의존성의 별도 조건은 [서드파티 고지](THIRD_PARTY_NOTICES.md)를 참고하세요.
+Hera 자체 코드와 문서는 [Apache-2.0](LICENSE)으로 배포합니다.
+[저작권 고지](NOTICE)와 [서드파티 고지](THIRD_PARTY_NOTICES.md)를 참고하세요.
+[캐릭터 이미지](assets/branding/LICENSE)는 이 라이선스의 적용 대상에서 제외합니다.
+선택 설치하는 Attention Span 화법 원문은 AGPL-3.0을 유지하며, Hera에 동봉하거나
+Hera 라이선스로 변경하지 않습니다.

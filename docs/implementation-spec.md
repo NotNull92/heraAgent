@@ -1,3 +1,10 @@
+User-authorized license grant (2026-10-08): Hera's original source code and
+documentation are Apache-2.0. Preserve third-party licenses and notices.
+Attention Span AGPL-3.0 style texts remain separately installed, not bundled.
+Branding artwork is excluded from this grant; see assets/branding/LICENSE.
+This supersedes older UNLICENSED statements, not the separate approval
+requirements for release/npm publication or further license changes.
+
 User-authorized mode revision (2026-10-08): only HERA Design (adaptive) and
 HERA Development (external_workers) are selectable. Retire GPT Balance
 (gpt_only); retain legacy settings/history for reading, but block execution

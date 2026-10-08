@@ -16,7 +16,8 @@ It does not add external dependencies or a second agent loop.
 
 Upstream and reference code retain Apache-2.0. See the original
 [license](../../assets/codex/LICENSE) and [notice](../../assets/codex/NOTICE).
-This notice does not grant a license to Hera or authorize public publication.
+Hera's original code is licensed under the root Apache-2.0 LICENSE; this notice
+does not relicense upstream material or authorize release/npm publication.
 
 On native Windows PowerShell or macOS, after `npm ci` and `npm run build`:
 

@@ -1,7 +1,10 @@
 # Third-party notices
 
-Hera is UNLICENSED; no public license grant is made. Dependencies retain their own
-licenses. npm installs original dependency packages with their license/notice files;
+Hera's original source code and documentation are licensed under Apache-2.0;
+see [LICENSE](LICENSE) and [NOTICE](NOTICE). Branding artwork is excluded; see
+[its notice](assets/branding/LICENSE). Third-party materials retain their own
+licenses. npm installs the original dependency packages; their metadata is not a
+substitute for preserving applicable license/notice files when redistributing them.
 Hera does not vendor their native binaries. Exact versions, integrity and transitive
 license identifiers are recorded in the source lock and consumer shrinkwrap.
 
@@ -35,3 +38,26 @@ The development-only `experiments/codex-provider-routing/native-v1.patch` adapts
 Apache-2.0 source from openai/codex and Bozentan/codex. Exact source revisions and
 modifications are documented beside the patch. It is excluded from the npm archive
 and does not replace the installed dependency or change Hera's license.
+
+## User-installed answer styles (not bundled)
+
+The optional `attention-kind`, `spartan` and `rundown` Markdown answer styles
+originate from [alexgreensh/attention-span](https://github.com/alexgreensh/attention-span).
+The upstream project identifies them as AGPL-3.0; see its
+[license at the reviewed revision](https://github.com/alexgreensh/attention-span/blob/2714c965e6be1fa2597510e66651e63bc67cb448/LICENSE).
+Hera's names for these choices are Sage, Warrior and Herald (현자, 전사, 전령).
+The picker reads user-installed files from the Hera home. Neither their original
+text nor translations are included in this repository or the reviewed npm archive.
+Renaming a style does not change its license. Do not copy these texts into a
+Hera release under the project's own license; preserve their upstream terms and
+review the distribution obligations before adding any bundled style content.
+
+## Transitive dependencies and distribution scope
+
+The reviewed npm lock includes MIT, Apache-2.0, ISC, BSD-2-Clause, BSD-3-Clause
+and `(MIT OR CC0-1.0)` runtime dependency declarations. Development dependencies
+also include MPL-2.0 `lightningcss` and its optional platform packages through
+Vitest/Vite. These packages are not vendored into Hera's source archive.
+Their licenses continue to apply independently. This inventory is not a license
+clearance for repackaged Codex binaries or Chromium and their internal libraries.
+See the [license review](https://github.com/NotNull92/heraAgent/blob/main/docs/license-audit-2026-10-08.md) for scope and findings.
