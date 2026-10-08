@@ -72,6 +72,10 @@ only the command name.
 Bindings follow Claude Code.
 
 - Enter sends. Backslash+Enter, Shift/Alt+Enter and Ctrl+J insert a newline.
+- When the last characters and Enter arrive from the terminal as one chunk (fast typing,
+  an IME commit), a short run of at most 16 characters is text plus Enter. A longer or
+  multi-line chunk, or one that alone forms a `/command`, is treated as an unbracketed
+  paste and stays text.
 - Escape interrupts a running turn; pressed twice within a second it clears the input.
 - Ctrl+C interrupts a running turn. When idle, the first press clears the input and
   turns the placeholder into `See you later codingborn.` in blood red; a second press

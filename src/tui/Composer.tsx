@@ -63,15 +63,21 @@ export function Composer({busy,send,cancel,quit,language,rows=6}:{busy:boolean;s
     if(key.escape){if(busy){cancel();return;}if(options.length){setMenu({...menuRef.current,hidden:true});lastEscape.current=0;return;}const now=Date.now();if(now-lastEscape.current<1000){reset();lastEscape.current=0;}else lastEscape.current=now;return;}
     if(input==='\n'||key.ctrl&&input==='j'||key.return&&(key.shift||key.meta)){insert('\n');return;}
     if(key.tab&&selected){replace(current.current.value[0]+selected[0]+' ');return;}
-    if(key.return){
-      const {value,cursor}=current.current;
+    const enter=()=>{
+      const {value,cursor}=current.current;const selected=matches()[menuRef.current.index];
       if(graphemes(value)[cursor-1]==='\\'){setState(s=>{const cut=editInput(s.value,s.cursor,'backspace');return editInput(cut.value,cut.cursor,'insert','\n');});return;}
       if(busy||!value.trim())return;
       if(selected?.[0]==='plan'){replace(value[0]+'plan ');return;}
       const text=selected?value[0]+selected[0]:value;
       const submitted=pasteRef.current&&text.startsWith('/')?` ${text}`:text;
-      send(submitted);history.current.items=[...history.current.items,submitted].slice(-100);history.current.at=-1;reset();return;
-    }
+      send(submitted);history.current.items=[...history.current.items,submitted].slice(-100);history.current.at=-1;reset();
+    };
+    if(key.return){enter();return;}
+    // Fast typing or an IME commit can deliver the last characters together with Enter as one chunk, which
+    // would otherwise become text plus a line break. A short printable run ending in one CR is typing; a
+    // longer or multi-line chunk is an unbracketed paste and stays text, as does a chunk that alone forms a command.
+    const burst=/^([^\x00-\x1f\x7f]+)\r$/.exec(input);
+    if(burst&&!key.ctrl&&!key.meta&&graphemes(burst[1]!).length<=16&&!(current.current.value===''&&burst[1]!.startsWith('/'))){insert(burst[1]!);enter();return;}
     if(key.ctrl){
       const parts=graphemes(current.current.value);const at=current.current.cursor;
       if(input==='a')setState(s=>({...s,cursor:0}));

@@ -1419,3 +1419,14 @@ samples, not a measured rate. Technical terms such as PostgreSQL stay in English
 A later local edit to the same user file added a curt-register rule (plain Korean
 endings, no politeness markers); one live rerun of the question returned line one plus
 three flat statements in plain endings.
+
+Enter-as-newline fix (user report: Enter after typing sometimes added a line break
+instead of sending): Ink delivers characters and the Enter that follows them as a single
+text chunk when the terminal batches them (fast typing, an IME commit, a busy event
+loop), and the composer inserted that chunk verbatim, turning the CR into a line break.
+A printable run of at most 16 characters ending in one CR is now inserted and then
+handled as Enter; longer or multi-line chunks and a chunk that alone forms a `/command`
+keep the paste-safe behavior. Windows local: typecheck, build and 94 offline tests
+passed (exit 0). The cause was derived from the input handler and the existing
+embedded-control test, not reproduced in a real terminal; whether this covers every
+occurrence the user saw is NOT_RUN.

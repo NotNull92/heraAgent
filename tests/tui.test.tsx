@@ -137,3 +137,16 @@ it('renders closed markdown bold in model output without asterisks and keeps use
   expect(frame).toContain('You: keep **mine** as typed');expect(frame).toContain('Hera: Use PostgreSQL. It fits, 2 ** 3 stays');expect(frame).toContain('-> Next: start small');expect(frame).toContain('open **only');
   ui.unmount();
 });
+it('treats a short typed run that arrives together with Enter as text plus Enter, but not a paste-like chunk',async()=>{
+  const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  const key=async(value:string)=>{ui.stdin.write(value);await tick();};
+  try{
+    await tick();await key('hi ');await key('there\r');expect(sent).toEqual(['hi there']);
+    await key('ok\r');expect(sent).toEqual(['hi there','ok']);
+    await key('/mo');await key('de\r');expect(sent).toEqual(['hi there','ok','/model']);
+    // A chunk that alone forms a command, a long chunk or a multi-line chunk is not typing.
+    await key('/quit\r');expect(sent).toHaveLength(3);await key('\x15');
+    await key('x'.repeat(17)+'\r');expect(sent).toHaveLength(3);await key('\x15');
+    await key('a\rb\r');expect(sent).toHaveLength(3);
+  }finally{ui.unmount();}
+});
