@@ -1,3 +1,14 @@
+User-authorized publication amendment (2026-10-08): the original repository was
+renamed to heraAgent-private-archive and preserved privately. The new public
+NotNull92/heraAgent contains the same source history with commit emails replaced
+by the verified GitHub noreply address. The user approved this one-time history
+rewrite and repository rename after privacy review. Continue reviewed normal
+pushes to the public heraAgent remote; preserve the private archive. This overrides
+the earlier private-only restrictions below, not the prohibitions on release/npm
+publication, license grants, or further history rewriting without approval.
+Develop for independent users on clean Windows and macOS machines, with portable
+setup, user-owned credentials, actionable errors and documented install/update paths.
+
 User-authorized workflow amendment (2026-10-07): ordinary Hera sessions must use
 Codex-native workspace-write and on-request approvals. Execute requested edits
 and checks without a separate /apply, proposal-generation turn, whole-workspace

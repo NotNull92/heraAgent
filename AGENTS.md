@@ -11,5 +11,7 @@ user-owned credentials, clear errors, and documented install/update paths.
 Public repository visibility was authorized on 2026-10-08 subject to a privacy review;
 release publication, npm publication, and a license grant still require approval.
 The user separately authorized the one-time historical email rewrite on that date.
+The original remote was then renamed to heraAgent-private-archive and kept private
+with user approval; the new heraAgent remote contains only sanitized history and is public.
 Do not publish releases, npm packages, public visibility or a license grant without approval.
-Before each authorized private push, review staged content, secrets, origin URLs and ancestry.
+Before each push, review staged content, secrets, origin URLs and ancestry.

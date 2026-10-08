@@ -1,6 +1,6 @@
 # Implementation status
 
-## Public readiness review (2026-10-08; visibility still private)
+## Public readiness review (2026-10-08; clean repository public)
 
 Develop future changes for independent users on clean Windows and macOS machines,
 with portable installation, user-owned credentials and actionable errors.
@@ -25,9 +25,15 @@ databases and backups; existing local files were preserved.
 
 The sanitized tip is `5d3de75fc92ba1eb62ce6ccd3e3d61a005eab0d4`.
 Historical commit IDs in older evidence below refer to the pre-rewrite history.
-GitHub still returns the former tip and its personal author email by its old SHA,
-even after the rewrite. Therefore public conversion is pending removal of retained
-objects, or an approved fresh repository with only the sanitized history.
+GitHub retained the former tip and its personal author email after the rewrite.
+With separate user approval, renamed the original repository (ID 1406773417) to
+`NotNull92/heraAgent-private-archive` and preserved it privately. Created a new,
+independent `NotNull92/heraAgent` (ID 1409659092), pushed only sanitized `main`,
+verified the old tip is unavailable there (HTTP 422), and confirmed no old Actions
+runs/artifacts were carried over. Converted only the new repository to public.
+The original repository and its five unscanned binary artifacts remain private.
+Historical Actions links below refer to the private archive and require access.
+Current public CI results will be recorded separately when observed.
 See [GitHub's removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
 No release, npm publication or new live/manual model checks were performed.
 
@@ -43,7 +49,7 @@ Native Windows typecheck/build, all 19 TUI tests and the full 86-test offline su
 passed, including three new keyboard/filter/scroll/paste regressions. No live
 model calls or new physical terminal acceptance were performed. Source commit
 `e4614ee6f965524e34c0c0a0b4c0f9e322f3bbd1` is verified on the private remote.
-[CI `37720164302`](https://github.com/NotNull92/heraAgent/actions/runs/37720164302)
+[CI `37720164302`](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37720164302)
 failed before either platform's steps started: GitHub reported failed recent
 account payments or a spending limit requiring an increase. Installed-package
 jobs were skipped. No remote test failure or pass is inferred. Resolve the account
@@ -118,13 +124,13 @@ CI `37715214835` passed both platforms' offline checks, but Windows reached the
 15-minute job limit during package smoke; downstream archive jobs were skipped.
 The combined offline/package job now allows 30 minutes with all checks retained.
 Follow-up source commit `a656fdbad659301bdf55300953579b911347192e` is verified on
-the private remote. [CI `37716932924`](https://github.com/NotNull92/heraAgent/actions/runs/37716932924)
+the private remote. [CI `37716932924`](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37716932924)
 completed successfully: both platforms' offline checks, Windows package smoke,
 and clean-prefix Windows/macOS installation of the same Windows-built archive.
 Downloaded archive SHA-256 matched its CI checksum file:
 `419ddc54794eca6901d584ffae7999070309b36b6b30a3e7aa6309e86c5a5d17`.
 Superseded native workflow `37715231091` was cancelled
-following its macOS fresh-home pass. Replacement [native CI `37716968069`](https://github.com/NotNull92/heraAgent/actions/runs/37716968069)
+following its macOS fresh-home pass. Replacement [native CI `37716968069`](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37716968069)
 completed successfully: Windows and macOS builds and official/patched/official
 profile round trips. No CI jobs remain pending for this executable source.
 The follow-up status/qualification README commits are documentation-only and skip
@@ -209,7 +215,7 @@ passed, exit 0, for SHA-256
 
 Final implementation commit `41c48c38b4885ca41f7d722907da1da270d88778`, including
 DRD commit `dc6f298`, passed all four jobs in
-[CI 37707243321](https://github.com/NotNull92/heraAgent/actions/runs/37707243321):
+[CI 37707243321](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37707243321):
 Windows x64/macOS arm64 offline checks and identical-archive installation on both
 platforms. Each offline run passed 82 tests. The exact Windows-built archive was
 downloaded and passed local Windows installation, native initialization,
@@ -403,7 +409,7 @@ Source commit `1a9b3a38f0b934ae15a1e73f4d1cfbb5fdebd43b` was pushed to private
 URLs, ancestry, staged-content, source/history pattern and exact-value Go credential
 checks. The latter also checked the decompressed archive without logging the key.
 Concurrent TUI changes and untracked `.omo/`/`outputs/` were preserved.
-CI [37601591133](https://github.com/NotNull92/heraAgent/actions/runs/37601591133)
+CI [37601591133](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37601591133)
 has passed macOS offline/Chromium checks and the Windows offline/Chromium step;
 Windows artifact preparation/installation is still running at this checkpoint.
 The two identical-archive installation jobs are pending, not passed. No current
@@ -431,7 +437,7 @@ live/manual search remains NOT_RUN; current-source CI is verified separately.
 Source commit `98862bb5aa5efc3d324ee614a0a19189a1f63b3e` was pushed to private
 `NotNull92/heraAgent` main after identity, origin, ancestry, staged-content and
 secret checks; remote SHA matched local HEAD. CI
-[37594309507](https://github.com/NotNull92/heraAgent/actions/runs/37594309507)
+[37594309507](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37594309507)
 completed successfully: Windows/macOS offline checks and both identical-archive
 installation jobs (4/4). These CI jobs do not perform live search/model inference.
 Actual Windows GPT/Go search and write-phase denial are separately recorded above;
@@ -477,7 +483,7 @@ The maintained patch is now SHA-256
 `057f04af2e05d945a6a00613fadc77202c6063f30a12e8136caab157e36b6eaf`.
 The rebuilt executable and fresh product-level live checks below qualify this guard;
 the earlier experimental binary/CI receipts do not qualify this product build.
-Product CI [37573653148](https://github.com/NotNull92/heraAgent/actions/runs/37573653148)
+Product CI [37573653148](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37573653148)
 at `b01ee01954105c66d5c411325adb298b9b37f859` passed all four Windows/macOS jobs.
 The new optimized Windows executable built in 1m38s (exit 0), SHA-256
 `97225251787f19adf19d4641efc00dc22593f6a5bd9569ab75b21e1399df5aca`.
@@ -544,7 +550,7 @@ pattern scanning also passed (1,161 tracked files).
 Source commit `67c68e30d65ba812c4f12126f5243921fe66a90c` was pushed to private
 `NotNull92/heraAgent` main after origin, identity, staged-content, secret and ancestry
 checks. `ls-remote` matched the local SHA. Product CI
-[37578298594](https://github.com/NotNull92/heraAgent/actions/runs/37578298594) passed
+[37578298594](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37578298594) passed
 all four jobs: both platform offline checks, Windows packaging and Windows/macOS
 installed-package checks. The downloaded CI archive checksum
 matched `944f53782ac68963c492a67705055fd3b48501e3b8e0033cf214d0ff2058314b`;
@@ -552,7 +558,7 @@ those exact bytes passed local Windows install/native initialization/reinstall,
 credential persistence and launcher checks. The first invocation used the local
 artifact directory's checksum and failed before installation; selecting the downloaded
 artifact directory corrected the invocation. Native qualification
-[37578328995](https://github.com/NotNull92/heraAgent/actions/runs/37578328995) passed
+[37578328995](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37578328995) passed
 the macOS arm64 build, explicit runtime installation/integrity and fresh-home native
 initialization/profile smoke; its completed job log reports the current patch SHA and
 binary SHA-256 `2e630d57c66b46e9c7ec0d881bb150a31124e10e870311bdda784a80338fa674`.
@@ -626,7 +632,7 @@ The Windows x64 job also completed successfully. This CI checks no inference or 
 credentials and does not run the native Rust test suite. The older reference runtime did
 not open the existing Hera home or migrate its history.
 
-CI run [37565451567](https://github.com/NotNull92/heraAgent/actions/runs/37565451567)
+CI run [37565451567](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37565451567)
 at `7a8f2f3` passed macOS offline checks, failed the Windows picker test and skipped
 installed-package jobs. Waiting for visible frames did not flush React's passive
 input subscription. The test now uses React `act` around rendering and keyboard
@@ -636,7 +642,7 @@ including unchanged file-sync tests; these are recorded failures, not a full pas
 A later serial run with a 60-second per-test bound passed 48/48 (exit 0); this does
 not erase those default-timeout failures. Main `bb4dd24551955b1a8860a485e93e339276851483`
 was privately pushed and its remote SHA verified. CI run
-[37567629845](https://github.com/NotNull92/heraAgent/actions/runs/37567629845) passed
+[37567629845](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37567629845) passed
 all four jobs: Windows/macOS offline checks with normal timeouts and both installed
 archive checks. The exact CI archive SHA-256 is
 `81c5ce1ae8b12ac67249246cb2c71ba0e11e5cae9bfca62d6c1ae836f1799b95`;
@@ -1029,7 +1035,7 @@ Ctrl+Q is an explicit TUI exit/owned cleanup action, distinct from Ctrl+C interr
 
 Source commit `fcbdd69cc26a16a4c6ec7786fc539ad24c73cdaf` was pushed and matched
 remote main in the private `NotNull92/heraAgent` repository, upstream origin/main.
-[CI run 37425015641](https://github.com/NotNull92/heraAgent/actions/runs/37425015641)
+[CI run 37425015641](https://github.com/NotNull92/heraAgent-private-archive/actions/runs/37425015641)
 completed successfully: Windows x64 and macOS arm64 offline jobs, plus both
 installed-package jobs without source checkout. Earlier corrected run 37424674193
 also passed all four jobs. The earlier packaging failure above remains recorded.

@@ -10,7 +10,7 @@ if ($LASTEXITCODE -ne 0 -or $owner -cne 'NotNull92') { throw 'Authenticated owne
 $repo = & gh repo view NotNull92/heraAgent --json name,nameWithOwner,isPrivate,url,defaultBranchRef
 if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect destination' }
 $view = $repo | ConvertFrom-Json
-if ($view.name -cne 'heraAgent' -or $view.nameWithOwner -cne 'NotNull92/heraAgent' -or !$view.isPrivate -or $view.defaultBranchRef.name -cne 'main') { throw 'Repository identity conflict' }
+if ($view.name -cne 'heraAgent' -or $view.nameWithOwner -cne 'NotNull92/heraAgent' -or $view.isPrivate -or $view.defaultBranchRef.name -cne 'main') { throw 'Repository identity conflict (expected authorized public repository)' }
 foreach ($argsForUrl in @(@('remote','get-url','--all','origin'),@('remote','get-url','--push','--all','origin'))) {
   $urls = @(Git-Checked $argsForUrl)
   if ($urls.Count -ne 1 -or $urls[0] -cne 'https://github.com/NotNull92/heraAgent.git') { throw 'Unexpected origin destination' }
@@ -27,4 +27,4 @@ $localSha = [string](Git-Checked @('rev-parse','HEAD'))
 $remoteRef = [string](Git-Checked @('ls-remote','--exit-code','origin','refs/heads/main'))
 if (($remoteRef -split '\s+')[0] -cne $localSha) { throw 'Remote SHA mismatch' }
 if ([string](Git-Checked @('rev-parse','--abbrev-ref','--symbolic-full-name','@{upstream}')) -cne 'origin/main') { throw 'Wrong upstream' }
-Write-Output "VERIFIED $localSha $($view.url) private"
+Write-Output "VERIFIED $localSha $($view.url) public"
