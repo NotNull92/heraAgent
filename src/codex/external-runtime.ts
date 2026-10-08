@@ -13,6 +13,7 @@ import {childEnvironment,CODEX_VERSION} from './launcher.js';
 import {nativeSettings} from './config-compiler.js';
 import {resolveGoCredential} from '../providers/go-credentials.js';
 import {GO_URL,GO_MODEL} from '../providers/opencode-go.js';
+import {startupCheck} from './startup.js';
 
 export const GO_PROVIDER='hera_opencode_go';
 export const GO_ROLE='hera_go';
@@ -30,12 +31,13 @@ async function bundleDigest(directory:string):Promise<string>{
 }
 function platformPaths(){const platform=process.platform+'-'+process.arch;const triples:Record<string,string>={'win32-x64':'x86_64-pc-windows-msvc','darwin-arm64':'aarch64-apple-darwin','darwin-x64':'x86_64-apple-darwin'};const triple=triples[platform];if(!triple)throw new HeraError('UNSUPPORTED_PLATFORM','Patched runtime supports Windows x64 and macOS arm64/x64.',4);return {platform,triple,executable:process.platform==='win32'?'codex.exe':'codex'};}
 export async function externalRuntime(home:string){
+  return startupCheck('runtime:'+home,async()=>{
   const raw=await existsJson(join(home,'runtimes','external-runtime.json'));if(raw===undefined)return null;
   const parsed=receiptSchema.safeParse(raw);const expected=await pin();const platform=platformPaths();
   if(!parsed.success||parsed.data.platform!==platform.platform||parsed.data.patchSha256!==expected.patchSha256)throw new HeraError('EXTERNAL_RUNTIME_MISMATCH','Installed mixed runtime differs from this Hera build; reinstall the reviewed runtime. No fallback.',4);
   const receipt=parsed.data;const directory=join(home,'runtimes','provider-v1',receipt.binarySha256);const binary=join(directory,'bin',platform.executable);
   if(await digest(binary)!==receipt.binarySha256||await bundleDigest(directory)!==receipt.bundleSha256)throw new HeraError('EXTERNAL_RUNTIME_MISMATCH','Mixed runtime or platform helpers changed; no fallback.',4);
-  return {binary,receipt};
+  return {binary,receipt};});
 }
 export async function installExternalRuntime(home:string,source:string,expectedSha:string){
   sha.parse(expectedSha);await rejectRepositoryHome(await realpath(home));

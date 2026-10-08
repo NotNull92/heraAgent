@@ -1482,3 +1482,34 @@ Windows local: typecheck, build and all 100 offline tests (19 files) passed,
 exit 0. Tests cover pending preparation, Ready ordering, native gate propagation,
 missing-credential recovery and submitted-input echo. No native qualification
 fingerprint inputs changed. CI results remain separate from local evidence.
+
+Startup check reuse (2026-10-08): one startup attempt now shares in-flight
+account/model discovery, OS credential reads, schema verification, native
+qualification and mixed-runtime integrity results. Independent provider/key
+checks and Controller readiness checks run concurrently. The startup scope is
+discarded on success or failure, including callbacks retained by a runtime;
+subsequent attempts revalidate. Authentication, model compatibility, native
+permissions and qualification gates remain enforced. No dependencies were added.
+
+The preceding configured TUI startup sample took 13,469 ms. Three fresh temporary
+workspace startups through initializeProviders now took 6,441 / 6,472 / 6,211 ms,
+each with exactly one official account/model discovery process and less than 1 ms
+to reuse the prepared session. These samples used Design with the existing user
+configuration, project AGENTS.md and user voice. Configuration and voice bytes
+were verified unchanged. These are local observations, not a controlled provider
+benchmark; the three startup measurements made no inference calls. Model response
+time and physical terminal paint latency are separate from startup time.
+
+Windows local: typecheck, build and all 102 offline tests (20 files) passed,
+exit 0. Tests cover concurrent/nested sharing, separate attempts, failed checks,
+callbacks after scope completion, discovery process reuse and runtime tampering
+between attempts. Native fingerprint inputs include the new startup helper and
+account discovery module. Under the user's existing live-fixture authorization,
+both adaptive and external_workers passed conversation, edit/test, same-thread
+resume, routing, approval denial/allow-once, cancellation and concurrency checks
+in disposable workspaces, with a 180-second per-stage limit. Development loaded
+the full coding handbook before edits; Design kept the coding handbook absent
+and used the research handbook and an actual GPT worker for planning. Fresh local
+qualification evidence was recorded only after each complete suite passed;
+previous records were backed up. macOS live/manual checks remain NOT_RUN.
+Cross-platform CI results are separate from these local results.

@@ -4,10 +4,20 @@ import {startupArgs} from '../codex/config-compiler.js';
 import type {Config} from '../config.js';
 import {HeraError} from '../errors.js';
 import {goCredentialStatus} from './go-credentials.js';
+import {startupCheck} from '../codex/startup.js';
+
+export async function discoverOpenAI(home:string,cwd:string,config:Config,existing?:CodexClient){
+  return startupCheck('openai:'+JSON.stringify([home,cwd,startupArgs(config)]),async()=>{
+    const client=existing??await CodexClient.connect(home,cwd,startupArgs(config));
+    try{const account=await client.account();return {account,models:account.ready?await client.models():[]};}
+    finally{if(!existing)await client.close();}
+  });
+}
 
 export async function providerStatus(home:string,cwd:string,config:Config){
-  const client=await CodexClient.connect(home,cwd,startupArgs(config));
-  try{return {openai:await client.account(),go:await goCredentialStatus(home)};}finally{await client.close();}
+  const [openai,go]=await Promise.allSettled([discoverOpenAI(home,cwd,config),goCredentialStatus(home)]);
+  if(openai.status==='rejected')throw openai.reason;if(go.status==='rejected')throw go.reason;
+  return {openai:openai.value.account,go:go.value};
 }
 export async function loginOpenAI(home:string,cwd:string,config:Config,show:(text:string)=>void,device=false,signal?:AbortSignal){
   const client=await CodexClient.connect(home,cwd,startupArgs(config));let timer:NodeJS.Timeout|undefined;let loginId:string|undefined;let abort:()=>void=()=>{};

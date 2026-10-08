@@ -9,6 +9,7 @@ import {workerCapability} from '../src/codex/capabilities.js';
 import {defaults,loadConfig} from '../src/config.js';
 import {InteractiveSession} from '../src/session/interactive.js';
 import {CodexClient} from '../src/codex/client.js';
+import {withStartupChecks} from '../src/codex/startup.js';
 
 it('rejects runtime tampering and never treats installed binaries as live acceptance',async()=>{
   const home=await mkdtemp(join(tmpdir(),'hera-runtime-check-'));expect(await externalRuntime(home)).toBeNull();
@@ -19,8 +20,9 @@ it('rejects runtime tampering and never treats installed binaries as live accept
   const pin=JSON.parse(await readFile('assets/codex-provider/manifest.json','utf8'));
   await atomicJson(join(home,'runtimes','external-runtime.json'),{schemaVersion:1,platform:process.platform+'-'+process.arch,patchSha256:pin.patchSha256,binarySha256,bundleSha256});
   expect((await externalRuntime(home))?.receipt.binarySha256).toBe(binarySha256);
+  await withStartupChecks(async()=>{const [first,second]=await Promise.all([externalRuntime(home),externalRuntime(home)]);expect(first).toBe(second);});
   expect((await workerCapability(home,{...defaults,mode:'external_workers'})).ready).toBe(false);
-  await writeFile(join(directory,'helper.txt'),'unexpected executable helper');await expect(externalRuntime(home)).rejects.toMatchObject({errorCode:'EXTERNAL_RUNTIME_MISMATCH'});
+  await writeFile(join(directory,'helper.txt'),'unexpected executable helper');await expect(withStartupChecks(()=>externalRuntime(home))).rejects.toMatchObject({errorCode:'EXTERNAL_RUNTIME_MISMATCH'});
   await expect(installExternalRuntime(home,join(directory,path),'0'.repeat(64))).rejects.toMatchObject({errorCode:'EXTERNAL_RUNTIME_MISMATCH'});
 });
 it('offers the Go model with low, high and max effort without replacing the saved GPT worker configuration',async()=>{

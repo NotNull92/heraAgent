@@ -7,6 +7,7 @@ import {z} from 'zod';
 import {HeraError} from '../errors.js';
 import {childEnvironment} from '../codex/launcher.js';
 import {rejectRepositoryHome} from '../paths.js';
+import {startupCheck} from '../codex/startup.js';
 
 export function validateGoKey(key:string){if(!/^[\x21-\x7e]{1,2048}$/.test(key))throw new HeraError('INVALID_GO_KEY','Go key must be 1-2048 printable ASCII characters without spaces.',2);return key;}
 async function target(home:string){const canonical=await realpath(home);await rejectRepositoryHome(canonical);return 'hera-agent/opencode-go/'+createHash('sha256').update(process.platform==='win32'?canonical.toLowerCase():canonical).digest('hex');}
@@ -20,6 +21,9 @@ function run(home:string,file:string,args:string[],input=''):Promise<{code:numbe
   });
 }
 async function stored(home:string,action:'read'|'write'|'delete',value?:string):Promise<string|null>{
+  return action==='read'?startupCheck('go-key:'+home,()=>storedOnce(home,action,value)):storedOnce(home,action,value);
+}
+async function storedOnce(home:string,action:'read'|'write'|'delete',value?:string):Promise<string|null>{
   const id=await target(home);
   if(process.platform==='win32'){
     const root=process.env.SYSTEMROOT??process.env.SystemRoot;if(!root)throw new HeraError('CREDENTIAL_STORE_UNAVAILABLE','Windows system directory is unavailable.',3);

@@ -95,6 +95,10 @@ Bindings follow Claude Code.
 - Once provider setup is complete at startup, prepare the native session before
   showing Ready. Preparation performs no model turn; the first prompt reuses that
   session. Show runtime preparation explicitly rather than deferring it to a greeting.
+- Within one startup attempt, reuse account/model discovery, OS credential reads,
+  protocol verification and runtime integrity results. Independent readiness checks
+  may run concurrently. Discard these results when startup succeeds or fails;
+  another attempt must check again. Preserve authentication and native worker gates.
 - Markdown bold in model output is drawn bold: a closed `**pair**` on one line loses its
   asterisks. Inline code, fenced/indented code blocks and user text (including
   continuation lines) stay literal. Fence state survives streaming and resize.

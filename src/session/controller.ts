@@ -14,6 +14,8 @@ import {acquireWorkspace} from './workspace-lock.js';
 import {baseline,PhasePolicy,validateProposalPath,assignmentSchema,resultSchema} from './phase-policy.js';
 import {editProposalSchema,reviewEdits,reviewProposal,testResults,observeTestSequence,type ApplyReview} from './apply-review.js';
 import {goCredentialStatus} from '../providers/go-credentials.js';
+import {discoverOpenAI,providerStatus} from '../providers/accounts.js';
+import {withStartupChecks} from '../codex/startup.js';
 import {NativeWorkers,workerContractsSchema,threadBusy} from './workers.js';
 import {workerCapability,nativeCapability} from '../codex/capabilities.js';
 import {GO_PROVIDER,GO_ROLE,ASTRA_ROLE} from '../codex/external-runtime.js';
@@ -36,14 +38,22 @@ export class Controller extends EventEmitter {
   readonly requests=new Map<string|number,NativeRequest>();
   constructor(public client:CodexClient,readonly home:string,readonly cwd:string,readonly config:Config,private workerAnalysis=false,readonly nativeFlow=false){super();this.bindClient();}
   private bindClient(){this.client.on('event',(e:RpcEvent)=>this.event(e));this.client.on('request',(r:RpcRequest)=>this.deny(r));this.client.on('fault',(e:HeraError)=>{this.fault=e;this.failure?.(e);this.emit('fault',e);});}
-  static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){requireMode(config,singleAgent,singleAgent?false:(await nativeCapability(home,config)).ready);const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;try{client=await CodexClient.session(home,cwd,config,'workspace-write',!singleAgent,true);const controller=new Controller(client,home,cwd,config,!singleAgent,true);controller.lock=lock;await controller.start(previous);return controller;}catch(e){if(!client||await client.close())await lock.release();throw e;}}
+  static async open(home:string,cwd:string,config:Config,singleAgent:boolean,previous?:Metadata){return withStartupChecks(async()=>{
+    const [capability,providers]=await Promise.allSettled([singleAgent?Promise.resolve({ready:false}):nativeCapability(home,config),providerStatus(home,cwd,config)]);
+    if(capability.status==='rejected')throw capability.reason;if(providers.status==='rejected')throw providers.reason;
+    requireMode(config,singleAgent,capability.value.ready);
+    if(!providers.value.openai.ready||!providers.value.go.credentialStored)throw new HeraError('PROVIDER_SETUP_REQUIRED','먼저 /providers에서 OpenAI 로그인과 Go 키 저장을 완료하세요.',3);
+    const lock=await acquireWorkspace(home,cwd);let client:CodexClient|undefined;
+    try{client=await CodexClient.session(home,cwd,config,'workspace-write',!singleAgent,true);const controller=new Controller(client,home,cwd,config,!singleAgent,true);controller.lock=lock;await controller.start(previous);return controller;}
+    catch(e){if(!client||await client.close())await lock.release();throw e;}
+  });}
   get busy(){return this.active||this.applying||(this.workers?.activeCount??0)>0;}
   get collaborationEnabled(){return this.workerAnalysis;}
   private async start(previous?:Metadata){
     // A Go-root runtime reports no OpenAI account. Discover OpenAI readiness and
     // supported reasoning levels through the official OpenAI runtime instead.
-    const discovery=this.config.mode==='adaptive'?await CodexClient.connect(this.home,this.cwd,startupArgs(this.config)):this.client;
-    try{const account=await discovery.account();if(!account.ready)throw new HeraError('PROVIDER_SETUP_REQUIRED','OpenAI login is required: /providers or hera auth login openai.',3);validateModelChoices(this.config,await discovery.models());}finally{if(discovery!==this.client)await discovery.close();}
+    const discovery=await discoverOpenAI(this.home,this.cwd,this.config,this.config.mode==='adaptive'?undefined:this.client);
+    if(!discovery.account.ready)throw new HeraError('PROVIDER_SETUP_REQUIRED','OpenAI login is required: /providers or hera auth login openai.',3);validateModelChoices(this.config,discovery.models);
     if(!(await goCredentialStatus(this.home)).credentialStored)throw new HeraError('PROVIDER_SETUP_REQUIRED','Save the Go key in the OS store first: /providers or hera auth login go.',3);
     await this.verifyRuntime();
     if(this.nativeFlow){await this.startNative(previous);return;}

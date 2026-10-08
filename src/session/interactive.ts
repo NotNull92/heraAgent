@@ -14,6 +14,7 @@ import {listMetadata} from '../metadata.js';
 import {safeText,HeraError,errorView} from '../errors.js';
 import {capabilityReport} from '../codex/capabilities.js';
 import {providerStatus,loginOpenAI} from '../providers/accounts.js';
+import {withStartupChecks} from '../codex/startup.js';
 import {saveGoCredential} from '../providers/go-credentials.js';
 import {externalRuntime} from '../codex/external-runtime.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
@@ -42,7 +43,7 @@ export class InteractiveSession extends EventEmitter {
     this.emit('change');
   }
   cancelSelection(){if(this.busy)return;if(this.providerSetupRequired){this.add('\n먼저 OpenAI와 OpenCode Go를 설정하세요. 종료하려면 Ctrl+Q를 누르세요.\n');return;}this.selection=null;this.emit('change');}
-  async initializeProviders(){if(this.busy)return;this.providerSetupRequired=true;this.busy=true;this.status='Checking providers';this.emit('change');try{await this.openProviders(true);if(!this.providerSetupRequired){this.status=this.config.language==='ko'?'런타임 준비 중':'Starting runtime';this.emit('change');await this.connect();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);if(this.providerSetupRequired)this.providerMenu(null,null);}finally{this.busy=false;this.emit('change');}}
+  async initializeProviders(){return withStartupChecks(async()=>{if(this.busy)return;this.providerSetupRequired=true;this.busy=true;this.status='Checking providers';this.emit('change');try{await this.openProviders(true);if(!this.providerSetupRequired){this.status=this.config.language==='ko'?'런타임 준비 중':'Starting runtime';this.emit('change');await this.connect();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);if(this.providerSetupRequired)this.providerMenu(null,null);}finally{this.busy=false;this.emit('change');}});}
   private async openProviders(startup=false){const status=await providerStatus(this.home,this.cwd,this.config);this.providerSetupRequired=!status.openai.ready||!status.go.credentialStored;if(startup&&!this.providerSetupRequired){this.selection=null;return;}this.providerMenu(status.openai.ready,status.go.credentialStored);}
   private providerMenu(openai:boolean|null,go:boolean|null){
     const ko=this.config.language==='ko';this.approval=this.providerSetupRequired?(ko?'두 제공자 설정을 완료해 주세요. Ctrl+Q: 종료':'Complete both providers to continue. Ctrl+Q: quit'):'';this.selection={title:ko?'제공자 설정 · OpenAI / OpenCode Go':'Providers · OpenAI / OpenCode Go',current:null,
