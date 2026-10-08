@@ -2,6 +2,10 @@
 
 ## 0.1.0-alpha.1
 
+Pinned Codex runtime and generated protocol upgraded to 0.161.0. Runtime version
+labels share the checked runtime constant. Existing 0.160.1 session references
+remain readable; native execution still requires fresh runtime qualification.
+
 Local Codex client with strict settings, isolated official authentication, native
 history/resume, Windows sandbox setup and Korean-aware TUI. Ordinary tasks edit and
 test immediately with native on-request approvals; `/plan` remains read-only.

@@ -2,9 +2,17 @@
 
 ## Current behavior (2026-10-08)
 
+The project-local Codex dependency is pinned to 0.161.0, upstream source
+`979011409de0a60b52f179721948e65531d26144`. Generated protocol and package integrity
+are recorded in `assets/codex/compatibility.json`. The mixed-provider patch is
+rebased on the same source. This does not follow or modify the global Codex install.
+Previous 0.160.1 session references remain readable without rewriting their saved
+runtime version; old capability records cannot qualify the new runtime. See the
+latest status checkpoint for upgrade verification, separately from earlier passes.
+
 Normal sessions use native workspace-write/on-request, with read-only `/plan` and
 no mandatory `/apply` or phase restart. GPT-only, GPT-root/Go-worker and adaptive
-Go-root/Astra modes have separate Windows live evidence and require matching local
+Go-root/Astra modes require separate Windows live evidence and matching local
 fingerprints. Design/research requests use native DRD assignment and synthesis
 guidance. See the newest [status](status.md) for the exact source and test receipts.
 macOS automated CI does not qualify live modes; macOS manual/live remains NOT_RUN.

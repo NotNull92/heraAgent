@@ -12,6 +12,7 @@ import {GO_EFFORT} from '../codex/external-runtime.js';
 import {windowsFor} from '../session/limits.js';
 import type {LimitWindow} from '../session/limits.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
+import {CODEX_VERSION} from '../codex/launcher.js';
 
 // Title-screen greetings: well-known Skyrim lines of at most 51 characters, one chosen per TUI start.
 export const GREETINGS=["Hey, you. You're finally awake.","Let me guess: someone stole your sweetroll?","Do you get to the Cloud District very often?","Fus Ro Dah!","I am sworn to carry your burdens.","Skyrim belongs to the Nords!","Never should have come here!","Some may call this junk. Me, I call them treasures.","No lollygaggin'.","Khajiit has wares, if you have coin.","Sky above, voice within."];
@@ -39,7 +40,7 @@ function Banner({width,cwd,greeting,language}:{width:number;cwd:string;greeting:
   return <Box flexDirection="column" width={width}>
     <Box><Ornate text={'╾'+'━'.repeat(side>>1)+'◇━━━━ ◆ '}/><Text bold>H E R A</Text><Ornate text={' ◆ ━━━━◇'+'━'.repeat(side-(side>>1))+'╼'}/></Box>
     <Box flexDirection="column" alignItems="center" paddingY={1}>{EMBLEM.map((line,i)=><Ornate key={i} text={line} bold/>)}<Text> </Text><Text color={c.iron}>{greeting}</Text></Box>
-    <Text wrap="truncate-middle"><Text color={c.iron}>◇ {language==='ko'?'작업 폴더':'Workspace'}  </Text>{safeText(cwd)}<Text color={c.iron}> · Codex 0.160.1</Text></Text>
+    <Text wrap="truncate-middle"><Text color={c.iron}>◇ {language==='ko'?'작업 폴더':'Workspace'}  </Text>{safeText(cwd)}<Text color={c.iron}> · Codex {CODEX_VERSION}</Text></Text>
   </Box>;
 }
 export function App({session}:{session:InteractiveSession}){

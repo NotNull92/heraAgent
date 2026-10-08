@@ -5,7 +5,7 @@ import {dirname,join,isAbsolute,delimiter,resolve} from 'node:path';
 import {spawn,spawnSync, type ChildProcessWithoutNullStreams} from 'node:child_process';
 import {z} from 'zod';
 import {HeraError} from '../errors.js';
-export const CODEX_VERSION='0.160.1';
+export const CODEX_VERSION='0.161.0';
 export function runtimeLauncher() {
   const require=createRequire(import.meta.url);
   const file=require.resolve('@openai/codex/package.json');

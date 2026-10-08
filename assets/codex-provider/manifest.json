@@ -1,10 +1,10 @@
 {
   "source": "https://github.com/openai/codex.git",
-  "commit": "d27764b82f7118f674371e6d6e76271d9d606edb",
+  "commit": "979011409de0a60b52f179721948e65531d26144",
   "reference": "https://github.com/Bozentan/codex/commit/af3072ebbcde8d47bb8592a6a3226ef1b83b560a",
-  "version": "0.160.1",
-  "patchSha256": "057f04af2e05d945a6a00613fadc77202c6063f30a12e8136caab157e36b6eaf",
+  "version": "0.161.0",
+  "patchSha256": "2bcbfea1a8503147f1188394b7ceb3dca9843dc1a270081f3bc2e04d54d1bdc0",
   "rustToolchain": "1.95.0",
   "productDefaultChanged": false,
-  "protocolSchemaSha256": "3cdc69decf1c3b99884b2ace8b3357b0f14c1ec244c83653092e568ad258565d"
+  "protocolSchemaSha256": "d2d388216bb62f79dc6cf03356bd0d40af82db8768cba626c62f3e20ba9791b2"
 }

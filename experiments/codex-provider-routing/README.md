@@ -11,7 +11,7 @@ It adapts the user-owned grants, routing snapshots, provider auth/catalog isolat
 and saved-provider restoration from the pinned Bozentan reference. It uses existing
 V1 plaintext collaboration, rejects cross-provider history forks/V2 spawning, and
 adds a bounded named-profile flag to standalone App Server for isolated qualification.
-Cargo.lock changes only normalize workspace versions to the source tag's 0.160.1.
+Cargo.lock changes only normalize workspace versions to the source tag's 0.161.0.
 It does not add external dependencies or a second agent loop.
 
 Upstream and reference code retain Apache-2.0. See the original

@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 import type {JsonValue} from '../codex/generated/serde_json/JsonValue.js';
 import type {Config} from '../config.js';
 import {CodexClient} from '../codex/client.js';
+import {CODEX_VERSION} from '../codex/launcher.js';
 import {nativeSettings,startupArgs,requireMode,validateModelChoices} from '../codex/config-compiler.js';
 import type {RpcEvent,RpcRequest} from '../codex/transport.js';
 import {HeraError,safeText} from '../errors.js';
@@ -63,7 +64,7 @@ export class Controller extends EventEmitter {
       if(resumed.model!==this.config.workers.gptModel||resumed.modelProvider!=='openai'||resumed.sandbox.type!=='readOnly'||resumed.sandbox.networkAccess!==false||resumed.approvalPolicy!=='never')throw new HeraError('WORKER_POLICY_DRIFT','Saved worker policy did not resume read-only.',4,false);
     }
     this.model=started.model;this.provider=started.modelProvider;if(await baseline(this.cwd)!==this.baselineHash)throw new HeraError('BASELINE_CHANGED','Workspace changed during session startup.',4);this.phase.analyze();
-    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:this.config.mode,workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:this.workerAnalysis?(await workerCapability(this.home,this.config)).fingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
+    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:CODEX_VERSION,mode:this.config.mode,workspaceRealPath:this.cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:this.workerAnalysis?(await workerCapability(this.home,this.config)).fingerprint:'single-agent-live-unverified',updatedAt:new Date().toISOString()};await this.persist();
   }
   private async startNative(previous?:Metadata){
     if(previous&&previous.mode!==this.config.mode)throw new HeraError('SESSION_MODE_MISMATCH','Resume in the saved provider mode; no silent route change.',4);
@@ -81,7 +82,7 @@ export class Controller extends EventEmitter {
     this.workers??=new NativeWorkers(started.thread.id,this.cwd,this.config,!previous);await this.workers.refresh(this.client);
     if(!this.workerAnalysis&&this.workers.count)throw new HeraError('COLLABORATION_UNVERIFIED','Saved children require a worker-enabled session.',4);
     this.model=started.model;this.provider=started.modelProvider;this.phase.phase='NATIVE';
-    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:'0.160.1',mode:this.config.mode,workspaceRealPath:this.cwd,phase:'NATIVE',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:this.workerAnalysis?(await nativeCapability(this.home,this.config)).fingerprint:'native-single-agent',updatedAt:new Date().toISOString()};await this.persist();
+    this.metadata={schemaVersion:1,heraSessionId:previous?.heraSessionId??randomUUID(),codexThreadId:started.thread.id,codexVersion:CODEX_VERSION,mode:this.config.mode,workspaceRealPath:this.cwd,phase:'NATIVE',lastKnownTurnId:null,status:'idle',configFingerprint:createHash('sha256').update(JSON.stringify(this.config)).digest('hex'),capabilityFingerprint:this.workerAnalysis?(await nativeCapability(this.home,this.config)).fingerprint:'native-single-agent',updatedAt:new Date().toISOString()};await this.persist();
   }
   private async verifyRuntime(){
     const effective=z.object({config:z.record(z.string(),z.unknown())}).parse(await this.client.rpc.request('config/read',{cwd:this.cwd,includeLayers:true})).config;

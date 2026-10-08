@@ -1,5 +1,27 @@
 # Implementation status
 
+## Codex 0.161.0 upgrade (2026-10-08, in progress)
+
+The user requested that Hera's fixed runtime match the installed Codex 0.161.0.
+Updated the project dependency/lock, generated protocol and official config schema,
+runtime checks, version labels and the maintained mixed-provider patch source pin.
+The upstream source is `979011409de0a60b52f179721948e65531d26144`.
+Preserved old generated files/package artifacts under ignored `.artifacts`.
+Existing 0.160.1 session metadata remains readable without rewriting stored history;
+future/unknown versions are rejected. Old runtime capability evidence stays stale.
+
+Observed native Windows: dependency install/audit (zero vulnerabilities), typecheck,
+83 offline tests, build and isolated no-inference native smoke passed, exit 0.
+The isolated smoke has no login or configured sandbox; it does not inspect the
+user's authenticated profile. Package inspection and clean-prefix Windows install,
+native initialization, reinstall/settings, OS credential persistence and launcher
+passed, exit 0, for SHA-256
+`8f0d73426c1c59cb5c7b2c14c0e983ea903a9d3f6c4cdcedb3ed7ee0cacfc466`.
+That archive predates the notice/changelog update, not a runtime/code change.
+Mixed-runtime build is in progress. Fresh live mode qualification, updated CI and
+macOS manual/live are NOT_RUN.
+Historical passes below do not certify this upgrade. No release was published.
+
 ## Current checkpoint (2026-10-08)
 
 The user confirmed the herdr resize fix and subsequently completed Korean IME

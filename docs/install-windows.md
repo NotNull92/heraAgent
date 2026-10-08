@@ -54,6 +54,11 @@ These are user-confirmed Windows manual results; macOS manual/live remains unver
 Close active Hera sessions before update. Reinstall the new checked tarball in the
 same prefix. Roll back with the previous checked tarball in that prefix. Neither
 operation deletes ~/.hera; a newer unsupported metadata version is rejected intact.
+Hera pins its own Codex runtime (currently 0.161.0); `codex update` changes the
+separate global CLI. There is no `hera update` command. Mixed/adaptive runtime
+upgrades also require the matching reviewed binary and fresh local verification.
+Keep the previous runtime receipt and verification records for rollback. Session
+references from 0.160.1 remain readable, but reading them is not a live resume test.
 The initial prerelease has only same-version reinstall evidence, not a previous
 release upgrade/downgrade test. Preserve the old tarball for future rollback.
 

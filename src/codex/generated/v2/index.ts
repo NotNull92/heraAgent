@@ -505,6 +505,7 @@ export type { ThreadGoalClearResponse } from "./ThreadGoalClearResponse.js";
 export type { ThreadGoalClearedNotification } from "./ThreadGoalClearedNotification.js";
 export type { ThreadGoalGetParams } from "./ThreadGoalGetParams.js";
 export type { ThreadGoalGetResponse } from "./ThreadGoalGetResponse.js";
+export type { ThreadGoalMutationOrigin } from "./ThreadGoalMutationOrigin.js";
 export type { ThreadGoalSetParams } from "./ThreadGoalSetParams.js";
 export type { ThreadGoalSetResponse } from "./ThreadGoalSetResponse.js";
 export type { ThreadGoalStatus } from "./ThreadGoalStatus.js";
@@ -526,6 +527,8 @@ export type { ThreadMetadataGitInfoUpdateParams } from "./ThreadMetadataGitInfoU
 export type { ThreadMetadataUpdateParams } from "./ThreadMetadataUpdateParams.js";
 export type { ThreadMetadataUpdateResponse } from "./ThreadMetadataUpdateResponse.js";
 export type { ThreadNameUpdatedNotification } from "./ThreadNameUpdatedNotification.js";
+export type { ThreadPredictionResult } from "./ThreadPredictionResult.js";
+export type { ThreadPredictionUpdatedNotification } from "./ThreadPredictionUpdatedNotification.js";
 export type { ThreadProjectUpdatedNotification } from "./ThreadProjectUpdatedNotification.js";
 export type { ThreadQueueChangedNotification } from "./ThreadQueueChangedNotification.js";
 export type { ThreadReadParams } from "./ThreadReadParams.js";

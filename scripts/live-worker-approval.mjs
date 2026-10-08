@@ -21,7 +21,7 @@ const native={...(client.sessionSettings??nativeSettings(config,'read-only',true
 try{
   const root=await client.start({model:config.main.model,modelProvider:'openai',cwd,sandbox:'read-only',approvalPolicy:'on-request',config:native});assert.equal(root.sandbox.type,'readOnly');assert.equal(root.approvalPolicy,'on-request');
   controller=new Controller(client,home,cwd,config,true);controller.phase.analyze();controller.baselineHash=await baseline(cwd);controller.model=root.model;controller.provider=root.modelProvider;controller.workers=new NativeWorkers(root.thread.id,cwd,config,true);
-  controller.metadata={schemaVersion:1,heraSessionId:randomUUID(),codexThreadId:root.thread.id,codexVersion:'0.160.1',mode:config.mode,workspaceRealPath:cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:'approval-negative-fixture',capabilityFingerprint:'unverified-negative-fixture',updatedAt:new Date().toISOString()};
+  controller.metadata={schemaVersion:1,heraSessionId:randomUUID(),codexThreadId:root.thread.id,codexVersion:'0.161.0',mode:config.mode,workspaceRealPath:cwd,phase:'ANALYZE_READ_ONLY',lastKnownTurnId:null,status:'idle',configFingerprint:'approval-negative-fixture',capabilityFingerprint:'unverified-negative-fixture',updatedAt:new Date().toISOString()};
   const denied=[];controller.on('approval',request=>denied.push({method:request.method,threadId:request.params?.threadId}));
   timer=setTimeout(()=>{expired=true;void controller.interrupt().catch(()=>{});},120000);
   console.error(JSON.stringify({scope:'actual worker approval request and Hera denial',approvalPolicy:'on-request in disposable fixture only',allDecisions:'decline',deadlineSeconds:120,cwd}));
