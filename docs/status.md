@@ -1103,3 +1103,8 @@ scrollback before Ink repaints for the same event, and the next 50 ms tick repri
 the banner and conversation. Windows local: typecheck, build and 81 offline tests
 passed (exit 0). Behavior while dragging in herdr after this change is NOT_RUN; a
 long conversation is reprinted up to 20 times per second during a drag.
+
+Footer label at the user's request: the adaptive mode now reads `Astra + DeepSeek`,
+matching the order of the two role lines below it (deep reasoning, then routine work);
+the root that receives the conversation in that mode is still DeepSeek. Windows local:
+typecheck and the 16 TUI tests passed (exit 0); the full suite was not rerun.
