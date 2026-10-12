@@ -35,9 +35,9 @@ it('exposes only the research handbook in Design and rejects coding loads',async
     await client.connect(new StreamableHTTPClientTransport(new URL(server.url)) as Transport);
     const tool=(await client.listTools()).tools.find(t=>t.name==='load_instructions')!;
     expect(JSON.stringify(tool)).not.toContain('coding');
-    expect(tool.description).toContain('only before web_search/web_fetch, spawning or messaging a worker, or running commands in the workspace');
-    expect(tool.description).toContain('Answer directly from knowledge and conversation otherwise');
-    expect(tool.description).toContain('reload if missing after compaction');
+    expect(tool.description).toContain('Design root already has the full handbook in its developer instructions');
+    expect(tool.description).toContain('workers or explicit rereads');
+    expect(tool.description).not.toMatch(/only before|reload if missing/);
     expect((await client.callTool({name:'load_instructions',arguments:{topic:'coding'}})).isError).toBe(true);
     const result=await client.callTool({name:'load_instructions',arguments:{topic:'research'}});
     expect(result.isError).not.toBe(true);

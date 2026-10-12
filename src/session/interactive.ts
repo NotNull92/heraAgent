@@ -1,4 +1,5 @@
 import {EventEmitter} from 'node:events';
+import {statSync} from 'node:fs';
 import {join} from 'node:path';
 import {existsJson} from '../paths.js';
 import {execFile} from 'node:child_process';
@@ -34,6 +35,13 @@ export class InteractiveSession extends EventEmitter {
   limits:LimitSnapshot[]|null|undefined=undefined;
   providerSetupRequired=false;providerKeyInput=false;providerLoginText='';private providerAbort:AbortController|null=null;
   constructor(readonly home:string,readonly cwd:string,readonly config:Config,readonly singleAgent:boolean){super();}
+  private buildMtime=this.readBuildMtime();
+  private readBuildMtime(){try{return statSync(new URL('../cli.js',import.meta.url)).mtimeMs;}catch{return undefined;}}
+  private checkBuild(){
+    const mtime=this.readBuildMtime();if(mtime===undefined)return;
+    const changed=this.buildMtime!==undefined&&mtime!==this.buildMtime;this.buildMtime=mtime;
+    if(changed){const ko=this.config.language==='ko';this.add(ko?'\n새 빌드가 감지되었습니다. 종료 후 다시 시작하면 반영됩니다.\n':'\nA newer build was detected. Quit and start Hera again to use it.\n');}
+  }
   // Running count of appended characters: the transcript is a sliding window, so a view needs this to find new text.
   written=0;
   add(text:string){const safe=safeText(text);this.written+=safe.length;this.transcript=(this.transcript+safe).slice(-128*1024);this.emit('change');}
@@ -133,7 +141,7 @@ export class InteractiveSession extends EventEmitter {
     else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);if(own&&this.busy)this.setActivity(ko?'응답 기다리는 중':'waiting for the model');}
     else if(event.method==='account/rateLimits/updated'&&this.limits){this.limits=mergeLimits(this.limits,event.params);this.emit('change');}
   }
-  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(text.startsWith('/')){
+  async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.checkBuild();this.busy=true;this.status='Working';this.emit('change');try{if(text.startsWith('/')){
       // Echo the command like any other input; /providers arguments are rejected, so they are never echoed.
       const typed=text.trim();this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{this.add(`\nYou: ${text}\n`);await this.connect();this.add('Hera: ');this.setActivity(this.config.language==='ko'?'응답 기다리는 중':'waiting for the model');await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.setActivity('');this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){

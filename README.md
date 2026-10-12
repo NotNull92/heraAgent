@@ -119,9 +119,10 @@ Both modes require a reviewed native runtime installed in
 your Hera home. A key alone does not enable them. There is no automatic provider fallback.
 
 In adaptive mode, `/model main` and `/effort main` configure the GPT reasoning role.
-Fresh conversations carry compact instructions. Only HERA Development loads the
-full coding handbook on demand. HERA Design loads only research guidance; its
-local handbook tool rejects the coding topic. This instruction split does not
+Fresh Design sessions include the full research handbook in developer instructions,
+without a separate tool call or load-order dependency. Only HERA Development loads
+the full coding handbook on demand. Design's local handbook tool remains available
+for workers or explicit rereads and rejects the coding topic. This instruction split does not
 change native sandbox permissions. Guides are read locally, without web access.
 Loaded guidance and existing native history remain in context. Start a new
 session for the new scope; old history is preserved rather than scrubbed.
@@ -141,6 +142,9 @@ native v2 qualification. Before downgrading to a build without this field, remov
 from the model catalog. `/workers` sets a ceiling of 1–8, capped by the project,
 not a measured running count. Settings apply to a new native session on the next input;
 Hera does not need restarting. Active turns reject changes. Old v1 records need fresh qualification.
+
+Code updates require quitting and starting Hera again. If `dist/cli.js` changes while
+Hera is open, the next input prints a restart notice once per detected build change.
 
 See [native runtime installation and qualification](experiments/codex-provider-routing/README.md)
 and [compatibility](docs/compatibility.md). Maintainer verification does not unlock

@@ -7,6 +7,14 @@ an entry here needs the owner's approval first; do not "fix" an intended behavio
 Product text is Korean by default with an English variant; this document is English like
 the rest of the engineering documentation.
 
+## New build notice
+
+Before accepting an input, the session checks the installed `dist/cli.js` modification
+time. Each detected change prints one localized restart notice in the transcript,
+then input continues normally. Missing or unreadable files are ignored. There is no
+watcher or automatic restart; code updates require quitting and starting Hera again.
+Saved settings still apply without restarting Hera.
+
 ## Commands
 
 - A command starts with `/` on every platform. A leading backslash is ordinary text.

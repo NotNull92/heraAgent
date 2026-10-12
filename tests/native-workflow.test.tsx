@@ -45,12 +45,11 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   const controller=new Controller(client,'unused','unused',structuredClone(defaults),true,true);
   await expect(Reflect.apply(Reflect.get(controller,'startNative'),controller,[])).rejects.toThrow('capture');
   const params=vi.mocked(client.start).mock.calls[0]![0];
-  expect(params.baseInstructions).toContain('topic="research"');
+  expect(params.baseInstructions).toContain('research handbook is already in the developer instructions');
   expect(JSON.stringify(params)).not.toMatch(/topic=\\"coding|routine coding|authorized edits|editing worker-owned|coding handbook/);
   expect(params.developerInstructions).toContain('research questions');
-  expect(params.baseInstructions).toContain('your FIRST tool call in that task must be hera_web load_instructions with topic="research"');
-  expect(params.baseInstructions).toContain('own knowledge and the conversation directly without loading the handbook');
-  expect(params.baseInstructions).toContain('reload if missing after compaction');
+  expect(params.baseInstructions).not.toMatch(/FIRST tool call|load_instructions|reload if missing/);
+  expect(params.baseInstructions).toContain('own knowledge and the conversation directly when tools are unnecessary');
   expect(params.baseInstructions).toContain('never search config files or the workspace');
   expect(params.baseInstructions).toContain('If those instructions do not say, say so');
   expect(params.developerInstructions).toContain('Root role: you are Hera, running on DeepSeek (deepseek-v4.1-flash) through OpenCode Go');
@@ -59,7 +58,8 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.developerInstructions).toContain('explanations, factual questions, summaries, reviews of a given snippet and follow-ups');
   expect(params.developerInstructions).toContain("one short visible commentary line in the user's language");
   expect(params.developerInstructions).toContain('one spawn then wait');
-  expect(params.developerInstructions).toContain('read its result before spawning; never skip or batch this prerequisite with the spawn');
+  expect(params.developerInstructions).not.toMatch(/load_instructions|read its result before spawning|Only then spawn/);
+  expect(params.developerInstructions).toContain('Include the relevant research handbook rules inline in fresh worker assignments');
   expect(params.baseInstructions).toContain('brief correctness check and start with the useful answer immediately');
   expect(params.developerInstructions).toContain("Match the assignment to the user's actual scope");
   expect(params.developerInstructions).toContain('normally within 250 words');
@@ -69,7 +69,10 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.developerInstructions).toContain('expand when explicitly requested or necessary for correctness');
   expect(params.developerInstructions).toContain('without an acknowledgement or a promise to explain');
   const handbook=await readFile(new URL('../assets/codex/research-instructions.md',import.meta.url),'utf8');
-  expect(handbook).toContain('Loading this handbook does not itself require web research or delegation');
+  expect(handbook).toContain('This handbook does not itself require web research or delegation');
+  expect(params.developerInstructions?.endsWith(handbook)).toBe(true);
+  expect(params.developerInstructions?.split(handbook)).toHaveLength(2);
+  expect(params.developerInstructions).not.toContain('## Task execution');
   expect(handbook).toContain('numbered DRD workflow below applies to HERA Development (external_workers)');
 });
 it('defaults native approval to decline and treats apply as a compatibility notice',async()=>{const answer=vi.fn();const ui=render(<NativePrompt request={{id:'a',threadId:'root',turnId:'turn',itemId:'item',summary:'fixture'}} language="ko" rows={12} answer={answer} quit={()=>{}}/>);await new Promise(r=>setTimeout(r,70));ui.stdin.write('\r');await new Promise(r=>setTimeout(r,70));expect(answer).toHaveBeenCalledWith('decline');ui.unmount();const session=new InteractiveSession('unused','unused',structuredClone(defaults),true);await session.submit('/apply');expect(session.transcript).toContain('별도 /apply는 필요하지 않습니다');expect(session.controller).toBeNull();});

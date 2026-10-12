@@ -28,14 +28,19 @@ for(let sample=1;sample<=3;sample++){
         const result=await Promise.race([controller.run(prompt),new Promise((_,reject)=>{timer=setTimeout(()=>{void controller.interrupt().catch(()=>{});reject(new Error(`${name} exceeded 180 seconds`));},180000);})]);
         const elapsedMs=Math.round(performance.now()-started);const thread=await client.read(result.threadId);const items=thread.turns.at(-1).items;
         assert(firstTextMs!==null,'Expected streamed root text');
+        assert(!items.some(i=>i.type==='mcpToolCall'&&i.tool==='load_instructions'&&i.arguments.topic==='coding'),'Design must never load the coding handbook');
+        if(name==='greeting'){
+          const handbook=await readFile(new URL('../assets/codex/research-instructions.md',import.meta.url),'utf8');
+          const trace=(await readFile(thread.path,'utf8')).trim().split('\n').map(JSON.parse);
+          assert(trace.some(e=>e.type==='response_item'&&e.payload.type==='message'&&e.payload.role==='developer'&&e.payload.content.some(c=>c.text?.includes(handbook.trimEnd()))),'Full research handbook must be in native developer instructions');
+        }
         if(name!=='design'){
           assert(items.every(i=>['userMessage','agentMessage','reasoning'].includes(i.type)),'Direct answers must not load handbooks, execute commands or spawn workers');
           if(name==='factual')assert.match(firstText,/HTTP/,'First text must contain an answer, not a waiting notice');
           if(name==='identity')assert(items.some(i=>i.type==='agentMessage'&&/딥시크|DeepSeek/i.test(i.text)));
         }else{
-          const guide=items.findIndex(i=>i.type==='mcpToolCall'&&i.status==='completed'&&i.tool==='load_instructions'&&i.arguments.topic==='research');
           const spawns=items.filter(i=>i.type==='collabAgentToolCall'&&i.tool==='spawnAgent');assert.equal(spawns.length,1);
-          const spawnIndex=items.indexOf(spawns[0]);assert(guide>=0&&guide<spawnIndex,'Load research before the first hand-off');
+          const spawnIndex=items.indexOf(spawns[0]);
           const announcement=items.slice(0,spawnIndex).find(i=>i.type==='agentMessage'&&/Astra|아스트라/i.test(i.text)&&/[가-힣]/u.test(i.text));assert(announcement);
           const delta=events.findIndex(e=>e.method==='item/agentMessage/delta'&&e.params.itemId===announcement.id);
           assert(delta>=0&&delta<events.findIndex(e=>e.method==='item/started'&&e.params.item.id===spawns[0].id));

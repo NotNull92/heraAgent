@@ -1849,3 +1849,258 @@ instead, the text already tells the worker to ignore root-role rules.
 NOT_RUN: macOS/CI, live compaction, a second adaptive sample of the handbook
 rule, package/release checks. The owner's running Hera session predates this
 build and must be restarted to pick it up.
+
+## Ignored build-output cleanup blocked (2026-10-12)
+
+Owner authorized deleting only the three codex-rs/target directories below and
+all 19 existing release-staging/pack-* directories, preserving checkout sources
+and every other artifact. Preflight resolved the absolute target paths, checked
+that targets and ancestors were directories without reparse points, measured
+regular-file bytes, and inventoried all other artifact/staging entries.
+
+Actual result: NOT DELETED. Automatic approval review rejected both the
+22-target PowerShell removal command and a narrower single literal-path removal
+of release-staging/pack-9qHGw9 with `blocked by policy`; no more detailed reason
+was returned. Neither command executed. No alternative shell or deletion API
+was used to bypass that block. Reclaimed bytes: 0.
+
+Measured content before the blocked deletion (logical file sizes, not allocated
+filesystem blocks; these are not claimed as freed disk space):
+
+| Requested directory | Measured bytes | Files | Reclaimed bytes |
+| --- | ---: | ---: | ---: |
+| .artifacts/codex-runtime-canary/codex-rs/target | 72,216,105,284 | 99,298 | 0 |
+| .artifacts/codex-runtime-01610/codex-rs/target | 28,507,603,083 | 43,775 | 0 |
+| .artifacts/codex-runtime-v1/codex-rs/target | 1,025 | 1 | 0 |
+| release-staging/pack-9qHGw9 | 4,602,415 | 1,884 | 0 |
+| release-staging/pack-AqnEOU | 4,452,787 | 1,861 | 0 |
+| release-staging/pack-CjUDXR | 4,333,126 | 1,827 | 0 |
+| release-staging/pack-DUtIpQ | 4,487,838 | 1,867 | 0 |
+| release-staging/pack-EDdBgu | 6,594,271 | 1,892 | 0 |
+| release-staging/pack-ErdGBz | 4,328,702 | 1,827 | 0 |
+| release-staging/pack-FiRbTq | 4,579,390 | 1,877 | 0 |
+| release-staging/pack-MU1CCw | 4,377,031 | 1,847 | 0 |
+| release-staging/pack-SeqyG1 | 4,401,390 | 1,856 | 0 |
+| release-staging/pack-XejpD3 | 4,330,874 | 1,827 | 0 |
+| release-staging/pack-c75iy3 | 6,570,797 | 1,887 | 0 |
+| release-staging/pack-emLAMB | 4,583,017 | 1,877 | 0 |
+| release-staging/pack-hQ4uzI | 4,328,702 | 1,827 | 0 |
+| release-staging/pack-lPP7V7 | 4,579,355 | 1,877 | 0 |
+| release-staging/pack-oA56vv | 4,579,355 | 1,877 | 0 |
+| release-staging/pack-szojLq | 4,331,280 | 1,827 | 0 |
+| release-staging/pack-tCNbRN | 4,431,145 | 1,858 | 0 |
+| release-staging/pack-u7HtVJ | 4,401,390 | 1,856 | 0 |
+| release-staging/pack-x5eTu3 | 6,571,668 | 1,887 | 0 |
+
+Total eligible content: 100,814,573,925 bytes
+(93.891 GiB), across 178,412 files.
+The live v1 target contained only 1,025 bytes, unlike the older hand-off estimate;
+measurements above reflect the actual preflight, not that estimate.
+
+Remaining repository-tree regular files: 364,530
+(before: 364,530); 36 symbolic-link/reparse entries were
+counted separately and not followed. The count includes hidden and ignored
+paths, node_modules, and .git. All 22 requested directories still exist.
+All 187,172 inventoried non-target artifact/staging entries retain
+their paths/types; regular-file sizes and modification times are unchanged.
+Checkout sources, codex-provider-qualification, public-audit, logs, receipts,
+JSON files and the runtime under the Hera home were preserved.
+
+Pending: authorized deletion in an environment that permits it, followed by
+actual reclaimed-size and remaining-file-count verification. Once these target
+directories are deleted, the next native patch build in those checkouts will
+be a full cargo build and can take tens of minutes.
+NOT_RUN: deletion, post-deletion free-space verification, native rebuild.
+Only docs/status.md was changed; no scripts, CI, ignore rules, commit or push.
+
+## Owner-performed target cleanup verified; staging pending (2026-10-12)
+
+Following the policy-blocked attempt above, the owner reported manual deletion.
+Read-only verification at 2026-10-12T03:48:25.586Z confirmed all three requested
+codex-rs/target directories are absent. Measured file content removed:
+
+| Removed directory | Pre-deletion file bytes | GiB | Removed files |
+| --- | ---: | ---: | ---: |
+| .artifacts/codex-runtime-canary/codex-rs/target | 72,216,105,284 | 67.256 | 99,298 |
+| .artifacts/codex-runtime-01610/codex-rs/target | 28,507,603,083 | 26.550 | 43,775 |
+| .artifacts/codex-runtime-v1/codex-rs/target | 1,025 | 0.000 | 1 |
+
+Total removed content: 100,723,709,392 bytes (93.806 GiB).
+These are the pre-deletion logical file sizes; allocated disk space cannot be
+attributed exactly per directory from this inventory. Observed C: free space
+rose from 21,592,064,000 bytes (20.109 GiB) to
+113,039,777,792 bytes (105.276 GiB), a net increase of
+91,447,713,792 bytes (85.167 GiB).
+This volume-wide difference also includes any intervening filesystem activity
+and can differ from logical file sizes.
+
+Remaining repository-tree regular files: 221,456, down from
+364,530 by 143,074. Counting includes hidden/ignored
+files, node_modules and .git; 36 symbolic-link/reparse entries were counted
+separately without following them. The reduction exactly matches the three
+removed targets' file counts.
+
+Sources were kept. All 187,172 inventoried non-target entries under
+.artifacts and release-staging remain at their original paths/types; regular-file
+sizes and modification times match the preflight inventory. This includes the
+checkout sources, codex-provider-qualification, public-audit, logs, receipts and
+JSON files. The installed runtime in the Hera home was not touched.
+
+Still pending: all 19 original release-staging/pack-* directories remain. Their
+current file counts and sizes match the preflight: 35,338 files and
+90,864,533 bytes (86.655 MiB). The cleanup is therefore
+partial, not complete. No further deletion was attempted by the agent.
+
+The next native patch build in any of the three cleaned checkouts will be a
+full cargo build and can take tens of minutes. NOT_RUN: native rebuild, runtime
+smoke test, remaining staging deletion. Only docs/status.md was modified; no
+scripts, CI, ignore rules, commit or push.
+
+## Inline research handbook for the Design root (2026-10-12)
+
+Owner-approved Hand-off A replaces Design's prompt-only handbook load order.
+At each adaptive native session start (including resume), Controller reads the
+packaged research-instructions.md once via import.meta.url and appends its full
+3,445 UTF-8 bytes after the existing developer instructions. No coding handbook
+is inlined. The adaptive base/routing text now points to the included handbook;
+FIRST-tool-call, wait-for-load and compaction-reload prerequisites were removed
+for the root. Fresh worker assignments request the relevant rules inline.
+
+The research handbook's opening now describes applicability and its inclusion
+in the root instructions. The load_instructions tool remains registered, with
+an adaptive description for workers or explicit rereads. Worker role files
+retain their existing instruction to load research before web/workspace tools;
+this change does not inline role files or change their model/effort/routing.
+
+Development base/developer instruction strings were compared byte-for-byte
+with the pre-change build with workers enabled and disabled: identical. The
+numbered Development DRD workflow and public-web policy are unchanged. Hash
+comparisons also confirmed external-runtime.ts, config.ts, interactive.ts,
+App.tsx and the coding handbook unchanged. Saved user configuration is unchanged:
+Design root none, Astra high, Go workers high. Existing status entries, including
+the incomplete disk-cleanup record, were preserved and this section appended.
+
+Live fixtures no longer require adaptive research-loading items or handbook
+reuse markers. They instead verify the full research handbook in the native
+rollout's developer message. The latency fixture checks this in all three fresh
+sessions. Design's coding-handbook exclusion, Astra announcement/spawn/wait,
+routing, permissions, concurrency, cancellation and existing deadlines remain.
+No sandbox, approval, search configuration or qualification gate was loosened.
+Inlining guarantees delivery of the text; it is not enforcement of model behavior.
+
+Actual Windows local results:
+
+- Typecheck, build and all 107 offline tests across 21 files passed (exit 0).
+  After the final direct-answer wording adjustment, build and the four targeted
+  native-workflow tests passed again. Tests verify exact handbook inclusion once
+  in the developer string, absence of obsolete load rules, and continued coding
+  handbook exclusion/tool availability.
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive: PASS,
+  exit 0, recorded 2026-10-12T03:56:34.188Z. Fingerprint:
+  ccf1818734b8433470a1a67c0041a82e3c3a97c6d6be28c485968590f3e089b3.
+  Greeting/HTTP/identity first text: 2.310 / 1.681 / 1.464 s. The exact original
+  sync-design request announced Astra at 1.597 s and completed in 32.670 s with
+  one spawn and wait. Actual edit/test, same-thread resume, routing, denial and
+  exact-target allow-once, cancellation and concurrency all passed. The full
+  handbook was present in the initial developer message; rollout inspection
+  found no root load_instructions calls across the complete fixture.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers:
+  PASS, exit 0, recorded 2026-10-12T03:57:03.671Z. Fingerprint:
+  60add614feebf735ba2135595dba37772484c2c9a9da4cf7dec555787531c332.
+  Full coding handbook loaded before edits as before; actual edit/test, resume,
+  routing, denial/allow-once, cancellation and concurrency all passed.
+- Both recorded fingerprints were rechecked against the final build and saved
+  config: nativeCapability ready for both modes. Previous records were backed up
+  by the existing qualification recorder.
+- node scripts/live-design-latency.mjs --live: PASS, exit 0. This separate run
+  followed both qualification suites; three fresh Design sessions produced:
+
+  | First root text (seconds) | Sample 1 | Sample 2 | Sample 3 |
+  | --- | ---: | ---: | ---: |
+  | Korean greeting | 2.588 | 2.618 | 2.793 |
+  | HTTP/2 versus HTTP/1.1 | 1.796 | 2.001 | 1.687 |
+  | DeepSeek identity | 1.772 | 1.737 | 1.526 |
+
+  All nine direct turns were below the existing five-second threshold, made no
+  tool/worker calls and reported zero reasoning tokens. The exact original
+  offline-first to-do sync request announced Astra in Korean at 1.739 s and
+  completed in 33.609 s, with one hera_astra spawn and wait. The selected Astra
+  model/high effort, announcement streaming order and cleanup checks passed.
+  Its root rollout had no handbook calls. The deadline remains 180 seconds.
+
+Comparison with the earlier 2026-10-12 samples: greetings remain within 2-3 s
+(previous 2.462 / 3.030 / 2.635 s), and the announcement remains around 2 s
+(previous 1.806 s). The design finished in 33.609 s versus 44.375 s in the prior
+three-session fixture and about 39.5 s after the worker-role correction. These
+are observed samples, not a controlled provider-latency or factual-quality
+benchmark. Times start at Controller.run and exclude native-session startup
+and physical terminal paint.
+
+The owner's interactive Hera must be restarted to load the updated dist/; use
+a fresh Design session for the new instructions. No running owner session was
+terminated. NOT_RUN for this change: physical TUI/manual checks, macOS/CI, live
+compaction, factual-quality evaluation, package/release checks. No runtime,
+credentials, user effort settings, commit, push or publication were changed.
+
+
+## New build notice in interactive sessions (2026-10-12)
+
+Hand-off B is implemented alongside the inline Design handbook above.
+InteractiveSession remembers the installed cli.js mtime at construction and
+checks it before each accepted submission, after the existing busy guard.
+The path is resolved relative to import.meta.url (dist/session/interactive.js
+points to dist/cli.js), independently of the workspace. A changed mtime adds
+one Korean or English restart notice through the existing transcript path,
+then input proceeds normally. The remembered value advances per detected
+change. Failed stats are ignored without discarding the last known mtime.
+No watcher, hot reload, restart command, launcher or pause-label change was added.
+README and the UX guide distinguish saved settings from code updates.
+
+Actual Windows results:
+
+- npm run typecheck: PASS, exit 0.
+- npm run build: PASS, exit 0; repeated successfully with the test session open.
+- npm test: PASS, 108 tests across 22 files, exit 0. One new Ink test covers
+  both languages, a mocked changed mtime, repeated input without duplicate
+  notices, another changed mtime, stat failure/recovery and continued input.
+  The first targeted run exposed an incorrect expected input count in the new
+  test (seven versus six); that assertion was corrected before the full pass.
+- Actual terminal check: launched this checkout's bin/hera.mjs in a dedicated
+  psmux 0.4.1 terminal with a separate temporary workspace and the owner's
+  existing Design configuration. Sent /apply as a local, inference-free input:
+  no notice. Ran npm run build while that Hera process remained open, then
+  sent /apply twice. The first post-build input printed exactly
+  "새 빌드가 감지되었습니다. 종료 후 다시 시작하면 반영됩니다."
+  before its input echo; the second printed no additional notice. The captured
+  transcript contained one notice and all three input echoes, with status Ready.
+  A capture-count assertion passed. Exited that test session with /quit;
+  no owner session was terminated. Evidence is stored outside the repository at
+  the temporary hera-build-notice-2c1f6572194e4cb7816424f7844b4a3d workspace
+  (terminal-after-build.txt).
+- Final dist/ nativeCapability checks: both modes ready. interactive.ts is not
+  a native fingerprint input; both fingerprints and their successful live
+  qualification records from Hand-off A remain unchanged:
+  adaptive ccf1818734b8433470a1a67c0041a82e3c3a97c6d6be28c485968590f3e089b3
+  (2026-10-12T03:56:34.188Z);
+  external_workers 60add614feebf735ba2135595dba37772484c2c9a9da4cf7dec555787531c332
+  (2026-10-12T03:57:03.671Z). No gate or acceptance record was bypassed.
+  Live inference suites and Design latency were not repeated for this UI-only
+  addition; the actual A results above apply to the same final native inputs.
+- git diff --check: PASS.
+
+The owner's existing Hera process must be restarted once to load both the new
+handbook instructions and this detector from dist/. A process started before
+this feature cannot display the new notice retroactively. Subsequent detected
+build changes print the notice on the next accepted input.
+
+NOT_RUN for B: macOS/remote CI, a packed-install terminal, an English physical
+terminal (English is covered by the Ink test), package/release publication.
+No commit or push was performed for A/B. Existing status sections were preserved.
+
+## Release staging cleanup completed (2026-10-12)
+
+Claude removed all 19 `release-staging/pack-*` directories (35,338 files,
+about 87 MiB) with explicit literal paths on the owner's instruction. The
+folder is now empty; `prepare-release.mjs` recreates it when needed. Nothing
+else under `.artifacts/` was touched. The disk cleanup from the two sections
+above is therefore complete.

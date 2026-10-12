@@ -1,10 +1,10 @@
 # Hera research workflow
 
-In HERA Design (adaptive), load this handbook only before web_search/web_fetch,
-spawning or messaging a worker, or running commands in the workspace. Reuse it
-while present in native history; reload if missing after compaction. Answer from
-your own knowledge and the conversation directly when those actions are unnecessary.
-Loading this handbook does not itself require web research or delegation. Follow
+In HERA Design (adaptive), this handbook applies to web_search/web_fetch,
+spawning or messaging a worker, and commands in the workspace. It is included
+in the root's developer instructions; no separate load is required there. Answer
+from your own knowledge and the conversation directly when those actions are
+unnecessary. This handbook does not itself require web research or delegation. Follow
 the developer instructions for Astra routing: announce the consultation in one
 short visible line in the user's language, spawn once, wait, then finish the answer.
 Use the public web policy below when web evidence is needed. Keep workspace

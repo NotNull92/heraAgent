@@ -24,6 +24,12 @@ try{
   await start();
   const greetingStarted=performance.now();
   const greeting=await run('conversation','안녕?');assert.equal(controller.workers.count,0);assert(greeting.turns.at(-1).items.every(i=>['userMessage','agentMessage','reasoning'].includes(i.type)));checks.conversation='pass';
+  if(mode==='adaptive'){
+    const handbook=await readFile(new URL('../assets/codex/research-instructions.md',import.meta.url),'utf8');
+    const trace=(await readFile(greeting.path,'utf8')).trim().split('\n').map(JSON.parse);
+    assert(trace.some(e=>e.type==='response_item'&&e.payload.type==='message'&&e.payload.role==='developer'&&e.payload.content.some(c=>c.text?.includes(handbook.trimEnd()))),'Full research handbook must be in native developer instructions');
+    console.log(JSON.stringify({stage:'research-handbook',inlined:'complete',threadId:greeting.id}));
+  }
   const usage=events.findLast(e=>e.method==='thread/tokenUsage/updated'&&e.params.threadId===controller.metadata.codexThreadId)?.params.tokenUsage.last;
   console.log(JSON.stringify({stage:'conversation-metrics',mode,effort:mode==='adaptive'?designEffort(config):config.main.reasoningEffort,elapsedMs:Math.round(performance.now()-greetingStarted),usage}));
   if(mode==='adaptive')for(const [name,prompt] of [['factual','HTTP/2와 HTTP/1.1 차이 설명해줘'],['identity','지금 답변하고 있는건 딥시크지?']]){
@@ -51,9 +57,6 @@ try{
   console.log(JSON.stringify({stage:'coding-handbook',loaded:'complete',beforeEdits:true,threadId:controller.metadata.codexThreadId}));
   }else{
     assert.equal(guideIndex,-1,'Design must not load the coding handbook even during explicit edit/permission regression checks');
-    const researchIndex=items.findIndex(i=>i.type==='mcpToolCall'&&i.status==='completed'&&i.tool==='load_instructions'&&i.arguments.topic==='research');
-    assert(researchIndex>=0&&researchIndex<items.findIndex(i=>i.type==='commandExecution'),'Design must load research before its first workspace command');
-    assert.equal(items[researchIndex].result.content[0].text,await readFile(new URL('../assets/codex/research-instructions.md',import.meta.url),'utf8'));
   }
   assert.equal((await import('node:child_process')).spawnSync(process.execPath,['check.cjs'],{cwd,windowsHide:true}).status,0);
   assert(edit.turns.at(-1).items.some(i=>i.type==='commandExecution'&&i.exitCode===0&&i.command.includes('check.cjs')));checks.editTest='pass';
@@ -64,14 +67,13 @@ try{
   assert(!followup.turns.at(-1).items.some(i=>i.type==='mcpToolCall'&&i.tool==='load_instructions'&&i.arguments.topic==='coding'),'Reuse the handbook already present in resumed native history');
   if(mode==='adaptive'){
     const planning=await run('planning','오프라인 우선 할 일 앱의 동기화 설계안을 추천해줘');const items=planning.turns.at(-1).items;
-    assert(!items.some(i=>i.type==='mcpToolCall'&&i.tool==='load_instructions'),'Reuse the research handbook already in native history');
     const spawns=items.filter(i=>i.type==='collabAgentToolCall'&&i.tool==='spawnAgent');assert.equal(spawns.length,1,'One Astra consultation');
     const spawnIndex=items.indexOf(spawns[0]);assert(items.slice(0,spawnIndex).some(i=>i.type==='agentMessage'&&/Astra|아스트라/i.test(i.text)&&/[가-힣]/u.test(i.text)),'Announce Astra in Korean before spawning');
     assert(items.slice(spawnIndex+1).some(i=>i.type==='collabAgentToolCall'&&i.tool==='wait'),'Wait for Astra');
     const firstDelta=events.findIndex(e=>e.method==='item/agentMessage/delta'&&e.params.threadId===controller.metadata.codexThreadId&&e.params.delta);
     assert(firstDelta>=0&&firstDelta<events.findIndex(e=>e.method==='item/started'&&e.params.item.id===spawns[0].id),'Stream commentary before the spawn starts');
     assert(spawns[0].receiverThreadIds.some(id=>{const t=controller.workers.snapshot.get(id);return t?.modelProvider==='openai'&&t.model===config.main.model&&t.reasoningEffort===config.main.reasoningEffort;}));
-    console.log(JSON.stringify({stage:'planning-acceptance',announcementBeforeSpawn:true,astraSpawns:spawns.length,handbookReused:true}));
+    console.log(JSON.stringify({stage:'planning-acceptance',announcementBeforeSpawn:true,astraSpawns:spawns.length}));
   }
   else await run('routing','Use exactly one native worker to read sum.cjs and report its purpose in one sentence. Wait for completion. No files, shell, web or extra workers.');
   await controller.workers.refresh(controller.client);assert(controller.workers.count>0);checks.routing='pass';
