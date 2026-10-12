@@ -32,3 +32,10 @@ it('invalidates native evidence on relevant configuration drift and never promot
   await atomicJson(join(home,'metadata/worker-verification.json'),{...record,checks:{readOnly:'pass'}});expect((await workerCapability(home,config)).ready).toBe(false);
 });
 it('requires complete separate native-workflow evidence and invalidates changed limits',async()=>{const home=await mkdtemp(join(tmpdir(),'hera-native-evidence-'));const config=structuredClone(defaults);const initial=await nativeCapability(home,config);const record={schemaVersion:1,fingerprint:initial.fingerprint,checkedAt:new Date().toISOString(),checks:{conversation:'pass',editTest:'pass',resume:'pass',cancel:'pass',approval:'pass',routing:'pass',concurrency:'pass'},nativeThreadIds:['offline-fixture-only']};await atomicJson(join(home,'metadata/native-gpt_only-verification.json'),record);expect((await nativeCapability(home,config)).ready).toBe(true);expect((await nativeCapability(home,{...config,workers:{...config.workers,maxConcurrent:2}})).ready).toBe(false);await atomicJson(join(home,'metadata/native-gpt_only-verification.json'),{...record,checks:{conversation:'pass'}});expect((await nativeCapability(home,config)).ready).toBe(false);});
+
+it('requires fresh adaptive qualification for disabled root reasoning without changing Development qualification',async()=>{
+  const config=structuredClone(productDefaults);const thinking=await nativeCapability(undefined,config);
+  expect((await nativeCapability(undefined,{...config,designReasoningEffort:'high'})).fingerprint).toBe(thinking.fingerprint);
+  const disabled=await nativeCapability(undefined,{...config,designReasoningEffort:'none'});expect(disabled.fingerprint).not.toBe(thinking.fingerprint);expect(disabled.ready).toBe(false);
+  const development={...config,mode:'external_workers' as const};expect((await nativeCapability(undefined,{...development,designReasoningEffort:'none'})).fingerprint).toBe((await nativeCapability(undefined,development)).fingerprint);
+});

@@ -35,7 +35,7 @@ it('persists both command prefixes, validates before saving, and rejects active-
   const session=new InteractiveSession(home,home,structuredClone(defaults),true);
   try{
     await session.submit('/model main fixture-gpt low');await session.submit('/model worker deepseek-v4.1-flash high');await session.submit('/workers 5');
-    const saved=(await loadConfig(home)).config;expect(saved.main).toEqual({model:'fixture-gpt',reasoningEffort:'low'});expect(saved.workers.goReasoningEffort).toBe('high');expect(saved.workers.maxConcurrent).toBe(5);
+    const saved=(await loadConfig(home)).config;expect(saved.main).toEqual({model:'fixture-gpt',reasoningEffort:'low'});expect(saved.designReasoningEffort).toBe('high');expect(saved.workers.goReasoningEffort).toBe('low');expect(saved.workers.maxConcurrent).toBe(5);
     await session.submit('/effort main default');expect((await loadConfig(home)).config.main.reasoningEffort).toBeNull();
     const before=await readFile(join(home,'config.json'),'utf8');
     for(const command of ['/effort worker ultra','/model main missing low','/workers 0','/workers 9','/workers 2 extra']){await session.submit(command);expect(await readFile(join(home,'config.json'),'utf8')).toBe(before);}

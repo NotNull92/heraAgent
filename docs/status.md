@@ -1513,3 +1513,240 @@ and used the research handbook and an actual GPT worker for planning. Fresh loca
 qualification evidence was recorded only after each complete suite passed;
 previous records were backed up. macOS live/manual checks remain NOT_RUN.
 Cross-platform CI results are separate from these local results.
+
+## Pause labels in the status line (2026-10-08)
+
+Investigation of perceived DeepSeek slowness in Design mode, measured from the
+runtime log database and session rollouts (local observations, one machine):
+
+- "안녕?" on the DeepSeek root: 3.5 s from Enter to the first visible character
+  (Hera pre-turn checks 0.3 s, native turn preparation 1.0 s, gateway response
+  headers 1.4 s, first token 0.4 s, reasoning 0.2 s). A GPT root greeting: 2.5 s.
+- Reasoning at effort high ran 12 to 642 reasoning tokens (0.2 to 3.7 s) even for
+  trivial prompts, none of it visible.
+- One design question in the qualification run took 171 s: handbook load round
+  trip about 8 s, Astra hand-off wait 148 s, three DeepSeek reasoning passes
+  about 15 s. Nothing was printed during that time.
+- Text deltas arrive spread over generation; streaming itself is not buffered.
+- Every model request rebuilds the HTTP client (certificate load logged per
+  request); DeepSeek responses came through a US Cloudflare edge. This cost is
+  shared with GPT and is outside Hera.
+
+No DeepSeek-specific defect was found in Hera. The perceived delay is the sum of
+hidden reasoning, the mandatory handbook load and Astra delegation with no
+feedback. Change: the status line now names the root thread's current pause
+(waiting for the model, thinking, reading the handbook, running a command,
+handing off to or waiting for Astra or a worker) with an elapsed counter, from
+native events of the root thread only, cleared when reply text streams. Code:
+`src/session/interactive.ts` (`observe`, `activity`) and `src/tui/App.tsx`
+(`Activity`); neither is a native fingerprint input.
+
+Windows local: typecheck, build and all 103 offline tests (21 files) passed,
+exit 0. The new test drives the session with native event fixtures. NOT_RUN: the
+labels in a real terminal with a live turn; macOS.
+
+## Narrow adaptive instruction triggers (2026-10-12)
+
+Owner-approved revision to the earlier automatic Design/DRD guidance: adaptive
+loads the research handbook only before web_search/web_fetch, spawning or
+messaging a worker, or workspace commands. Knowledge/conversation answers stay
+direct. Loaded guidance is reused from native history and reloaded if absent
+after compaction. The shared handbook now scopes the numbered DRD workflow to
+Development, so loading it cannot restore broad adaptive delegation.
+
+Adaptive consults Astra only for an explicitly requested design proposal,
+architecture/technology decision, alternatives comparison with a recommendation,
+deep thinking, or when the root cannot answer reliably. Explanations, factual
+questions, summaries, snippet reviews and follow-ups otherwise stay with the
+root. Before a hand-off it streams a short notice in the user's language, then
+spawns once and waits. Model/identity/configuration answers use the developer
+role description; unknown details are acknowledged without searching files.
+The root description includes its configured DeepSeek model and effort.
+
+Changed `controller.ts`, the adaptive handbook tool description and research
+handbook, with focused instruction assertions and live acceptance checks.
+Development's base instructions were compared byte-for-byte with HEAD and are
+unchanged. Astra role configuration/model/effort, native sandbox, approvals,
+search policy/catalog and routing gates are unchanged. This is model guidance,
+not a new execution gate. No dependencies were added. Claude's existing pause
+label changes were preserved; this section is appended after that work.
+
+Windows local (win32/x64, Node v24.12.0, PowerShell 7.6.6):
+
+- `npm.cmd run typecheck`, `npm.cmd run build`, `npm.cmd test`: PASS, exit 0;
+  all 103 offline tests in 21 files passed.
+- `node scripts/live-native-workflow.mjs --live --record --mode=external_workers`:
+  PASS, exit 0. Complete coding handbook before edits, actual edit/test,
+  same-thread resume, worker routing, denial/allow-once, cancellation and
+  concurrency passed. Fresh qualification recorded at 01:02:41 UTC.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  first attempt FAILED at the unchanged 180-second planning deadline, exit 1,
+  with no qualification record written. The exact unbounded acceptance prompt
+  announced Astra in Korean before one `spawn_agent(hera_astra)` and wait. Astra
+  completed after about 164 seconds; the root did not finish before the deadline.
+- Adaptive rerun with the fixture's bounded two-sentence design scope: PASS,
+  exit 0, qualification recorded at 01:06:48 UTC. Korean commentary streamed at
+  5.510 s before the single Astra spawn; final answer completed at 80.613 s.
+  The research handbook loaded completely before the first workspace command
+  and was reused across resume and the later consultation. No coding handbook
+  loaded. All existing edit/test, routing, permission, cancellation and
+  concurrency checks passed. Previous qualification files were backed up by
+  the existing recorder; no gate or per-stage deadline was relaxed.
+
+Both fresh Design runs used the existing Go high effort. The three direct-answer
+turns contained no tool calls or workers (including no handbook or shell calls):
+
+| Prompt | First text, run 1 | First text, run 2 |
+| --- | ---: | ---: |
+| Greeting (`안녕?`) | 3.136 s | 3.062 s |
+| HTTP/2 vs HTTP/1.1 explanation | 18.747 s | 6.703 s |
+| DeepSeek identity question | 3.115 s | 3.361 s |
+
+Times measure the first root text delta from the live controller, not physical
+terminal paint. Native rollout inspection confirmed the first HTTP answer used
+2,416 reasoning tokens despite making no tool calls. The unnecessary handbook
+and delegation round trips are gone for these samples, but a consistent
+few-second factual answer is NOT achieved; provider/model reasoning latency
+remains. The unbounded design answer's full completion remains unverified after
+its timeout. These are local samples, not a controlled speed benchmark.
+
+NOT_RUN: physical TUI paint/IME checks, a separate web-only live request, live
+compaction/reload, Windows CI, macOS CI, macOS live/manual checks, package smoke
+and release checks. Windows/macOS CI configuration is preserved. No release,
+npm publication, commit or push was performed for this change.
+
+## Follow-up: answer scope and remaining reasoning latency (2026-10-12)
+
+The earlier bounded two-sentence planning pass did not complete the owner's
+original latency acceptance. The live workflow now uses the exact original
+design question again, without a two-sentence limit or a no-web hint.
+
+Rollout inspection found the root had expanded that short question into an
+implementation specification, at least three alternatives, an extensive
+failure-mode survey and a test plan. Astra returned roughly 18,000 characters.
+Adaptive instructions now match assignments to the requested scope: an ordinary
+recommendation asks for a decision brief, normally within 250 words, including
+rationale, the main tradeoff and correctness risks. Explicit depth requests and
+correctness requirements override that default. The root checks and synthesizes
+the result without independently re-solving the same design. Familiar factual
+explanations default to the core distinction and essential caveats rather than
+an unsolicited survey. No model, effort, user style, sandbox or routing setting
+was changed.
+
+Actual Windows live observations with the saved Go high and unchanged Astra high:
+
+- Exact original design request completed in 52.712 s in the first follow-up,
+  51.629 s in a fresh acceptance session, and 40.275 s in final qualification.
+  Each used one Astra consultation and wait, with Korean commentary first. The
+  fresh acceptance session loaded research before its first spawn; later
+  qualification reused the handbook already loaded for workspace work.
+- Added `node scripts/live-design-latency.mjs --live`: three fresh Design
+  sessions, the original Korean prompts, no tools on direct answers, and one
+  full design request with the existing 180-second deadline. It checks actual
+  first text, handbook ordering, streamed announcement, Astra role/model/effort
+  and cleanup. It does not add a product timeout or another inference loop.
+- This stricter acceptance run FAILED its five-second direct-answer target,
+  exit 1: HTTP first text was 7.774 / 3.774 / 5.051 s. All three greetings and
+  identity questions were under five seconds; the full design request finished.
+  The final qualification HTTP sample was 3.476 s. These passing individual
+  samples do not erase the failed repeated latency check.
+- An isolated low-effort experiment produced HTTP first text at 4.573 / 5.761 /
+  10.804 s, still with reasoning tokens. It was not saved as a user setting.
+- An isolated `none` experiment through the same pinned native runtime and
+  OpenCode Go model produced HTTP first text at 2.533 / 2.638 / 2.579 s, with
+  zero reported reasoning tokens and no tools in all three fresh sessions.
+  [DeepSeek's thinking-mode documentation](https://api-docs.deepseek.com/guides/thinking_mode/)
+  motivated the probe; these observed Go results, not upstream documentation
+  alone, establish support for these text-only samples. No direct DeepSeek
+  billing route, fallback or runtime patch was used.
+
+The `none` option is NOT enabled in the shipped configuration or current user
+settings, and these text-only probes are NOT full workflow qualification.
+Applying it only to the Design root requires a separate setting, matching
+runtime/turn/routing checks, and accurate effort display. The existing Go effort
+is shared with Development workers, so changing it globally would violate the
+requested scope. Owner confirmation was requested because the minimal settings
+UI changes would touch the explicitly protected `interactive.ts` and `App.tsx`.
+Their existing bytes, `tests/activity.test.tsx` and `docs/ux-guide.md` remain
+unchanged while that decision is pending. Astra configuration stays unchanged.
+
+Windows local typecheck, build and all 103 offline tests passed, exit 0.
+Both final `live-native-workflow.mjs --live --record` runs passed, exit 0:
+`--mode=external_workers` recorded at 01:23:27 UTC and `--mode=adaptive` at
+01:24:02 UTC. Both passed conversation, actual edit/test, same-thread resume,
+observed routing, denial/allow-once, cancellation and concurrency with the
+existing safety checks and deadlines. The current fingerprints were rechecked
+against the saved receipts. These are workflow passes, separate from the failed
+five-second latency acceptance above.
+NOT_RUN: physical TUI, macOS/CI, live compaction, full workflow with a separately
+configured non-thinking root, package/release checks. No user configuration or
+credentials were changed, and no commit, push or publication was performed.
+
+## Design root without hidden reasoning (2026-10-12)
+
+Owner approval to modify the previously protected settings display/save paths
+in interactive.ts and App.tsx supersedes the pending decision above. Their
+existing pause-label changes were preserved. activity.test.tsx and ux-guide.md
+remain byte-identical to the initial working tree, and the original status.md
+prefix remains unchanged.
+
+Added optional user setting designReasoningEffort (none/low/high/max). It affects
+only the adaptive root's startup, turn effort, role description, routing checks
+and settings display. Missing settings retain the old Go effort. The Go worker
+schema still accepts only low/high/max, and Astra's model, role and effort are
+unchanged. Project settings cannot override this field. Switching between none
+and thinking requires separate native qualification; no sandbox, approval,
+search or routing check was relaxed.
+
+Applied designReasoningEffort=none to the owner's local config after an exclusive
+backup, config.json.2026-10-12T01-30-07.136Z.bak in the Hera home. Read-back comparison
+confirmed every other setting unchanged: Astra high and Go workers high. No
+credentials or global runtime were changed. README documents selection, legacy
+behavior, qualification and downgrade removal of the new optional field. Existing
+running processes must reload this build/config; use a fresh Design session.
+
+Actual Windows results:
+
+- Typecheck, build and all 107 offline tests across 21 files passed (exit 0).
+  Tests cover separate effort save/display, legacy fallback, project rejection,
+  root/child routing drift, and distinct none qualification.
+- The initial none latency run passed all nine direct-answer timing/tool checks
+  but FAILED the handbook-before-spawn assertion. Its design response completed
+  in roughly 38 s, but this was not acceptance. The adaptive hand-off instruction
+  now explicitly sequences announcement, absent-handbook load/read, then spawn,
+  without batching the prerequisite; fresh workers receive the loading rule.
+- After that correction, node scripts/live-design-latency.mjs --live PASSED,
+  exit 0, with three new native Design sessions. First root text, measured from
+  Controller.run (session startup excluded), in seconds:
+
+  | Prompt | Sample 1 | Sample 2 | Sample 3 |
+  | --- | ---: | ---: | ---: |
+  | Korean greeting | 2.462 | 3.030 | 2.635 |
+  | HTTP/2 versus HTTP/1.1 | 1.973 | 1.886 | 1.986 |
+  | DeepSeek identity | 1.815 | 1.738 | 1.772 |
+
+  All nine direct turns used no tools/workers and reported zero reasoning tokens.
+  The exact original offline-first to-do sync design request streamed its Korean
+  Astra announcement at 1.806 s and completed in 44.375 s. The rollout confirmed
+  research loaded before one hera_astra spawn, wait, and the selected OpenAI
+  model/high effort; cleanup completed. The deadline remains 180 s.
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive PASSED,
+  exit 0, recorded at 2026-10-12T01:36:51.401Z, fingerprint
+  c5e25d6232c295f64404c572981b19d9fc42a55d898970132e0043b205e57284.
+  HTTP first text was 1.548 s; the exact design request announced at 2.254 s and
+  completed in 42.322 s, reusing the handbook already loaded for workspace work.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers
+  PASSED, exit 0, recorded at 2026-10-12T01:36:41.082Z, fingerprint
+  9f850a8e127a37f57faa7fa7476496d676b5cea9cbc47ddfd86753e1317fc096.
+- Both suites passed conversation, actual edit/test, same-thread resume, routing,
+  real approval denial/allow-once, cancellation and concurrency. Both recorded
+  fingerprints were rechecked against the final build and saved config: ready.
+
+These are observed samples, not a provider latency guarantee. The timing fixture
+is not a factual-quality benchmark: some sampled HTTP explanations oversimplified
+HTTP/1.1 pipelining or connection reuse. none removes root deliberation; Astra
+continues to use high for delegated design decisions.
+
+NOT_RUN: physical TUI/manual interaction, macOS/CI, live compaction, exhaustive
+factual-quality evaluation, package/release checks, and live high/low effort-switch
+fixture on this final fingerprint. No commit, push or publication was performed.

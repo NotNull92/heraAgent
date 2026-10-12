@@ -1,5 +1,19 @@
 # Hera research workflow
 
+In HERA Design (adaptive), load this handbook only before web_search/web_fetch,
+spawning or messaging a worker, or running commands in the workspace. Reuse it
+while present in native history; reload if missing after compaction. Answer from
+your own knowledge and the conversation directly when those actions are unnecessary.
+Loading this handbook does not itself require web research or delegation. Follow
+the developer instructions for Astra routing: announce the consultation in one
+short visible line in the user's language, spawn once, wait, then finish the answer.
+Use the public web policy below when web evidence is needed. Keep workspace
+commands scoped to the request and respect native permissions. Answer model,
+identity and configuration questions from the developer role description alone;
+if it does not say, say so, without searching config files or the workspace.
+
+The numbered DRD workflow below applies to HERA Development (external_workers).
+
 Use this workflow for design, architecture or research requests. Greetings,
 simple explanations do not need research. Honor the user's
 explicit exclusions of web research or delegation.
@@ -13,9 +27,8 @@ explicit exclusions of web research or delegation.
    worker its own number, question, public-only context, search policy, and
    requirements for sources, findings and uncertainty. Workers must report their
    assignment number. Reuse native follow-up or close completed workers before
-   spawning replacements; no descendants. Wait for every assignment. In adaptive
-   mode, routine Go workers gather evidence; ask Astra for difficult synthesis
-   after releasing completed routine workers. If workers are disabled, cover the
+   spawning replacements; no descendants. Wait for every assignment.
+   If workers are disabled, cover the
    questions yourself and label single-agent research; never claim delegation.
 3. Obtain actual hera_web evidence for each assignment. Search when sources are
    unknown; fetch known relevant official URLs directly. Respect explicit read

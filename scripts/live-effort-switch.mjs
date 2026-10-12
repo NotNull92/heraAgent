@@ -12,8 +12,8 @@ const home=await heraHome();const original=await readFile(join(home,'config.json
 const {config}=await loadConfig(home);config.mode='adaptive';
 const cwd=await mkdtemp(join(tmpdir(),'hera-effort-switch-'));let fingerprint;
 for(const effort of ['high','low']){
-  config.workers.goReasoningEffort=effort;
-  const capability=await nativeCapability(home,config);assert(capability.ready,'Qualify native adaptive workflow first');
+  config.workers.goReasoningEffort=effort;config.designReasoningEffort=effort;
+  const capability=await nativeCapability(home,config);assert(capability.ready,'Qualify native adaptive workflow with --go-effort=high first; none has separate evidence');
   fingerprint??=capability.fingerprint;assert.equal(capability.fingerprint,fingerprint);
   let controller;let timer;
   try{

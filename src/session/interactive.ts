@@ -9,7 +9,7 @@ import type {ModelView} from '../codex/client.js';
 import {startupArgs,validateModelChoices} from '../codex/config-compiler.js';
 import {Controller} from './controller.js';
 import type {Config} from '../config.js';
-import {saveConfig,parseEffort,configSchema,projectSchema,goEffortSchema,activeModeSchema} from '../config.js';
+import {saveConfig,parseEffort,configSchema,projectSchema,goEffortSchema,designEffortSchema,designEffort,activeModeSchema} from '../config.js';
 import {listMetadata} from '../metadata.js';
 import {safeText,HeraError,errorView} from '../errors.js';
 import {capabilityReport} from '../codex/capabilities.js';
@@ -27,6 +27,8 @@ type Role='main'|'worker';
 export type SelectionMenu={title:string;options:{value:string;label:string}[];current:string|null;choose:(value:string)=>Promise<void>};
 export class InteractiveSession extends EventEmitter {
   controller:Controller|null=null;busy=false;transcript='';status='Ready';approval='';
+  // What the root thread is doing while nothing is printed (thinking, a tool, waiting for a worker); empty when idle or streaming text.
+  activity='';activitySince=0;
   selection:SelectionMenu|null=null;
   // undefined: not read yet; null: the runtime returned no usable limit data.
   limits:LimitSnapshot[]|null|undefined=undefined;
@@ -70,18 +72,22 @@ export class InteractiveSession extends EventEmitter {
   private async saveModelChoice(role:Role,model:string,effort:Config['main']['reasoningEffort'],models:ModelView[]){
     const candidate=structuredClone(this.config);
     // The Go route has one model and its own effort setting; the saved GPT worker choice is left untouched.
-    if(role==='worker'&&this.config.mode!=='gpt_only'){const level=goEffortSchema.safeParse(effort);if(model!==GO_MODEL||!level.success)throw new HeraError('UNSUPPORTED_GO_SETTING','Go 워커는 DeepSeek V4.1 Flash 모델과 low, high, max effort만 지원합니다.',2);candidate.workers.goReasoningEffort=level.data;}
+    if(role==='worker'&&this.config.mode!=='gpt_only'){
+      const schema=this.config.mode==='adaptive'?designEffortSchema:goEffortSchema;const level=schema.safeParse(effort);
+      if(model!==GO_MODEL||!level.success)throw new HeraError('UNSUPPORTED_GO_SETTING',`DeepSeek V4.1 Flash: ${schema.options.join(', ')} effort만 지원합니다.`,2);
+      if(this.config.mode==='adaptive')candidate.designReasoningEffort=level.data;else candidate.workers.goReasoningEffort=goEffortSchema.parse(level.data);
+    }
     else{if(role==='main')candidate.main={model,reasoningEffort:effort};else{candidate.workers.gptModel=model;candidate.workers.reasoningEffort=effort;}validateModelChoices(candidate,models);}
     await this.newSession();await saveConfig(this.home,candidate);Object.assign(this.config,candidate);
     this.add(this.config.language==='ko'?`\n${role==='main'?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'설계·조사':'워커')} 설정 저장: ${model} / ${effort??'기본값'} · 다음 입력부터 적용됩니다.\n`:`\nSaved ${role}: ${model} / ${effort??'default'}; applies to the next input.\n`);
   }
   private async openSettings(action:'model'|'effort',role?:Role){
     const ko=this.config.language==='ko';
-    if(!role){this.selection={title:ko?'설정할 역할 선택':'Choose a role',current:null,options:[{value:'main',label:`${ko?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'Reasoning':'Main')} · ${this.config.main.model??'—'} / ${this.config.main.reasoningEffort??'default'}`},{value:'worker',label:`${ko?(this.config.mode==='adaptive'?'설계·조사':'워커'):(this.config.mode==='adaptive'?'Design/research':'Worker')} · ${this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel??'—'} / ${this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort??'default'}`}],choose:async value=>this.openSettings(action,value as Role)};return;}
+    if(!role){this.selection={title:ko?'설정할 역할 선택':'Choose a role',current:null,options:[{value:'main',label:`${ko?(this.config.mode==='adaptive'?'깊은 추론':'메인'):(this.config.mode==='adaptive'?'Reasoning':'Main')} · ${this.config.main.model??'—'} / ${this.config.main.reasoningEffort??'default'}`},{value:'worker',label:`${ko?(this.config.mode==='adaptive'?'설계·조사':'워커'):(this.config.mode==='adaptive'?'Design/research':'Worker')} · ${this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel??'—'} / ${this.config.mode==='adaptive'?designEffort(this.config):this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort??'default'}`}],choose:async value=>this.openSettings(action,value as Role)};return;}
     if(role==='worker'&&this.config.mode!=='gpt_only'){
       const name=ko?(this.config.mode==='adaptive'?'설계·조사':'워커'):(this.config.mode==='adaptive'?'Design/research':'Worker');
       this.selection=action==='model'?{title:ko?`${name} 모델 선택`:`Choose ${name.toLowerCase()} model`,current:GO_MODEL,options:[{value:GO_MODEL,label:GO_MODEL}],choose:async()=>this.openSettings('effort','worker')}
-        :{title:`${name} · ${GO_MODEL} · effort`,current:this.config.workers.goReasoningEffort,options:goEffortSchema.options.map(value=>({value,label:value})),choose:async value=>this.saveModelChoice('worker',GO_MODEL,parseEffort(value),[])};
+        :{title:`${name} · ${GO_MODEL} · effort`,current:this.config.mode==='adaptive'?designEffort(this.config):this.config.workers.goReasoningEffort,options:(this.config.mode==='adaptive'?designEffortSchema:goEffortSchema).options.map(value=>({value,label:value})),choose:async value=>this.saveModelChoice('worker',GO_MODEL,parseEffort(value),[])};
       return;}
     const models=await this.models();const model=role==='main'?this.config.main.model:this.config.workers.gptModel;
     if(action==='model'){
@@ -101,18 +107,35 @@ export class InteractiveSession extends EventEmitter {
     // Controller.open checks live credentials, models and permissions; do not launch a second discovery runtime first.
     try{this.controller=await Controller.open(this.home,this.cwd,this.config,this.singleAgent,previous);}
     catch(error){if(errorView(error).errorCode==='PROVIDER_SETUP_REQUIRED'){this.providerSetupRequired=true;await this.openProviders().catch(()=>this.providerMenu(null,null));}throw error;}
-    this.controller.on('event',event=>{
-      if(event.method==='item/agentMessage/delta'){const p=z.object({threadId:z.string(),delta:z.string()}).safeParse(event.params);if(p.success&&p.data.threadId===this.controller?.metadata?.codexThreadId)this.add(p.data.delta);}
-      else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);}
-      else if(event.method==='account/rateLimits/updated'&&this.limits){this.limits=mergeLimits(this.limits,event.params);this.emit('change');}
-    });
+    this.controller.on('event',event=>this.observe(event));
     this.controller.on('workers',()=>this.emit('change'));
     const shown=new Set<string|number>();this.controller.on('requests',()=>{const request=this.controller!.requests.values().next().value;if(request&&!shown.has(request.id)){shown.add(request.id);this.add(`\n${request.summary}\n`);}for(const id of shown)if(!this.controller!.requests.has(id))shown.delete(id);this.emit('change');});
     this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));
   }
+  setActivity(text:string){if(text===this.activity)return;this.activity=text;this.activitySince=Date.now();this.emit('change');}
+  // Native events of the owned tree. Only the root thread prints; its pauses are named in the status line.
+  observe(event:{method:string;params:unknown}){
+    const ko=this.config.language==='ko';const root=z.object({threadId:z.string()}).safeParse(event.params);const own=root.success&&root.data.threadId===this.controller?.metadata?.codexThreadId;
+    if(event.method==='item/agentMessage/delta'){const p=z.object({delta:z.string()}).safeParse(event.params);if(p.success&&own){this.setActivity('');this.add(p.data.delta);}}
+    else if(event.method==='item/reasoning/textDelta'||event.method==='item/reasoning/summaryTextDelta'){if(own)this.setActivity(ko?'생각 중':'thinking');}
+    else if(event.method==='item/started'&&own){
+      const p=z.object({item:z.object({type:z.string()}).passthrough()}).safeParse(event.params);if(!p.success)return;const item=p.data.item;
+      if(item.type==='reasoning')this.setActivity(ko?'생각 중':'thinking');
+      else if(item.type==='commandExecution')this.setActivity(ko?'명령 실행 중':'running a command');
+      else if(item.type==='fileChange')this.setActivity(ko?'파일 수정 중':'editing files');
+      else if(item.type==='mcpToolCall'){const tool=String(item.tool??'');this.setActivity(tool==='load_instructions'?(ko?'핸드북 읽는 중':'reading the handbook'):tool==='web_search'?(ko?'웹 검색 중':'searching the web'):tool==='web_fetch'?(ko?'웹 페이지 읽는 중':'reading a web page'):(ko?'도구 실행 중':'running a tool'));}
+      else if(item.type==='collabAgentToolCall'){
+        const targets=z.array(z.string()).safeParse(item.receiverThreadIds);const astra=targets.success&&targets.data.some(id=>this.controller?.workers?.snapshot.get(id)?.modelProvider==='openai');
+        const who=astra?'Astra':(ko?'워커':'a worker');
+        this.setActivity(item.tool==='wait'?(ko?`${who} 답 기다리는 중`:`waiting for ${who}`):['spawnAgent','sendInput','resumeAgent'].includes(String(item.tool))?(ko?`${who}에게 맡기는 중`:`handing off to ${who}`):(ko?'워커 정리 중':'managing workers'));
+      }
+    }
+    else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);if(own&&this.busy)this.setActivity(ko?'응답 기다리는 중':'waiting for the model');}
+    else if(event.method==='account/rateLimits/updated'&&this.limits){this.limits=mergeLimits(this.limits,event.params);this.emit('change');}
+  }
   async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.busy=true;this.status='Working';this.emit('change');try{if(text.startsWith('/')){
       // Echo the command like any other input; /providers arguments are rejected, so they are never echoed.
-      const typed=text.trim();this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{this.add(`\nYou: ${text}\n`);await this.connect();this.add('Hera: ');await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.emit('change');}}
+      const typed=text.trim();this.add(`\nYou: ${typed.startsWith('/providers')?'/providers':typed}\n`);await this.command(typed);}else{this.add(`\nYou: ${text}\n`);await this.connect();this.add('Hera: ');this.setActivity(this.config.language==='ko'?'응답 기다리는 중':'waiting for the model');await this.controller!.run(text);this.add('\n');void this.refreshLimits();}this.status='Ready';}catch(e){this.status=errorView(e).errorCode;this.add(`\n${errorView(e).message}\n`);}finally{this.busy=false;this.setActivity('');this.emit('change');}}
   private async command(text:string){const [command,...args]=text.split(/\s+/);switch(command){
     case '/research':{
       if(args.length>1)throw new HeraError('INVALID_COMMAND','/research [setup|status|open|resume]',2);
@@ -135,7 +158,7 @@ export class InteractiveSession extends EventEmitter {
       if(command==='/effort'&&args.length!==1||command==='/model'&&args.length>2)throw new HeraError('INVALID_COMMAND','Use /model [main|worker] [ID] [effort] or /effort [main|worker] [level].',2);
       const model=command==='/model'?args[0]!:(role==='main'?this.config.main.model:this.config.mode!=='gpt_only'?GO_MODEL:this.config.workers.gptModel);
       if(!model)throw new HeraError('MODEL_NOT_SELECTED','Select a model with /model first.',2);
-      const value=command==='/effort'?args[0]:args[1];const effort=value===undefined?(role==='main'?this.config.main.reasoningEffort:this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort):parseEffort(value);
+      const value=command==='/effort'?args[0]:args[1];const effort=value===undefined?(role==='main'?this.config.main.reasoningEffort:this.config.mode==='adaptive'?designEffort(this.config):this.config.mode!=='gpt_only'?this.config.workers.goReasoningEffort:this.config.workers.reasoningEffort):parseEffort(value);
       await this.saveModelChoice(role,model,effort,role==='worker'&&this.config.mode!=='gpt_only'?[]:await this.models());break;
     }
     case '/workers':{

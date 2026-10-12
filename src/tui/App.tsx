@@ -10,6 +10,7 @@ import {Glint,Ornate,Text,ThemeContext,palette,useTheme} from './theme.js';
 import {safeText} from '../errors.js';
 import {windowsFor} from '../session/limits.js';
 import type {LimitWindow} from '../session/limits.js';
+import {designEffort} from '../config.js';
 import {GO_MODEL} from '../providers/opencode-go.js';
 import {CODEX_VERSION} from '../codex/launcher.js';
 
@@ -29,6 +30,13 @@ function Role({label,children,windows,fallback,reset,language}:{label:string;chi
   }):<Text color={c.iron}>{fallback}</Text>}</Text>;
 }
 // Only prose gets bold; preserve code spans, including an unfinished span while streaming.
+// The root thread's current pause (thinking, a tool, a worker wait) with its elapsed time, ticking once a second.
+function Activity({text,since}:{text:string;since:number}){
+  const {c}=useTheme();const [now,setNow]=useState(Date.now());
+  useEffect(()=>{if(!text)return;setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[text,since]);
+  if(!text)return null;const s=Math.max(0,Math.floor((now-since)/1000));
+  return <Text color={c.iron}> · {safeText(text)} {Math.floor(s/60)}:{String(s%60).padStart(2,'0')}</Text>;
+}
 export function emphasis(text:string){
   const parts:React.ReactNode[]=[];let at=0,cursor=0;
   const prose=(end:number)=>{
@@ -118,10 +126,10 @@ export function App({session}:{session:InteractiveSession}){
         :session.controller?.review&&!session.busy?<ApplyReview key={session.controller.review.id} review={session.controller.review} rows={Math.max(8,rows)} columns={width} language={session.config.language} approve={()=>{void session.approveApply();}} cancel={()=>session.cancelApply()}/>
         :session.selection?<SettingsPicker key={session.selection.title} menu={session.selection} language={session.config.language} rows={Math.max(7,rows)} choose={value=>{void session.selectOption(value);}} cancel={()=>session.cancelSelection()} quit={quit}/>
         :<Composer language={session.config.language} rows={Math.max(1,height-8)} busy={session.busy} send={text=>{void session.submit(text);}} cancel={()=>{void session.interrupt().catch(e=>session.add(String(e)));}} quit={quit}/>}
-      <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{adaptive?(ko?'HERA 설계':'HERA Design'):external?(ko?'HERA 개발':'HERA Development'):(ko?'모드 선택 필요':'Select a mode')}</Text>
+      <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Activity text={session.activity} since={session.activitySince}/><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{adaptive?(ko?'HERA 설계':'HERA Design'):external?(ko?'HERA 개발':'HERA Development'):(ko?'모드 선택 필요':'Select a mode')}</Text>
         {session.controller?.collaborationEnabled&&<Text><Text color={c.iron}> · {ko?'워커':'Workers'} </Text><Text color={c.frost}>{'◆'.repeat(Math.min(active,limit))}</Text><Text color={c.iron}>{'◇'.repeat(Math.max(0,limit-active))}</Text>{ko?` ${active} 활성 / 상한 ${limit}`:` ${active} active / limit ${limit}`}</Text>}</Box>
       <Role label={adaptive?(ko?'깊은 추론':'Reasoning'):(ko?'메인':'Main')} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language}>{safeText(session.config.main.model??unset)}<Text color={c.iron}> · effort </Text>{session.config.main.reasoningEffort??'default'}</Role>
-      <Role label={adaptive?(ko?'설계·조사':'Design/research'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(external?session.config.workers.goReasoningEffort:session.config.workers.reasoningEffort)??'default'}</Role>
+      <Role label={adaptive?(ko?'설계·조사':'Design/research'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(adaptive?designEffort(session.config):external?session.config.workers.goReasoningEffort:session.config.workers.reasoningEffort)??'default'}</Role>
     </Box>
   </ThemeContext.Provider>;
 }

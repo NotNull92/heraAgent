@@ -80,3 +80,11 @@ it('accepts only complete current worker contracts and never promotes worker tes
   expect(()=>tracker.validateResults(contracts.map(c=>({...c,assignment:{...assignment,contractHash:'superseded'}})),'baseline')).toThrow(/superseded/);
   rows.get('child')!.turns[0]!.status='interrupted';await tracker.refresh(client);expect(()=>tracker.validateResults(contracts,'baseline')).toThrow(/did not finish/);
 });
+
+it('validates a non-thinking Design root independently of both thinking worker roles',async()=>{
+  const {rows,tracker,client,config}=fixture();config.mode='adaptive';config.designReasoningEffort='none';config.workers.goReasoningEffort='high';
+  Object.assign(rows.get('root')!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:'none'});Object.assign(rows.get('child')!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:'high'});Object.assign(rows.get('grandchild')!,{model:'main',reasoningEffort:'high'});
+  await tracker.assertIdle(client);
+  rows.get('root')!.reasoningEffort='high';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});rows.get('root')!.reasoningEffort='none';
+  rows.get('child')!.reasoningEffort='none';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});
+});

@@ -116,8 +116,9 @@ one random Skyrim line per start, at most 51 characters. There is no setup hint 
 
 Below the input, in this order:
 
-1. Status line: activity glint, status, mode, and live worker pips when collaboration
-   is enabled.
+1. Status line: activity glint, status, what the root thread is doing with its
+   elapsed time while nothing is printed, mode, and live worker pips when
+   collaboration is enabled.
 2. Main role line, then worker role line: model, effort, then limit windows.
 
 Rules:
@@ -129,6 +130,12 @@ Rules:
   made-up number.
 - Not shown: cumulative token counts, the worker's provider name, the phase name or a
   phase track.
+- The pause label (`응답 기다리는 중`, `생각 중`, `핸드북 읽는 중`, `명령 실행 중`,
+  `Astra에게 맡기는 중`, `워커 답 기다리는 중` …) comes only from native events of the
+  root thread and shows a `m:ss` counter since the pause began. It disappears as soon
+  as reply text streams and at the end of the turn. Worker threads never drive it.
+  It exists because a Design question can spend minutes in hidden reasoning, a handbook
+  load and an Astra hand-off before the first visible character.
 
 ## Theme
 
