@@ -1750,3 +1750,53 @@ continues to use high for delegated design decisions.
 NOT_RUN: physical TUI/manual interaction, macOS/CI, live compaction, exhaustive
 factual-quality evaluation, package/release checks, and live high/low effort-switch
 fixture on this final fingerprint. No commit, push or publication was performed.
+
+## Terminal check of pause labels and the none root (2026-10-12)
+
+Actual Windows results, build 8daa223, `hera` driven in a psmux (tmux 0.4.1) pane
+of 110x36 with the status line sampled every 0.3 s. The workspace was a scratch
+folder because the owner's own Hera session from 2026-10-08 still held the lock on
+the repository (pid 39056; that session runs the pre-c6938b7 build until restarted).
+
+| Turn | Enter to first visible text | Labels seen |
+| --- | ---: | --- |
+| 안녕? | 4.4 s (first turn of the session) | 응답 기다리는 중 0:00–0:02 |
+| 지금 답변하고 있는건 딥시크지? | 2.9 s | 응답 기다리는 중 0:00–0:02 |
+| 오프라인 우선 할 일 앱의 동기화 설계안을 추천해줘 | 2.5 s (announcement line), 46 s total | 응답 기다리는 중, Astra 답 기다리는 중 0:00–0:29, 응답 기다리는 중 |
+
+The footer showed `effort none` for 설계·조사 and the two direct turns made no tool
+calls. The design turn did announcement → load_instructions → one spawn_agent
+(hera_astra) → wait_agent (30.5 s) → Korean answer, as specified. The label clears
+the moment text streams and at the end of the turn; worker pips went 1 → 0 with the
+hand-off. `핸드북 읽는 중` and `Astra에게 맡기는 중` were not caught: the local
+handbook read and the spawn each complete within milliseconds, so the counter
+falls back to `응답 기다리는 중` and restarts at 0:00. The restart is per label,
+not per silent stretch; left as is.
+
+Two findings for the instruction owner (not changed here):
+
+- The Astra child receives the root's developer instructions verbatim ("Root role:
+  you are Hera, running on DeepSeek…", "Before any hand-off, write one short visible
+  commentary line…"). In this run the child wrote "I'm consulting Astra for the sync
+  recommendation", found no delegation target, and only then answered; about 14 s
+  of its 32 s went there. A one-sentence gate ("If you are a spawned worker, ignore
+  the routing rules and answer your assignment directly") in the adaptive
+  developer instructions would remove it; controller.ts is a fingerprint input.
+- A 17-character Korean prompt sent as one chunk with Enter stays in the input
+  (treated as an unbracketed paste, by the rule in docs/ux-guide.md); a second Enter
+  sends it. Expected, noted because scripted drivers hit it.
+
+Cause check for the 2026-10-08 hang (status-line section above): the root ran
+`Get-ChildItem -Path .codex -Recurse` in the repository. `.codex` does not exist
+there, and PowerShell then treats the missing leaf as a name filter over the whole
+tree. The tree holds about 364k files, 314k of them in ignored `.artifacts/`
+(three Codex source checkouts: codex-runtime-canary 106k, codex-runtime-v1 79k,
+codex-runtime-01610 53k; public-audit 43k) and 35k in ignored `release-staging/`.
+The same command run outside the sandbox did not finish in 120 s. Nothing at
+runtime reads those folders (the runtime lives under the Hera home); CI and the
+qualify/prepare scripts recreate `.artifacts/` when they need it. Moving or
+removing the old checkouts was not done; the instruction rule in c6938b7 now
+forbids the search that triggered it.
+
+NOT_RUN: macOS, a terminal narrower than 110 columns, the labels for web_search,
+web_fetch, commandExecution and fileChange in a live turn.
