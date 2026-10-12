@@ -74,8 +74,8 @@ it('clears the terminal on every resize and reprints the conversation',async()=>
   expect(ui.lastFrame()).toContain('You: 크기 변경 전');expect(ui.lastFrame()).toContain('I can do anything with you.');ui.unmount();
 });
 it('names the configured worker model and effort for each mode',async()=>{
-  const config=structuredClone(defaults);config.workers.gptModel='fixture-worker';config.workers.reasoningEffort='max';config.designReasoningEffort='none';
-  const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toContain('HERA 설계');expect(gpt.lastFrame()).toMatch(/설계·조사\s+deepseek-v4\.1-flash · effort none/);gpt.unmount();
+  const config=structuredClone(defaults);config.workers.gptModel='fixture-worker';config.workers.reasoningEffort='max';config.designReasoningEffort='low';
+  const gpt=render(<App session={new InteractiveSession('unused','fixture',config,true)}/>);await tick();expect(gpt.lastFrame()).toContain('HERA 설계');expect(gpt.lastFrame()).toMatch(/설계·조사\s+deepseek-v4\.1-flash · effort low/);gpt.unmount();
   const go=render(<App session={new InteractiveSession('unused','fixture',{...config,mode:'external_workers'},true)}/>);await tick();expect(go.lastFrame()).toMatch(/워커\s+deepseek-v4\.1-flash · effort low/);go.unmount();
 });
 it('places the IME caret by terminal cells across Korean text, newlines and hard wraps',()=>{

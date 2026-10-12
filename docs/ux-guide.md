@@ -149,6 +149,9 @@ Rules:
 
 Medieval fantasy, modeled on Skyrim. Hues come from `palette()` in `src/tui/theme.tsx`:
 gold (accent, selection), iron (secondary text, ornaments), frost (the user), blood
-(errors, exit warning), moss (healthy state). Every hue is dropped when `NO_COLOR` is
+(errors, exit warning), moss (healthy state). In the footer role lines the model name is
+frost and the effort word climbs with the setting: iron for `none`/`minimal`, moss for
+`low`, gold for `medium`/`default`, blood for `high`/`xhigh`/`max` (hot, not an error).
+Every hue is dropped when `NO_COLOR` is
 set or `ui.color` is `never`, so nothing may rely on color alone. Animation stops when
 `ui.reducedMotion` is set.

@@ -21,8 +21,10 @@ const EMBLEM=['◇','◇ ┃ ◇','◇   ┃   ◇','◆━━━━━╋━━
 const KEPT_LINES=2000;
 // One footer line per role: the configured route, the remaining share of each limit window the runtime
 // actually returned, or a plain statement when there is none.
-function Role({label,children,windows,fallback,reset,language}:{label:string;children:React.ReactNode;windows:LimitWindow[];fallback:string;reset:boolean;language:'ko'|'en'}){
-  const {c}=useTheme();const ko=language==='ko';const two=(n:number)=>String(n).padStart(2,'0');
+// Effort hue climbs with the setting: iron off, moss low, gold middle, blood hot; the words stay readable without color.
+function effortColor(effort:string,c:ReturnType<typeof palette>){return /^(none|minimal)$/.test(effort)?c.iron:effort==='low'?c.moss:/^(high|xhigh|max)$/.test(effort)?c.blood:c.gold;}
+function Role({label,model,effort,windows,fallback,reset,language}:{label:string;model:string;effort:string;windows:LimitWindow[];fallback:string;reset:boolean;language:'ko'|'en'}){
+  const {c}=useTheme();const children=<Text><Text color={c.frost}>{model}</Text><Text color={c.iron}> · effort </Text><Text bold color={effortColor(effort,c)}>{effort}</Text></Text>;const ko=language==='ko';const two=(n:number)=>String(n).padStart(2,'0');
   const name=(mins:number|null)=>mins===300?'5h':mins===1440?(ko?'일간':'daily'):mins===10080?(ko?'주간':'weekly'):mins?`${Math.round(mins/60)}h`:(ko?'한도':'limit');
   return <Text><Text color={c.iron}>{label}  </Text>{children}<Text color={c.iron}> · </Text>{windows.length?windows.map((w,i)=>{
     const left=Math.max(0,Math.min(100,Math.round(100-w.usedPercent)));const at=w.resetsAt===null||!reset?null:new Date(w.resetsAt*1000);const when=at&&`${at.getMonth()+1}/${at.getDate()} ${two(at.getHours())}:${two(at.getMinutes())}`;
@@ -128,8 +130,8 @@ export function App({session}:{session:InteractiveSession}){
         :<Composer language={session.config.language} rows={Math.max(1,height-8)} busy={session.busy} send={text=>{void session.submit(text);}} cancel={()=>{void session.interrupt().catch(e=>session.add(String(e)));}} quit={quit}/>}
       <Box><Glint active={session.busy}/><Text color={tone}> {session.status}</Text><Activity text={session.activity} since={session.activitySince}/><Text color={c.iron}> · {ko?'모드':'Mode'} </Text><Text>{adaptive?(ko?'HERA 설계':'HERA Design'):external?(ko?'HERA 개발':'HERA Development'):(ko?'모드 선택 필요':'Select a mode')}</Text>
         {session.controller?.collaborationEnabled&&<Text><Text color={c.iron}> · {ko?'워커':'Workers'} </Text><Text color={c.frost}>{'◆'.repeat(Math.min(active,limit))}</Text><Text color={c.iron}>{'◇'.repeat(Math.max(0,limit-active))}</Text>{ko?` ${active} 활성 / 상한 ${limit}`:` ${active} active / limit ${limit}`}</Text>}</Box>
-      <Role label={adaptive?(ko?'깊은 추론':'Reasoning'):(ko?'메인':'Main')} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language}>{safeText(session.config.main.model??unset)}<Text color={c.iron}> · effort </Text>{session.config.main.reasoningEffort??'default'}</Role>
-      <Role label={adaptive?(ko?'설계·조사':'Design/research'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language}>{safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)}<Text color={c.iron}> · effort </Text>{(adaptive?designEffort(session.config):external?session.config.workers.goReasoningEffort:session.config.workers.reasoningEffort)??'default'}</Role>
+      <Role label={adaptive?(ko?'깊은 추론':'Reasoning'):(ko?'메인':'Main')} windows={mainWindows} fallback={unread} reset={width>=70} language={session.config.language} model={safeText(session.config.main.model??unset)} effort={session.config.main.reasoningEffort??'default'}/>
+      <Role label={adaptive?(ko?'설계·조사':'Design/research'):(ko?'워커':'Worker')} windows={external||shared?[]:workerWindows} fallback={workerNote} reset={width>=70} language={session.config.language} model={safeText((external?GO_MODEL:session.config.workers.gptModel)??unset)} effort={(adaptive?designEffort(session.config):external?session.config.workers.goReasoningEffort:session.config.workers.reasoningEffort)??'default'}/>
     </Box>
   </ThemeContext.Provider>;
 }

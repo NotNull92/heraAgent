@@ -41,9 +41,9 @@ it('offers the Go model with low, high and max effort without replacing the save
 it('saves Design root effort separately while preserving legacy settings and Development worker limits',async()=>{
   const home=await mkdtemp(join(tmpdir(),'hera-design-menu-'));const config=structuredClone(defaults);config.main.reasoningEffort='high';config.workers.goReasoningEffort='high';
   const session=new InteractiveSession(home,home,config,false);await session.submit('/effort worker');
-  expect(session.selection?.current).toBe('high');expect(session.selection?.options.map(o=>o.value)).toEqual(['none','low','high','max']);await session.selectOption('none');
-  expect(config.designReasoningEffort).toBe('none');expect(config.workers.goReasoningEffort).toBe('high');expect(config.main.reasoningEffort).toBe('high');expect((await loadConfig(home)).config.designReasoningEffort).toBe('none');
-  await session.submit('/model worker deepseek-v4.1-flash');expect(config.designReasoningEffort).toBe('none');
+  expect(session.selection?.current).toBe('high');expect(session.selection?.options.map(o=>o.value)).toEqual(['low','high','max']);await session.selectOption('low');
+  expect(config.designReasoningEffort).toBe('low');expect(config.workers.goReasoningEffort).toBe('high');expect(config.main.reasoningEffort).toBe('high');expect((await loadConfig(home)).config.designReasoningEffort).toBe('low');
+  await session.submit('/model worker deepseek-v4.1-flash');expect(config.designReasoningEffort).toBe('low');
   config.mode='external_workers';await session.submit('/effort worker');expect(session.selection?.current).toBe('high');expect(session.selection?.options.map(o=>o.value)).toEqual(['low','high','max']);
   await session.selectOption('high');const saved=await readFile(join(home,'config.json'),'utf8');await session.submit('/effort worker none');expect(session.status).toBe('UNSUPPORTED_GO_SETTING');expect(await readFile(join(home,'config.json'),'utf8')).toBe(saved);
 });

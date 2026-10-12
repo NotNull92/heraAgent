@@ -131,14 +131,11 @@ GPT Balance is retired. Existing `gpt_only` settings remain readable but cannot
 start tasks. Select `/mode` or use `hera init --mode adaptive` (Design) /
 `hera init --mode external_workers` (Development); routes never migrate silently.
 
-In Design, `/effort worker none` disables thinking only for the DeepSeek root;
-`low`, `high` and `max` remain available. This saves the optional user setting
-`designReasoningEffort`, leaving Astra and Go worker settings unchanged. Existing
-settings without this field inherit the Go worker effort. Development workers
-continue to offer only `low`, `high` and `max`. Switching between `none` and thinking requires
-fresh adaptive native qualification; tuning among `low`, `high` and `max` preserves
-native v2 qualification. Before downgrading to a build without this field, remove only
-`designReasoningEffort` from the user config (or restore its backup). GPT options come
+In Design, `/effort worker` sets the DeepSeek root effort (`low`, `high` or `max`)
+in the optional user setting `designReasoningEffort`, leaving Astra and Go worker
+settings unchanged. Existing settings without this field inherit the Go worker
+effort. Changing any effort preserves native v2 qualification. A saved `none`
+from older builds is rejected; set `low`, `high` or `max`. GPT options come
 from the model catalog. `/workers` sets a ceiling of 1–8, capped by the project,
 not a measured running count. Settings apply to a new native session on the next input;
 Hera does not need restarting. Active turns reject changes. Old v1 records need fresh qualification.

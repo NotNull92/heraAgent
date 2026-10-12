@@ -26,6 +26,6 @@ describe('trust boundaries',()=>{
 
 it('keeps legacy Design effort and restricts the new setting to user configuration',()=>{
   const legacy=configSchema.parse({...defaults,workers:{...defaults.workers,goReasoningEffort:'high'}});expect(designEffort(legacy)).toBe('high');
-  expect(designEffort(configSchema.parse({...legacy,designReasoningEffort:'none'}))).toBe('none');
-  expect(configSchema.safeParse({...legacy,designReasoningEffort:'medium'}).success).toBe(false);expect(projectSchema.safeParse({designReasoningEffort:'none'}).success).toBe(false);
+  expect(designEffort(configSchema.parse({...legacy,designReasoningEffort:'low'}))).toBe('low');expect(configSchema.safeParse({...legacy,designReasoningEffort:'none'}).success).toBe(false);
+  expect(configSchema.safeParse({...legacy,designReasoningEffort:'medium'}).success).toBe(false);expect(projectSchema.safeParse({designReasoningEffort:'low'}).success).toBe(false);
 });

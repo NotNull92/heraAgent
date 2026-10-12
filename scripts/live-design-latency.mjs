@@ -51,7 +51,6 @@ for(let sample=1;sample<=3;sample++){
           const calls=trace.filter(row=>row.type==='response_item'&&row.payload.type==='function_call'&&row.payload.name==='spawn_agent');assert.equal(calls.length,1);assert.equal(JSON.parse(calls[0].payload.arguments).agent_type,'hera_astra');
         }
         const usage=events.findLast(e=>e.method==='thread/tokenUsage/updated'&&e.params.threadId===result.threadId)?.params.tokenUsage.last;
-        if(name!=='design'&&designEffort(config)==='none')assert.equal(usage?.reasoningOutputTokens,0,'Direct root must not spend hidden reasoning tokens');
         const measurement={sample,name,firstTextMs,elapsedMs,effort:designEffort(config),threadId:result.threadId,usage,firstText:firstText.slice(0,160)};
         measurements.push(measurement);console.log(JSON.stringify(measurement));
       }finally{clearTimeout(timer);controller.off('event',observe);}

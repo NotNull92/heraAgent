@@ -2104,3 +2104,103 @@ about 87 MiB) with explicit literal paths on the owner's instruction. The
 folder is now empty; `prepare-release.mjs` recreates it when needed. Nothing
 else under `.artifacts/` was touched. The disk cleanup from the two sections
 above is therefore complete.
+
+## Design effort low re-qualified after COLLABORATION_UNVERIFIED (2026-10-12)
+
+The owner changed `designReasoningEffort` from `none` to `low` at 14:12 local;
+the adaptive record held only the `none` fingerprint (ccf18187…), so the next
+session failed with COLLABORATION_UNVERIFIED. Computed fingerprints confirmed
+the cause: `none` adds its own qualification tag, while `low`, `high`, `max`
+and the Astra/Go worker efforts all share one fingerprint (9a8d0612…).
+
+Actual: `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`
+PASS, exit 0, recorded 2026-10-12T05:33:25.701Z, fingerprint 9a8d0612…, all
+seven checks pass, one Astra spawn with the announcement before it. Greeting
+first text 2.9 s, factual 3.4 s, identity 2.5 s, design planning 44.6 s at
+effort low. nativeCapability now reports ready for `low`; returning to `none`
+needs another live run. NOT_RUN: external_workers (its record is unaffected),
+macOS/CI.
+
+## Design effort `none` removed; footer colors (2026-10-12)
+
+Owner decision: drop the non-thinking Design root. `designEffortSchema` is now
+`low | high | max`; the `design-root-none` qualification tag in capabilities.ts
+and the reasoning-token assertion in live-design-latency.mjs are gone; README
+no longer documents `none`. A saved `none` is rejected as INVALID_CONFIG; set
+`low`, `high` or `max`. Tests updated (external-runtime, foundation, tui,
+worker-evidence, workers); 108 offline tests pass; typecheck and build pass.
+Any effort change now keeps native qualification (fingerprints compared for
+Design low/high/max and Astra/Go efforts: identical).
+
+Footer role lines color the model name frost and the effort word by level
+(iron none/minimal, moss low, gold medium/default, blood high/xhigh/max);
+documented in docs/ux-guide.md Theme.
+
+Actual: both live suites re-run after the hashed-file change.
+- adaptive: PASS, fingerprint 3d43c75a…; external_workers: PASS, fingerprint
+  4fe2432b…. `hera doctor` reports native ready for the saved config
+  (Design low). The legacy worker gate G14 stays not_run as before.
+NOT_RUN: macOS/CI, physical terminal check of the footer colors.
+
+## Hand-off C: retry freshly empty child rollouts (2026-10-12)
+
+Owner-provided incident evidence: Design mode at 14:51 local on build fingerprint
+`3d43c75a...` ended with `RPC_-32603`: failed to read thread / thread-store
+internal error / failed to read session metadata / rollout is empty. Parent
+`01a12ea7-5161-74c2-a508-eeee1911137c` and child
+`01a12eaa-2658-7c40-a784-141bf7d64722` establish this UTC timeline:
+
+- 05:51:05.277Z: root called `spawnAgent` for Astra.
+- 05:51:05.520Z: spawn item completed; child rollout existed with zero bytes.
+- 05:51:05.712Z: child `session_meta` line was written.
+
+`Controller.handle` -> `item/completed(collabAgentToolCall)` -> `checkWorkers()`
+-> `NativeWorkers.refresh()` -> `client.read(childId)` fell inside the roughly
+200 ms creation/flush window. The read error became a fault, interrupted the
+turn, and left Hera session `0517c799-1785-4425-946f-8356d4f15398` with status
+`unknown_outcome`. The child ultimately completed normally (15 lines, 57 KB).
+This is a latent rollout persistence race, not a configuration or instruction
+change. The incident timeline above was supplied by the owner, not reproduced
+by inspecting their private rollout during this fix.
+
+`NativeWorkers.refresh()` now retries only RPC errors matching an empty rollout
+or the failed-session-metadata variant carrying `is empty`, for five total
+attempts with 200 ms between attempts. Both full-thread and `includeTurns:false`
+metadata reads use the same retry. Exhaustion rethrows the first matching error;
+any different error is immediately rethrown. The 512-thread / 32 MiB limits,
+unmaterialized-child handling, runtime, approvals, sandbox and other fault
+handling remain unchanged. No new dependencies or configuration were added.
+
+Actual native Windows results (Windows 10.0.26200 x64, PowerShell 7.6.6,
+Node v24.12.0, project-pinned Codex 0.161.0; terminal identity unavailable):
+
+- `npm.cmd run typecheck`: PASS, exit 0.
+- `npm.cmd test`: PASS, 115 tests across 22 files, exit 0. Seven new cases cover
+  two empty-read failures followed by success (three reads), fresh-root and
+  unmaterialized-child metadata retries, five-attempt exhaustion preserving the
+  original error, unrelated errors without retry, and a different error after
+  an empty read.
+- `npm.cmd run build`: PASS, exit 0; updated local `dist/`.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  PASS, exit 0; all seven checks (conversation, edit/test, resume, routing,
+  approval, cancellation, concurrency). Recorded 2026-10-12T06:09:25.491Z,
+  fingerprint `66ab7e70a91068ad3b9b4da8b48592f6493dafd00fb411295ef5c0019b1ec101`,
+  root `01a12eb8-d799-73a3-9146-654c231ed2c6`. One Astra planning spawn completed
+  with its Korean announcement before spawning. Saved Design effort was `high`,
+  Astra `gpt-6-astra/high`, Go workers `deepseek-v4.1-flash/high`, concurrency 3;
+  these settings were read, not changed.
+- `node scripts/live-native-workflow.mjs --live --record --mode=external_workers`:
+  PASS, exit 0; all seven checks. Recorded 2026-10-12T06:11:43.963Z,
+  fingerprint `5122822f254ead0cee7c34f9be9420d5924e89238a7917cd4d5e57accd5aec38`,
+  root `01a12ebb-1c9f-7f10-bccb-179bd813db39`. Full coding-handbook loading before
+  edits and reuse after resume also passed.
+- Final `dist/` native capability checks: both modes ready, matching the new
+  recorded fingerprints; exit 0. The live scripts preserved previous evidence
+  as backups. These live passes qualify the updated build; the deterministic
+  empty-rollout failures were injected in unit tests, not asserted to recur live.
+- `git diff --check`: PASS, exit 0.
+
+The owner must restart Hera to load this fix from `dist/`; an already running
+process retains the old code. Existing unrelated workspace edits were preserved.
+No commit or push. NOT_RUN: Windows/macOS remote CI, macOS live/manual checks,
+physical terminal acceptance, packaging and publication for this change.

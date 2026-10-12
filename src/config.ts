@@ -8,7 +8,7 @@ export const effortSchema=z.string().min(1).max(64).regex(/^[a-z][a-z0-9_-]*$/).
 export function parseEffort(value:string){const parsed=effortSchema.safeParse(value==='default'?null:value);if(!parsed.success)throw new HeraError('UNSUPPORTED_EFFORT','Choose an advertised effort or default.',2);return parsed.data;}
 // Keep worker reasoning enabled; Design roots can separately disable thinking.
 export const goEffortSchema=z.enum(['low','high','max']);
-export const designEffortSchema=z.enum(['none','low','high','max']);
+export const designEffortSchema=z.enum(['low','high','max']);
 export const activeModeSchema=z.enum(['adaptive','external_workers']);
 // Keep retired settings readable, but never silently change their provider route.
 export function requireActiveMode(mode:Config['mode']){if(mode==='gpt_only')throw new HeraError('MODE_REMOVED','GPT 밸런스는 제거되었습니다. /mode에서 HERA 설계 또는 HERA 개발을 선택하세요. CLI: hera init --mode adaptive 또는 --mode external_workers.',2);}

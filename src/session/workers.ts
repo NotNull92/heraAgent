@@ -56,12 +56,23 @@ export class NativeWorkers {
   async refresh(client:CodexClient,checkRouting=true){
     // ponytail: bounded full native hydration (512 threads / 32 MiB); use paginated native items for larger trees.
     let bytes=0;const inventory=new Map<string,NativeThread>();const unmaterialized=new Set<string>();
-    const metadata=async(id:string)=>z.object({thread:z.unknown()}).parse(await client.rpc.request('thread/read',{threadId:id,includeTurns:false})).thread;
+    // ponytail: a freshly spawned child rollout can be empty before session metadata is flushed.
+    const readWithRetry=async(operation:()=>Promise<unknown>)=>{
+      let originalError:unknown;
+      for(let attempt=0;;attempt++){
+        try{return await operation();}catch(error){
+          if(!(error instanceof HeraError)||!error.errorCode.startsWith('RPC_')||!/rollout at .* is empty|failed to read session metadata[\s\S]*\bis empty\b/.test(error.message))throw error;
+          originalError??=error;if(attempt===4)throw originalError;
+          await delay(200);
+        }
+      }
+    };
+    const metadata=async(id:string)=>z.object({thread:z.unknown()}).parse(await readWithRetry(()=>client.rpc.request('thread/read',{threadId:id,includeTurns:false}))).thread;
     const read=async(id:string)=>{
       if(inventory.has(id))return inventory.get(id)!;
       if(inventory.size>=512)throw new HeraError('THREAD_INVENTORY_LIMIT','Native worker tree exceeds 512 retained threads; no phase transition.',4);
       let value:unknown;
-      try{value=id===this.root&&this.freshRoot?await metadata(id):await client.read(id);}
+      try{value=id===this.root&&this.freshRoot?await metadata(id):await readWithRetry(()=>client.read(id));}
       catch(error){
         // A loaded child can be visible before its first message materializes history.
         // Keep its ownership/routing metadata, but never count this state as idle.

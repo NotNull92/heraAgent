@@ -67,6 +67,41 @@ it('tracks a child before its first message without claiming idle or hiding othe
   pending=false;await tracker.assertIdle(client);expect(tracker.activeCount).toBe(0);
   vi.mocked(client.read).mockRejectedValueOnce(new HeraError('RPC_-32600','unrelated read error',5,false));await expect(tracker.refresh(client)).rejects.toThrow('unrelated read error');
 });
+it('retries an empty rollout twice before successfully refreshing a thread',async()=>{
+  const {rows,client,tracker,loaded}=fixture();loaded.clear();rows.get('root')!.turns=[];
+  const error=new HeraError('RPC_-32603','failed to read thread: thread-store internal error: failed to read session metadata: rollout at C:\\sessions\\child.jsonl is empty',5,false);
+  vi.mocked(client.read).mockRejectedValueOnce(error).mockRejectedValueOnce(error);
+  await tracker.refresh(client);expect(client.read).toHaveBeenCalledTimes(3);expect(tracker.snapshot.has('root')).toBe(true);
+});
+it.each(['fresh root','unmaterialized child'])('retries empty metadata-only reads for a %s',async kind=>{
+  const {rows,client,loaded,config}=fixture();loaded.clear();rows.get('root')!.turns=[];
+  const id=kind==='fresh root'?'root':'child';
+  if(id==='child'){
+    loaded.add(id);const read=vi.mocked(client.read).getMockImplementation()!;
+    vi.mocked(client.read).mockImplementation(async threadId=>{if(threadId===id)throw new HeraError('RPC_-32600',`thread ${id} is not materialized yet; includeTurns is unavailable before first user message`,5,false);return read(threadId);});
+  }
+  const error=new HeraError('RPC_-32603','thread-store internal error: failed to read session metadata: session file is empty',5,false);
+  vi.mocked(client.rpc.request).mockRejectedValueOnce(error).mockRejectedValueOnce(error).mockResolvedValue({thread:{...rows.get(id),turns:[]}});
+  const tracker=new NativeWorkers('root',process.cwd(),config,id==='root');
+  await tracker.refresh(client);expect(client.rpc.request).toHaveBeenCalledTimes(3);
+  expect(client.rpc.request).toHaveBeenCalledWith('thread/read',{threadId:id,includeTurns:false});
+  if(id==='child')expect(tracker.activeCount).toBe(1);
+});
+it('rethrows the original empty-rollout error after five attempts',async()=>{
+  const {client,tracker}=fixture();const original=new HeraError('RPC_-32603','rollout at first.jsonl is empty',5,false);
+  vi.mocked(client.read).mockRejectedValueOnce(original).mockRejectedValue(new HeraError('RPC_-32603','rollout at later.jsonl is empty',5,false));
+  await expect(tracker.refresh(client)).rejects.toBe(original);expect(client.read).toHaveBeenCalledTimes(5);
+});
+it.each(['failed to read session metadata: permission denied','unrelated value is empty'])('does not retry another read error: %s',async message=>{
+  const {client,tracker}=fixture();const error=new HeraError('RPC_-32603',message,5,false);
+  vi.mocked(client.read).mockRejectedValue(error);
+  await expect(tracker.refresh(client)).rejects.toBe(error);expect(client.read).toHaveBeenCalledTimes(1);
+});
+it('does not retry a different error after an empty rollout',async()=>{
+  const {client,tracker}=fixture();const error=new HeraError('RPC_-32603','permission denied',5,false);
+  vi.mocked(client.read).mockRejectedValueOnce(new HeraError('RPC_-32603','rollout at child.jsonl is empty',5,false)).mockRejectedValue(error);
+  await expect(tracker.refresh(client)).rejects.toBe(error);expect(client.read).toHaveBeenCalledTimes(2);
+});
 it('accepts only complete current worker contracts and never promotes worker test claims',async()=>{
   const {tracker,client,rows}=fixture();await tracker.refresh(client);
   const assignment={taskId:'task',contractVersion:1,contractHash:'current',goal:'inspect',scope:['sum.cjs'],sharedInterfaces:[],forbiddenChanges:['writes'],baseline:{gitHead:null,relevantFilesHash:'baseline'},output:'analysis' as const,completionCriteria:['read file']};
@@ -81,10 +116,10 @@ it('accepts only complete current worker contracts and never promotes worker tes
   rows.get('child')!.turns[0]!.status='interrupted';await tracker.refresh(client);expect(()=>tracker.validateResults(contracts,'baseline')).toThrow(/did not finish/);
 });
 
-it('validates a non-thinking Design root independently of both thinking worker roles',async()=>{
-  const {rows,tracker,client,config}=fixture();config.mode='adaptive';config.designReasoningEffort='none';config.workers.goReasoningEffort='high';
-  Object.assign(rows.get('root')!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:'none'});Object.assign(rows.get('child')!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:'high'});Object.assign(rows.get('grandchild')!,{model:'main',reasoningEffort:'high'});
+it('validates a low-effort Design root independently of both high-effort worker roles',async()=>{
+  const {rows,tracker,client,config}=fixture();config.mode='adaptive';config.designReasoningEffort='low';config.workers.goReasoningEffort='high';
+  Object.assign(rows.get('root')!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:'low'});Object.assign(rows.get('child')!,{modelProvider:GO_PROVIDER,model:GO_MODEL,reasoningEffort:'high'});Object.assign(rows.get('grandchild')!,{model:'main',reasoningEffort:'high'});
   await tracker.assertIdle(client);
-  rows.get('root')!.reasoningEffort='high';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});rows.get('root')!.reasoningEffort='none';
-  rows.get('child')!.reasoningEffort='none';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});
+  rows.get('root')!.reasoningEffort='high';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});rows.get('root')!.reasoningEffort='low';
+  rows.get('child')!.reasoningEffort='low';await expect(tracker.refresh(client)).rejects.toMatchObject({errorCode:'WORKER_ROUTING_DRIFT'});
 });

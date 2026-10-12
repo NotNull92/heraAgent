@@ -4,7 +4,7 @@ import {join,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {release} from 'node:os';
 import {z} from 'zod';
-import {designEffort,type Config} from '../config.js';
+import {type Config} from '../config.js';
 import {HeraError} from '../errors.js';
 import {existsJson} from '../paths.js';
 import {externalRuntime} from './external-runtime.js';
@@ -35,8 +35,6 @@ export async function nativeCapability(home:string|undefined,config:Config){
   const profile={...config,main:{...config.main,reasoningEffort:null},workers:{...config.workers,reasoningEffort:null,goReasoningEffort:'low' as const}};
   const legacy=await workerCapability(home,profile);const runtime=config.mode!=='gpt_only'&&home?await externalRuntime(home):null;
   const hash=createHash('sha256').update(legacy.fingerprint).update('native-workspace-v2').update(JSON.stringify(config.providers)).update(JSON.stringify(runtime?.receipt??null));
-  // Disabling root reasoning requires its own live qualification.
-  if(config.mode==='adaptive'&&designEffort(config)==='none')hash.update('design-root-none');
   for(const guide of ['coding-instructions.md','research-instructions.md'])hash.update(guide).update(await readFile(join(assets,guide)));
   const fingerprint=hash.digest('hex');
   const parsed=nativeEvidence.safeParse(home?await existsJson(join(home,'metadata',`native-${config.mode}-verification.json`)):undefined);
