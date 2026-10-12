@@ -141,8 +141,22 @@ it('offers bundled skills including the hyphenated grill-me command',async()=>{
   const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
   try{
     await tick();ui.stdin.write('/grill-');await tick();expect(ui.lastFrame()).toContain('그릴링 인터뷰 시작');ui.stdin.write('\t');await tick();ui.stdin.write('한글 주제');await tick();ui.stdin.write('\r');await tick();expect(sent).toEqual(['/grill-me 한글 주제']);
-    ui.stdin.write('/hand');await tick();expect(ui.lastFrame()).toContain('인수인계 문서');ui.stdin.write('\r');await tick();expect(sent.at(-1)).toBe('/handoff');
+    ui.stdin.write('/hand');await tick();expect(ui.lastFrame()).toContain('인수인계 문서');ui.stdin.write('\r');await tick();expect(sent).toEqual(['/grill-me 한글 주제']);expect(ui.lastFrame()).toContain('> /handoff');expect(ui.lastFrame()).not.toContain('Tab 완성');
   }finally{ui.unmount();}
+});
+it.each([['/grill','grilling'],['/grill-','grill-me'],['/hand','handoff']])('completes %s before sending a topic or an intentional empty topic',async(prefix,name)=>{
+  const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  const key=async(value:string)=>{ui.stdin.write(value);await tick();};
+  try{
+    await tick();await key(prefix);await key('\r');expect(ui.lastFrame()).toContain(`> /${name}`);expect(ui.lastFrame()).not.toContain('Tab 완성');expect(sent).toEqual([]);
+    // Ink trims trailing screen spaces; appended text and the submitted value verify the space and caret.
+    await key('한글 주제');expect(ui.lastFrame()).toContain(`> /${name} 한글 주제`);await key('\r');expect(sent).toEqual([`/${name} 한글 주제`]);
+    await key(prefix);await key('\r');expect(sent).toHaveLength(1);await key('\r');expect(sent).toEqual([`/${name} 한글 주제`,`/${name} `]);
+  }finally{ui.unmount();}
+});
+it('still sends help immediately when Enter selects its menu entry',async()=>{
+  const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  try{await tick();ui.stdin.write('/he');await tick();ui.stdin.write('\r');await tick();expect(sent).toEqual(['/help']);}finally{ui.unmount();}
 });
 it('never completes pasted commands or opens the menu during active work',async()=>{
   const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);

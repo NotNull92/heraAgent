@@ -2286,6 +2286,50 @@ fallback temporary-directory handoff approval path. The owner subsequently
 authorized committing and pushing the reviewed source on 2026-10-12. No npm or
 release publication was performed for this work.
 
+## Hand-off D: complete bundled skill commands before sending (2026-10-12)
+
+The owner reported that selecting `/grilling` from `/grill` immediately started
+an interview without allowing a topic. The owner confirmed the same new behavior
+for `/grilling`, `/grill-me` and `/handoff`: Enter on a completion-menu entry now
+fills the command and one trailing space, with the cursor at the end, without
+submitting. The next Enter sends the input, including an intentional empty topic.
+The existing `/plan` completion branch now covers these three names. Tab, other
+commands and the command matcher/list are unchanged. The UX guide describes both
+the general exception and the bundled-skill behavior.
+
+Actual Windows results:
+
+- `npm.cmd run typecheck` and `npm.cmd run build`: PASS, exit 0.
+- `npm.cmd test`: PASS, 133 tests across 23 files, exit 0. Ink cases cover all
+  three completions, Korean topic text inserted at the end, intentional empty
+  topics on the second Enter, and immediate `/help` submission. Existing Tab,
+  `/plan`, paste and other command tests remain covered.
+- The first test run had four new assertions fail because Ink strips trailing
+  spaces from rendered lines. The assertions now verify the completed command,
+  closed menu, appended topic with its separating space, and exact submitted
+  values. No additional product-code change was needed for that correction.
+- Terminal check: PASS in psmux 0.4.1, using the freshly built Composer in a
+  disposable real-terminal fixture with a recording send callback. `/grill` +
+  Enter displayed `/grilling`, kept submissions empty, and placed the cursor
+  at column 12 (zero-based), after the trailing space. Typing a Korean topic
+  and pressing Enter submitted exactly `/grilling 한글 주제` once. `/grill-`
+  and `/hand` likewise completed without sending; their second Enter submitted
+  `/grill-me ` and `/handoff ` respectively. `/he` + Enter immediately submitted
+  `/help`. Assertions passed, and Ctrl+Q closed only the fixture session.
+  Evidence remains outside Git in temporary directory
+  `hera-skill-enter-d868fbb6872a4b02a94531909b4f83c4` (captures and sent.jsonl).
+  This checks terminal input/rendering and submission, not a live skill response.
+- Final `dist/` readiness checks: both modes still `ready: true`, with unchanged
+  fingerprints `de1af650e76cc47f9343b12be0610a3f12e7898d7a58df246b02227f331f6c41`
+  (adaptive) and `bb4de3019bb70496153a84326e476ff0e39758559370f73e49272992e88fbe06`
+  (external_workers). No native fingerprint input changed; live re-qualification
+  was not needed or run. `git diff --check`: PASS.
+
+The owner must restart Hera to load the updated `dist/` input behavior.
+NOT_RUN: macOS/manual physical-keyboard checks and remote CI. The owner
+subsequently authorized committing and pushing this change on 2026-10-12.
+No package publication or release publication was performed.
+
 ## Review of the bundled skills change (2026-10-12)
 
 Claude reviewed the uncommitted skills work. Typecheck passes; 129 tests across

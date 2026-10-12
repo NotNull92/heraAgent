@@ -70,7 +70,7 @@ export function Composer({busy,send,cancel,quit,language,rows=6}:{busy:boolean;s
       const {value,cursor}=current.current;const selected=matches()[menuRef.current.index];
       if(graphemes(value)[cursor-1]==='\\'){setState(s=>{const cut=editInput(s.value,s.cursor,'backspace');return editInput(cut.value,cut.cursor,'insert','\n');});return;}
       if(busy||!value.trim())return;
-      if(selected?.[0]==='plan'){replace(value[0]+'plan ');return;}
+      if(selected&&['plan','grilling','grill-me','handoff'].includes(selected[0])){replace(value[0]+selected[0]+' ');return;}
       const text=selected?value[0]+selected[0]:value;
       const submitted=pasteRef.current&&text.startsWith('/')?` ${text}`:text;
       send(submitted);history.current.items=[...history.current.items,submitted].slice(-100);history.current.at=-1;reset();

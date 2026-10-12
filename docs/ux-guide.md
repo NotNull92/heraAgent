@@ -26,8 +26,10 @@ Saved settings still apply without restarting Hera.
 
 Typing `/` at the start of an empty input opens the command list directly below the
 input panel. Typing filters it by prefix; Up/Down move, Tab completes the name and adds
-a space for arguments, Enter runs the selected command, Escape closes the list and keeps
-the input. `/plan` needs request text, so Enter only completes it.
+a space for arguments, Enter runs the selected command except for `/plan` and the
+three bundled skills, and Escape closes the list and keeps the input. For `/plan`,
+`/grilling`, `/grill-me` and `/handoff`, Enter only completes the name and trailing
+space, leaving the cursor at the end for request text.
 
 Intended behavior, not defects:
 
@@ -53,7 +55,10 @@ interview, with a recommendation and a wait for the user's answer. They use the
 current conversation when no topic is given. `/handoff [next-session focus]`
 writes a handoff using the current history and the project's save convention
 (otherwise the OS temporary directory). Native write permissions still apply.
-These commands appear in the list and run on Enter; Tab permits extra arguments.
+For these three commands, Enter on a list entry completes `/<name> ` without
+sending. Type the content and press Enter again to send; a second Enter without
+content deliberately runs the skill on the current conversation. Tab still
+completes the command with a trailing space without sending.
 `$grilling`, `$grill-me` and `$handoff` at the start of an ordinary message also
 select the bundled skills. The conversation and follow-up remain in one native
 thread; an interview does not authorize implementation. Handoff and grill-me
