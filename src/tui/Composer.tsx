@@ -13,6 +13,9 @@ const commands=[
   ['providers','로그인 및 API 키 관리','Manage sign-in and API keys'],
   ['research','웹 리서치 설정 및 상태','Web research setup and status'],
   ['plan','읽기 전용 계획 작성 · 요청 입력','Read-only plan · enter a request'],
+  ['grilling','질문으로 계획·아이디어 점검','Stress-test a plan through questions'],
+  ['grill-me','그릴링 인터뷰 시작','Start a grilling interview'],
+  ['handoff','다음 세션용 인수인계 문서 작성','Write a handoff for the next session'],
   ['diff','작업 변경사항 보기','Show workspace changes'],
   ['resume','이전 세션 이어가기','Resume a previous session'],
   ['doctor','설정 및 런타임 상태 확인','Check configuration and runtime'],
@@ -42,7 +45,7 @@ export function Composer({busy,send,cancel,quit,language,rows=6}:{busy:boolean;s
   const [state,renderState]=useState({value:'',cursor:0});const current=useRef(state);const pasteRef=useRef(false);
   const [menu,renderMenu]=useState({index:0,hidden:false});const menuRef=useRef(menu);
   const setMenu=(next:typeof menu)=>{menuRef.current=next;renderMenu(next);};
-  const matches=()=>!busy&&!pasteRef.current&&!menuRef.current.hidden&&/^\/[a-z]*$/i.test(current.current.value)&&current.current.cursor===current.current.value.length?commands.filter(([name])=>name.startsWith(current.current.value.slice(1).toLowerCase())):[];
+  const matches=()=>!busy&&!pasteRef.current&&!menuRef.current.hidden&&/^\/[a-z-]*$/i.test(current.current.value)&&current.current.cursor===current.current.value.length?commands.filter(([name])=>name.startsWith(current.current.value.slice(1).toLowerCase())):[];
   const [armed,renderArmed]=useState(false);const armedRef=useRef(false);const lastEscape=useRef(0);const history=useRef({items:[] as string[],at:-1,draft:''});
   const setState=(next:typeof state|((s:typeof state)=>typeof state))=>{const previous=current.current.value;current.current=typeof next==='function'?next(current.current):next;if(previous!==current.current.value)setMenu({index:0,hidden:false});renderState(current.current);};
   const arm=(value:boolean)=>{if(armedRef.current!==value){armedRef.current=value;renderArmed(value);}};

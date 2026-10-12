@@ -12,6 +12,7 @@ import {defaults} from '../src/config.js';
 import {nativeSettings} from '../src/codex/config-compiler.js';
 import {NativePrompt} from '../src/tui/NativePrompt.js';
 import {InteractiveSession} from '../src/session/interactive.js';
+import {bundledSkillsRoot} from '../src/codex/skills.js';
 it('executes native turns without a workspace baseline, and answers approvals while streaming',async()=>{
   for(const decision of ['accept','decline','headless'] as const){
     const home=await mkdtemp(join(tmpdir(),'hera-native-home-'));const cwd=await mkdtemp(join(tmpdir(),'hera-native-work-'));
@@ -36,6 +37,7 @@ it('executes native turns without a workspace baseline, and answers approvals wh
       await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
       await controller.run('plan',undefined,true);expect(turn.mock.calls[1]?.[0]).toMatchObject({approvalPolicy:'never',sandboxPolicy:{type:'readOnly',networkAccess:false}});
       await controller.run('ordinary edit');expect(turn.mock.calls[2]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite'},input:[expect.objectContaining({text:'ordinary edit'})]});
+      await controller.run('/handoff 다음 세션');expect(turn.mock.calls[3]?.[0].input).toEqual([{type:'text',text:'/handoff 다음 세션',text_elements:[]},{type:'skill',name:'handoff',path:join(bundledSkillsRoot,'handoff','SKILL.md')}]);
     }finally{await controller.close();}
   }
 });

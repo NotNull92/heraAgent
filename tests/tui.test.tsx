@@ -129,12 +129,19 @@ it('scrolls a short command menu, dismisses it, ignores a backslash and complete
   const sent:string[]=[];const ui=render(<Composer language="en" rows={2} busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
   const key=async(value:string)=>{ui.stdin.write(value);await tick();};
   try{
-    await tick();await key('/');await key('\x1b[A');expect(ui.lastFrame()).toContain('› /quit');expect(ui.lastFrame()).toContain('13/13');expect(ui.lastFrame()).not.toContain('/help');
+    await tick();await key('/');await key('\x1b[A');expect(ui.lastFrame()).toContain('› /quit');expect(ui.lastFrame()).toContain('16/16');expect(ui.lastFrame()).not.toContain('/help');
     await key('\x1b');expect(ui.lastFrame()).toContain('> /');expect(ui.lastFrame()).not.toContain('Tab complete');expect(sent).toEqual([]);
     await key('\x15');await key('\\pl');expect(ui.lastFrame()).not.toContain('Tab complete');
     await key('\x15');await key('/pl');await key('\r');expect(sent).toEqual([]);expect(ui.lastFrame()).toContain('> /plan');
     await key('한글 계획');await key('\r');expect(sent).toEqual(['/plan 한글 계획']);
     await key('\x1b[A');await key('\r');expect(sent).toEqual(['/plan 한글 계획','/plan 한글 계획']);
+  }finally{ui.unmount();}
+});
+it('offers bundled skills including the hyphenated grill-me command',async()=>{
+  const sent:string[]=[];const ui=render(<Composer language="ko" busy={false} send={text=>sent.push(text)} cancel={()=>{}}/>);
+  try{
+    await tick();ui.stdin.write('/grill-');await tick();expect(ui.lastFrame()).toContain('그릴링 인터뷰 시작');ui.stdin.write('\t');await tick();ui.stdin.write('한글 주제');await tick();ui.stdin.write('\r');await tick();expect(sent).toEqual(['/grill-me 한글 주제']);
+    ui.stdin.write('/hand');await tick();expect(ui.lastFrame()).toContain('인수인계 문서');ui.stdin.write('\r');await tick();expect(sent.at(-1)).toBe('/handoff');
   }finally{ui.unmount();}
 });
 it('never completes pasted commands or opens the menu during active work',async()=>{

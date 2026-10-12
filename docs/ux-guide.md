@@ -38,13 +38,26 @@ Intended behavior, not defects:
   is shown, and only while the list is open.
 - **At most six commands are visible.** The list scrolls inside those rows even when the
   terminal is tall enough to show every command.
-- **Latin letters only.** Hangul typed after `/` (the IME left in Korean mode) matches
+- **Latin letters and hyphens only.** Hyphens support `/grill-me`. Hangul typed after `/` (the IME left in Korean mode) matches
   nothing and closes the list. There is no layout conversion.
 
 Appearance: the selected row is bold gold with a `› ` marker; on other rows the command
 name uses the default text color and its description is iron (dimmed), so names read first.
 
 The list does not open while a turn is running or for pasted text.
+
+## Bundled skills
+
+`/grilling [topic]` and `/grill-me [topic]` start the same one-question-at-a-time
+interview, with a recommendation and a wait for the user's answer. They use the
+current conversation when no topic is given. `/handoff [next-session focus]`
+writes a handoff using the current history and the project's save convention
+(otherwise the OS temporary directory). Native write permissions still apply.
+These commands appear in the list and run on Enter; Tab permits extra arguments.
+`$grilling`, `$grill-me` and `$handoff` at the start of an ordinary message also
+select the bundled skills. The conversation and follow-up remain in one native
+thread; an interview does not authorize implementation. Handoff and grill-me
+require an explicit invocation, while grilling permits native implicit selection.
 
 ## Voices (`/style`)
 

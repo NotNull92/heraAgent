@@ -39,6 +39,22 @@ Apache-2.0 source from openai/codex and Bozentan/codex. Exact source revisions a
 modifications are documented beside the patch. It is excluded from the npm archive
 and does not replace the installed dependency or change Hera's license.
 
+## Bundled interview and handoff skills
+
+`assets/skills/{grilling,grill-me,handoff}` adapts Matt Pocock's
+[mattpocock/skills](https://github.com/mattpocock/skills) under the MIT license.
+Copyright (c) 2026 Matt Pocock. The full license is included at
+`assets/skills/LICENSE` and remains separate from Hera's Apache-2.0 grant.
+
+These files preserve the owner's installed adaptations: one question at a time
+with a recommendation, explicit agreement before execution, and project-aware
+handoff locations and document structure. They are not copies of the current
+upstream grilling workflow, which asks questions in rounds. Upstream source and
+license were reviewed at revision `49dd158d1076134a641b33efb035946536778336`
+(`skills/productivity/`). Hera adds native explicit-invocation metadata for
+grill-me/handoff, a relative grilling reference, language/permission guidance,
+and keeps the locally adapted skill text rather than silently updating it.
+
 ## User-installed answer styles (not bundled)
 
 The optional `attention-kind`, `spartan` and `rundown` Markdown answer styles

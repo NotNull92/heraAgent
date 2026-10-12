@@ -10,3 +10,6 @@ license notice in that directory.
 Third-party material retains its own licenses and attribution. See
 THIRD_PARTY_NOTICES.md and assets/codex/LICENSE and NOTICE. User-installed
 Attention Span styles are not bundled or relicensed by Hera.
+
+Bundled grilling, grill-me and handoff skills adapt Matt Pocock's MIT-licensed
+skills. Copyright (c) 2026 Matt Pocock. See assets/skills/LICENSE.

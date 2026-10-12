@@ -131,6 +131,23 @@ GPT Balance is retired. Existing `gpt_only` settings remain readable but cannot
 start tasks. Select `/mode` or use `hera init --mode adaptive` (Design) /
 `hera init --mode external_workers` (Development); routes never migrate silently.
 
+Hera bundles three skills in both modes: `/grilling [topic]` asks one question at
+a time with a recommendation to sharpen a plan; `/grill-me [topic]` starts the
+same interview; `/handoff [next-session focus]` writes a document so a fresh
+session can continue. Omit the topic/focus to use the current conversation.
+They also accept `$grilling`, `$grill-me` and `$handoff` at the start of a normal
+message or headless prompt. Slash commands appear in the input suggestions.
+Bundled grilling can also be selected for a matching natural-language request;
+bundled grill-me and handoff are explicit-only. Interviews do not authorize implementation.
+
+Skills load directly from the installed Hera package through native Codex skill
+discovery. No separate download or copy into the user's skill directories is
+needed; updating Hera updates these bundled files. Existing user/project skills
+remain in place with their own invocation policies. The explicit Hera commands select the packaged skill paths even
+if another skill has the same name. Handoff follows the project's save convention
+or the OS temporary directory; native permissions still apply to that location.
+See `THIRD_PARTY_NOTICES.md` and `assets/skills/LICENSE` for their MIT attribution.
+
 In Design, `/effort worker` sets the DeepSeek root effort (`low`, `high` or `max`)
 in the optional user setting `designReasoningEffort`, leaving Astra and Go worker
 settings unchanged. Existing settings without this field inherit the Go worker

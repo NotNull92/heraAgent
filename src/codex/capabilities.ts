@@ -10,6 +10,7 @@ import {existsJson} from '../paths.js';
 import {externalRuntime} from './external-runtime.js';
 import {CODEX_VERSION} from './launcher.js';
 import {startupCheck} from './startup.js';
+import {bundledSkillsRoot,bundledSkillFiles} from './skills.js';
 const assets=fileURLToPath(new URL('../../assets/codex/',import.meta.url));
 export async function verifyContract(){return startupCheck('contract',async()=>{const expected=z.object({codexVersion:z.literal(CODEX_VERSION),schemaSha256:z.string()}).parse(JSON.parse(await readFile(join(assets,'compatibility.json'),'utf8')));const hash=createHash('sha256');async function files(dir:string):Promise<string[]>{const entries=await readdir(dir,{withFileTypes:true});const lists=await Promise.all(entries.map(e=>e.isDirectory()?files(join(dir,e.name)):Promise.resolve([join(dir,e.name)])));return lists.flat().sort();}for(const file of await files(join(assets,'schema')))hash.update(relative(join(assets,'schema'),file).replaceAll('\\','/')).update('\0').update(await readFile(file));if(hash.digest('hex')!==expected.schemaSha256)throw new HeraError('SCHEMA_MISMATCH','Bundled protocol schema differs from the pinned contract.',4);return expected;});}
 const workerChecks=['readOnly','concurrency','communication','resume','cancel','approvalDenial','applySpawn','singleWriter'] as const;
@@ -19,7 +20,7 @@ export async function workerCapability(home:string|undefined,config:Config){
   const contract=await verifyContract();const hash=createHash('sha256').update(JSON.stringify({contract,config:{mode:config.mode,main:config.main,workers:config.workers,safety:config.safety},os:process.platform,arch:process.arch}));
   const ext=import.meta.url.endsWith('.ts')?'.ts':'.js';
   hash.update(JSON.stringify(JSON.parse(await readFile(new URL('../../package.json',import.meta.url),'utf8')).dependencies));
-  for(const path of ['capabilities','client','config-compiler','web-research','launcher','transport','external-runtime','startup','../research/server','../research/browser','../research/proxy','../research/queue','../providers/opencode-go','../providers/go-credentials','../providers/accounts','../session/controller','../session/workers','../session/phase-policy','../session/apply-review','../config'])hash.update(path).update(await readFile(new URL(path+ext,import.meta.url)));
+  for(const path of ['capabilities','client','skills','config-compiler','web-research','launcher','transport','external-runtime','startup','../research/server','../research/browser','../research/proxy','../research/queue','../providers/opencode-go','../providers/go-credentials','../providers/accounts','../session/controller','../session/workers','../session/phase-policy','../session/apply-review','../config'])hash.update(path).update(await readFile(new URL(path+ext,import.meta.url)));
   const external=config.mode==='external_workers';const runtime=external&&home?await externalRuntime(home):null;if(external)hash.update(JSON.stringify(runtime?.receipt??null));
   const fingerprint=hash.digest('hex');const raw=home?await existsJson(join(home,'metadata',external?'external-worker-verification.json':'worker-verification.json')):undefined;const evidence=workerEvidence.safeParse(raw);
   const ready=evidence.success&&evidence.data.fingerprint===fingerprint&&(!external||runtime!==null&&evidence.data.externalChecks!==undefined);
@@ -36,6 +37,7 @@ export async function nativeCapability(home:string|undefined,config:Config){
   const legacy=await workerCapability(home,profile);const runtime=config.mode!=='gpt_only'&&home?await externalRuntime(home):null;
   const hash=createHash('sha256').update(legacy.fingerprint).update('native-workspace-v2').update(JSON.stringify(config.providers)).update(JSON.stringify(runtime?.receipt??null));
   for(const guide of ['coding-instructions.md','research-instructions.md'])hash.update(guide).update(await readFile(join(assets,guide)));
+  for(const file of bundledSkillFiles)hash.update(file).update(await readFile(join(bundledSkillsRoot,file)));
   const fingerprint=hash.digest('hex');
   const parsed=nativeEvidence.safeParse(home?await existsJson(join(home,'metadata',`native-${config.mode}-verification.json`)):undefined);
   const ready=parsed.success&&parsed.data.fingerprint===fingerprint&&(config.mode==='gpt_only'||runtime!==null);

@@ -18,6 +18,8 @@ import type {JsonValue} from './generated/serde_json/JsonValue.js';
 import {nativeSettings} from './config-compiler.js';
 import {launchExternal} from './external-runtime.js';
 import {startResearch} from '../research/server.js';
+import {bundledSkillsRoot} from './skills.js';
+import type {SkillsExtraRootsSetParams} from './generated/v2/SkillsExtraRootsSetParams.js';
 export const threadSchema=z.object({id:z.string(),cwd:z.string(),modelProvider:z.string(),status:z.object({type:z.string()}),turns:z.array(z.unknown()).optional()}).passthrough();
 const sessionSchema=z.object({thread:threadSchema,model:z.string(),modelProvider:z.string(),sandbox:z.object({type:z.string()}).passthrough()}).passthrough();
 export const modelSchema=z.object({id:z.string(),model:z.string(),displayName:z.string(),supportedReasoningEfforts:z.array(z.object({reasoningEffort:z.string()}))});
@@ -37,7 +39,7 @@ export class CodexClient extends EventEmitter {
       client.research=research;return client;
     }catch(e){await research?.close();await client?.close();throw e;}
   }
-  async initialize(){const params:InitializeParams={clientInfo:{name:'hera',title:'Hera',version:'0.1.0-alpha.1'},capabilities:{experimentalApi:true,requestAttestation:false}};const result=z.object({userAgent:z.string(),codexHome:z.string(),platformOs:z.string()}).parse(await this.rpc.request('initialize',params,20000));if(!result.userAgent.includes(`/${CODEX_VERSION} `))throw new HeraError('UNSUPPORTED_RUNTIME','Native runtime version mismatch.',4);this.rpc.notify('initialized');return result;}
+  async initialize(){const params:InitializeParams={clientInfo:{name:'hera',title:'Hera',version:'0.1.0-alpha.1'},capabilities:{experimentalApi:true,requestAttestation:false}};const result=z.object({userAgent:z.string(),codexHome:z.string(),platformOs:z.string()}).parse(await this.rpc.request('initialize',params,20000));if(!result.userAgent.includes(`/${CODEX_VERSION} `))throw new HeraError('UNSUPPORTED_RUNTIME','Native runtime version mismatch.',4);this.rpc.notify('initialized');await this.rpc.request('skills/extraRoots/set',{extraRoots:[bundledSkillsRoot]} satisfies SkillsExtraRootsSetParams);return result;}
   async account(){const result=z.object({account:z.object({type:z.string()}).passthrough().nullable(),requiresOpenaiAuth:z.boolean()}).parse(await this.rpc.request('account/read',{refreshToken:false}));return {ready:result.account!==null,category:result.account?.type??'none'};}
   async models(){const models:ModelView[]=[];let cursor:string|null=null;const seen=new Set<string>();do{const page=z.object({data:z.array(modelSchema),nextCursor:z.string().nullable()}).parse(await this.rpc.request('model/list',{cursor}));models.push(...page.data);cursor=page.nextCursor;if(cursor){if(seen.has(cursor)||models.length>2000)throw new HeraError('INVALID_PAGINATION','Model catalog pagination did not terminate.',4);seen.add(cursor);}}while(cursor);return models;}
   async start(params:ThreadStartParams){return sessionSchema.parse(await this.rpc.request('thread/start',params));}

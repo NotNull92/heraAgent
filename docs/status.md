@@ -2204,3 +2204,96 @@ The owner must restart Hera to load this fix from `dist/`; an already running
 process retains the old code. Existing unrelated workspace edits were preserved.
 No commit or push. NOT_RUN: Windows/macOS remote CI, macOS live/manual checks,
 physical terminal acceptance, packaging and publication for this change.
+
+## Bundled grilling, grill-me and handoff skills (2026-10-12)
+
+Owner request: ship the three currently installed skill adaptations with Hera.
+Preserved the installed one-question-at-a-time grilling behavior rather than
+substituting the current upstream multi-question rounds. Included the upstream
+MIT license and attribution, with the reviewed source revision and adaptation
+scope in THIRD_PARTY_NOTICES.md. No global Codex installation or user skill file
+was modified.
+
+Both modes register packaged `assets/skills` through the pinned native
+`skills/extraRoots/set` API after initialization. `/grilling [topic]`,
+`/grill-me [topic]`, and `/handoff [focus]` appear in the localized command list
+and `/help`. A leading `$grilling`, `$grill-me`, or `$handoff` also works in TUI
+or headless input. Explicit invocations attach native skill inputs with fixed
+packaged paths; grill-me also attaches the grilling body. Multiline arguments
+remain intact. Existing native conversations, permissions and tools do the work;
+there is no separate model loop, installer or transcript store.
+
+Packaged grilling permits implicit selection. Packaged grill-me/handoff use
+`agents/openai.yaml` to require explicit invocation; user-installed skills retain
+their own policies, including same-named copies. Handoff retains the project's
+save convention, otherwise the OS temporary directory, and remains subject to
+native write approvals. Its documented location is not an extra writable root.
+Skill code, bodies and invocation-policy files enter the native fingerprint.
+Packaging now requires the skill files and MIT license. Native and installed
+package smoke checks verify discovery from their actual installation paths;
+native smoke also verifies that a user skill stays present and unchanged.
+
+Observed on native Windows 10.0.26200 x64, PowerShell 7.6.6, Node v24.12.0,
+project-local Codex 0.161.0:
+
+- All three skill-creator `quick_validate.py` checks: PASS, exit 0.
+- `npm.cmd run typecheck`, `npm.cmd run build`: PASS, exit 0.
+- `npm.cmd test`: PASS, 129 tests across 23 files, exit 0. New coverage includes
+  native root registration, fixed-path skill attachments, grill-me's dependency,
+  multiline/Korean arguments, non-invocation/path-like text, controller turn
+  payloads, command dispatch and hyphenated command completion.
+- `npm.cmd run native:smoke`: PASS, exit 0; three packaged skills discovered,
+  user skill preserved, isolated profile unauthenticated. No inference.
+- `node scripts/live-bundled-skills.mjs --live --mode=adaptive`: PASS, exit 0,
+  root `01a12ece-d216-76b3-9f4e-6dc0d9b85604`.
+- `node scripts/live-bundled-skills.mjs --live --mode=external_workers`: PASS,
+  root `01a12ed0-73a2-71b2-8660-5790cc445562`. Both disposable fixtures verified
+  Korean single-question recommendations, a follow-up decision, grill-me,
+  HANDOFF.md preserving the project/4 people/37,000 budget and suggested skills,
+  no worker delegation, unchanged AGENTS.md, and complete packaged skill text
+  injected into the actual native model context. Temporary directories and
+  native traces remain local; no owner conversation was copied into the repo.
+- A read-only check of both saved test traces also verified native catalog
+  policy: packaged grilling is offered implicitly; packaged grill-me/handoff
+  are absent from the implicit catalog and were explicitly injected. This check
+  is now included in the live fixture; it did not repeat model calls.
+- `npm.cmd run release:prepare`, `npm.cmd run package:check`, and
+  `npm.cmd run package:smoke`: PASS, exit 0. The final archive has 1,902 files,
+  2,489,411 bytes, SHA-256
+  `48e04f6b551feea1b109d8f28d6d5388b1970342ab74b71563cd173a626eebae`.
+  Clean Windows installation found the skills inside the installed package;
+  initialization, reinstall preserving settings/OS credentials, and the launcher
+  passed. Earlier archives were preserved in ignored artifact backup directories.
+  Path comparisons resolve the installation root to support macOS symlinked
+  temporary directories; macOS execution remains unperformed here.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  PASS, exit 0; all seven workflow checks, recorded 2026-10-12T06:38:09.012Z,
+  fingerprint `de1af650e76cc47f9343b12be0610a3f12e7898d7a58df246b02227f331f6c41`,
+  root `01a12ed1-c7e5-7991-9eba-1ff41348c7ab`.
+- `node scripts/live-native-workflow.mjs --live --record --mode=external_workers`:
+  PASS, exit 0; all seven workflow checks, recorded 2026-10-12T06:40:42.940Z,
+  fingerprint `bb4de3019bb70496153a84326e476ff0e39758559370f73e49272992e88fbe06`,
+  root `01a12ed5-50fd-7c61-9c3c-3c8a8aba4a2d`. A fresh readiness check against
+  the final build returned `ready: true` for both modes and these fingerprints.
+- Source/history and changed/new-file secret pattern scans: PASS, exit 0;
+  25 changed/new files reviewed. `git diff --check`: PASS, exit 0.
+
+The owner must restart Hera to load the updated `dist/` and command list.
+Future package updates carry the skills; users do not need to install them
+separately. NOT_RUN: new remote Windows/macOS CI, macOS live/manual behavior,
+physical terminal acceptance, implicit model-selection behavior, and the
+fallback temporary-directory handoff approval path. The owner subsequently
+authorized committing and pushing the reviewed source on 2026-10-12. No npm or
+release publication was performed for this work.
+
+## Review of the bundled skills change (2026-10-12)
+
+Claude reviewed the uncommitted skills work. Typecheck passes; 129 tests across
+23 files pass. `hera doctor` and a direct nativeCapability computation report
+both modes ready against the saved records: adaptive de1af650… (06:38:09Z),
+external_workers bb4de301… (06:40:42Z). The "final result pending" line above
+for the external-worker re-qualification is therefore superseded: the record
+exists and matches the current build. The bundled LICENSE is byte-identical in
+its header to upstream mattpocock/skills at the reviewed revision (MIT). Skill
+files contain no local paths or secrets. Repository HEAD 3d072a8 matches
+origin/main; the skills work is not yet committed.
