@@ -1800,3 +1800,52 @@ forbids the search that triggered it.
 
 NOT_RUN: macOS, a terminal narrower than 110 columns, the labels for web_search,
 web_fetch, commandExecution and fileChange in a live turn.
+
+## Worker role instructions replace the inherited root text (2026-10-12)
+
+Spawned threads inherited the root's developer instructions, so the Astra child
+read "Root role: you are Hera, running on DeepSeek…" and the hand-off rules, and
+in the terminal check above spent 14 s announcing and attempting its own
+consultation before answering. The pinned runtime's agent role file
+(AgentRoleOverrides) accepts `developer_instructions`, so
+`src/codex/external-runtime.ts` now writes one into `go.toml` and `astra.toml`:
+answer the assignment directly, no delegation or announcement, handbook only
+before web tools or workspace commands, plain text, ignore root-role text.
+
+The first adaptive qualification run after that change failed its own assertion
+"Design must load research before its first workspace command": the none root
+fixed sum.cjs with exec_command without loading the handbook. That is unrelated
+to the role files; the base instruction said "require … only before", which the
+root read as optional. `nativeBaseInstructions()` in `src/session/controller.ts`
+now says the FIRST tool call in a task that needs web tools, a worker or a
+workspace command must be load_instructions, even for a small task, and the
+direct-answer rule is unchanged. The offline assertion in
+tests/native-workflow.test.tsx follows the new wording.
+
+Actual Windows results on the final build:
+
+- Typecheck, build and all 107 offline tests across 21 files passed.
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive PASSED,
+  exit 0, recorded at 2026-10-12T03:07:39.816Z, fingerprint
+  440b2e74e96aa6ce24bd6b1c93a405a9f9d04db83d82eb17eefe07abf509e15f. Greeting,
+  factual and identity turns 2.0–2.7 s to first text with zero reasoning tokens.
+  The design request announced at 2.0 s and completed in 39.5 s. The Astra child
+  (rollout 12-06-30) received the 406-character role instruction instead of the
+  2935-character root text, made no tool calls, and its first message was the
+  Korean decision brief; it took 29.6 s, of which 16 s was its own high-effort
+  reasoning. The two Go workers of the routing stage received the worker text,
+  loaded the handbook before their first workspace command, and reported in
+  plain text.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers
+  PASSED, exit 0, recorded at 2026-10-12T03:10:02.923Z, fingerprint
+  37ff845406f458381712d695477da0b7c501c06a11a3b0b28fe0ea7adc14aa00.
+- nativeCapability() reports ready for both modes against this build and the
+  saved config.
+
+The role instruction replaces the inherited developer text entirely in this
+runtime version (observed in the child rollouts); if a future runtime appends
+instead, the text already tells the worker to ignore root-role rules.
+
+NOT_RUN: macOS/CI, live compaction, a second adaptive sample of the handbook
+rule, package/release checks. The owner's running Hera session predates this
+build and must be restarted to pick it up.

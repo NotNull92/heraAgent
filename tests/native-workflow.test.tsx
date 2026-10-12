@@ -48,7 +48,7 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.baseInstructions).toContain('topic="research"');
   expect(JSON.stringify(params)).not.toMatch(/topic=\\"coding|routine coding|authorized edits|editing worker-owned|coding handbook/);
   expect(params.developerInstructions).toContain('research questions');
-  expect(params.baseInstructions).toContain('only before web_search/web_fetch, spawning or messaging a worker, or running commands in the workspace');
+  expect(params.baseInstructions).toContain('your FIRST tool call in that task must be hera_web load_instructions with topic="research"');
   expect(params.baseInstructions).toContain('own knowledge and the conversation directly without loading the handbook');
   expect(params.baseInstructions).toContain('reload if missing after compaction');
   expect(params.baseInstructions).toContain('never search config files or the workspace');
