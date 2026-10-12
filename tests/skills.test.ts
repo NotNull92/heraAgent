@@ -1,11 +1,22 @@
 import {it,expect,vi} from 'vitest';
 import {join,resolve} from 'node:path';
 import {spawn} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
 import {skillInput,bundledSkillsRoot} from '../src/codex/skills.js';
 import {CodexClient} from '../src/codex/client.js';
 import {InteractiveSession} from '../src/session/interactive.js';
 import type {Controller} from '../src/session/controller.js';
 import {defaults} from '../src/config.js';
+
+it('bundles numbered rounds of up to five recommended questions and keeps execution opt-in',async()=>{
+  const skill=await readFile(join(bundledSkillsRoot,'grilling/SKILL.md'),'utf8');
+  expect(skill).toContain('up to five questions per round, numbered 1-5, each with a short recommended answer');
+  expect(skill).toContain("Wait for the user's answers before the next round");
+  expect(skill).toContain('Do not act on it until I confirm');
+  expect(skill).toContain("Use the user's language");
+  expect(skill).not.toMatch(/one question per turn|questions one at a time|Bundling several questions/i);
+  expect(await readFile(join(bundledSkillsRoot,'grill-me/SKILL.md'),'utf8')).toContain('../grilling/SKILL.md');
+});
 
 it.each(['grilling','grill-me','handoff'])('attaches the packaged %s skill without changing the user text',name=>{
   for(const prefix of ['/','$']){

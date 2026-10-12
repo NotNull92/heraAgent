@@ -131,14 +131,19 @@ GPT Balance is retired. Existing `gpt_only` settings remain readable but cannot
 start tasks. Select `/mode` or use `hera init --mode adaptive` (Design) /
 `hera init --mode external_workers` (Development); routes never migrate silently.
 
-Hera bundles three skills in both modes: `/grilling [topic]` asks one question at
-a time with a recommendation to sharpen a plan; `/grill-me [topic]` starts the
+Hera bundles three skills in both modes: `/grilling [topic]` asks up to five numbered
+questions per round, each with a short recommendation, then waits for your answers
+to sharpen a plan; `/grill-me [topic]` starts the
 same interview; `/handoff [next-session focus]` writes a document so a fresh
 session can continue. Omit the topic/focus to use the current conversation.
 They also accept `$grilling`, `$grill-me` and `$handoff` at the start of a normal
 message or headless prompt. Slash commands appear in the input suggestions.
 Bundled grilling can also be selected for a matching natural-language request;
 bundled grill-me and handoff are explicit-only. Interviews do not authorize implementation.
+
+In Design, Astra conducts the interview and continues it in the same child thread;
+Hera relays Astra's text. Astra also composes handoffs, which Hera saves under native
+write permissions. Development's GPT root handles these skills directly.
 
 Skills load directly from the installed Hera package through native Codex skill
 discovery. No separate download or copy into the user's skill directories is

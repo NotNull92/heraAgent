@@ -2341,3 +2341,83 @@ exists and matches the current build. The bundled LICENSE is byte-identical in
 its header to upstream mattpocock/skills at the reviewed revision (MIT). Skill
 files contain no local paths or secrets. Repository HEAD 3d072a8 matches
 origin/main; the skills work is not yet committed.
+
+## Hand-off E: Astra skill routing and five-question rounds (2026-10-12)
+
+The owner selected Astra for explicitly attached bundled grilling, grill-me and
+handoff skills in Design. Development keeps its GPT root. Both modes now use
+numbered rounds of up to five questions, each with a short recommendation,
+waiting for the user's answers before continuing. Dependency ordering, explicit
+agreement before implementation, language guidance and the Enter-completion
+behavior from Hand-off D remain intact.
+
+Adaptive developer instructions announce Astra, assign one hera_astra child,
+wait and relay its text verbatim. Follow-up answers and grill-me continuations
+use native send_input on the same child, with resume_agent for unloaded children.
+Handoff reuses that child when available: Astra composes the document, the root
+shows it as commentary before writing, then saves the same text under native
+write permissions and reports the path. Verbatim relay bypasses answer-voice
+decoration. With workers disabled, Design reports the requirement instead of
+silently conducting these skills on DeepSeek. These are model instructions,
+not a new deterministic router, agent loop or persistent interview store.
+
+The pinned 0.161.0 runtime's multi_agents_spec.rs, multi_agents/spawn.rs and
+multi_agents_common.rs support skill items in both spawn_agent and send_input.
+Assignments therefore attach the exact bundled name/path through native items,
+alongside plaintext task/context, with fork_context=false and no model/effort
+override. This loads full skill text natively rather than making the root copy
+or summarize it. No skills.ts change, second root or new root thread is needed.
+Development routing and permission configuration are unchanged.
+
+Observed Windows results (PowerShell 7.6.6, Node 24.12.0, Codex 0.161.0):
+
+- Typecheck/build: PASS. Unit suite: 135 tests across 23 files passed; the final
+  routing-text/skill assertions also passed (19 tests in two files).
+  Skill frontmatter validation: PASS.
+- Early adaptive fixtures caught real instruction-following differences:
+  the root decorated Astra's text, then a later run saved a handoff before
+  displaying it. The routing instructions now explicitly exclude voice wrappers
+  and require document commentary before any write tool.
+- The live round parser was corrected to recognize numbered `1 →` voice output
+  and the Korean recommendation synonym `권장`, as well as `추천`. These were
+  checker limitations; the corresponding outputs did contain recommendations.
+- One later adaptive fixture (`01a12ef6-15a5-73d3-8cb8-c06fe280081d`) passed all
+  three interview turns but exceeded the 180-second handoff bound while waiting
+  for Astra, before any root write tool. The fixture interrupted and closed its
+  owned session. A fresh disposable fixture was used for the retry; no uncertain
+  writing operation was replayed.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  PASS, exit 0, all seven checks; recorded 2026-10-12T07:16:42.217Z,
+  root `01a12ef6-3901-77b0-ac85-4e7651836cf2`, fingerprint
+  `7e30415dc667d69933be62d75ef5f9bbb40d1ce2589b6dc80df12121f11fa3ee`.
+- `node scripts/live-native-workflow.mjs --live --record --mode=external_workers`:
+  PASS, exit 0, all seven checks; recorded 2026-10-12T07:16:44.317Z,
+  root `01a12ef6-576b-7c93-8915-1bba4a9f860a`, fingerprint
+  `0793540dce3c3c13de351e978413ce1e298eae88f85ad269c3f9a6ad6edaaef8`.
+- `node scripts/live-bundled-skills.mjs --live --mode=adaptive`: PASS, exit 0,
+  root `01a12efb-3e48-7100-8dde-7671c46c4a9a`, single Astra child
+  `01a12efb-5e85-7da1-b5e4-f15caaaa6e4b`. From submitting `/grilling <topic>`
+  to the completed first round in an initialized session: 25,775 ms (25.8 s).
+  This is one observed run, not a latency guarantee. Rounds contained 1/2/2
+  numbered questions with recommendations; fewer than five is intentional when
+  decisions depend on earlier answers. Follow-up and grill-me took 25,513 and
+  24,583 ms; handoff took 64,893 ms. Assertions verified the Korean announcement
+  before the sole hera_astra spawn, fork_context=false, exact packaged native
+  skill attachments, full skill text in Astra's actual context, reuse through
+  send_input, wait and verbatim relay. Astra composed the handoff without file
+  tools; root commentary displayed it before a root write tool saved the same
+  text. Only HANDOFF.md was created and AGENTS.md remained unchanged.
+- External-worker skill fixture: PASS, exit 0, root
+  `01a12ef4-0e68-7320-ba36-00090df34b9b`. First round completed in 10,302 ms;
+  three rounds had 1/1/1 numbered questions with recommendations. Follow-up,
+  grill-me, root-written HANDOFF.md, packaged skill injection and no delegation
+  all passed. The fixture preserved AGENTS.md and created only HANDOFF.md.
+- Fresh readiness checks of final dist/: both modes `ready: true` against the
+  final fingerprints above. `git diff --check` and a changed-file secret pattern
+  scan: PASS (nine changed files). Pre-commit verification used HEAD `3b35d20`.
+
+The owner must restart Hera to load updated dist/ and use a fresh session for
+the new routing instructions. NOT_RUN: macOS live/manual tests, physical terminal
+acceptance, remote CI, cold-resume interview and temporary-directory handoff
+approval fixtures. The owner subsequently authorized committing and pushing the
+reviewed change on 2026-10-12. No npm or release publication was performed.

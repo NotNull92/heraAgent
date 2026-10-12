@@ -50,8 +50,9 @@ The list does not open while a turn is running or for pasted text.
 
 ## Bundled skills
 
-`/grilling [topic]` and `/grill-me [topic]` start the same one-question-at-a-time
-interview, with a recommendation and a wait for the user's answer. They use the
+`/grilling [topic]` and `/grill-me [topic]` start the same interview in rounds of
+up to five numbered questions, each with a short recommendation, followed by a
+wait for the user's answers. They use the
 current conversation when no topic is given. `/handoff [next-session focus]`
 writes a handoff using the current history and the project's save convention
 (otherwise the OS temporary directory). Native write permissions still apply.
@@ -63,6 +64,12 @@ completes the command with a trailing space without sending.
 select the bundled skills. The conversation and follow-up remain in one native
 thread; an interview does not authorize implementation. Handoff and grill-me
 require an explicit invocation, while grilling permits native implicit selection.
+
+In Design, explicit bundled-skill input goes to Astra after a short announcement.
+Interview answers go back to that same Astra child, and Hera relays its output
+verbatim. For handoff, Astra composes the document and Hera saves it under normal
+native write permissions. Development's GPT root performs the same skill workflow
+directly. Design requires workers to be enabled for these Astra assignments.
 
 ## Voices (`/style`)
 

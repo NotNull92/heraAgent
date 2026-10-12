@@ -33,6 +33,7 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     expect(initial).not.toContain('## Task execution');expect(initial).not.toContain('DRD-1');
     expect(nativeBaseInstructions('external_workers')).toContain('load_instructions');
     expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1500);
+    expect(start.mock.calls[0]?.[0].developerInstructions).not.toContain('Bundled skill routing');
     expect(nativeBaseInstructions('external_workers').length).toBeLessThan(1500);start.mockRestore();
       await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
       await controller.run('plan',undefined,true);expect(turn.mock.calls[1]?.[0]).toMatchObject({approvalPolicy:'never',sandboxPolicy:{type:'readOnly',networkAccess:false}});
@@ -67,6 +68,17 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.developerInstructions).toContain('normally within 250 words');
   expect(params.developerInstructions).toContain('explicit requests for detail take precedence');
   expect(params.developerInstructions).toContain('without re-solving the design');
+  expect(params.developerInstructions).toContain('Bundled skill routing overrides');
+  expect(params.developerInstructions).toContain('exactly one agent_type=hera_astra child');
+  expect(params.developerInstructions).toContain('spawn_agent items, not message');
+  expect(params.developerInstructions).toContain('full skill text loads in Astra');
+  expect(params.developerInstructions).toContain('native send_input to the same child');
+  expect(params.developerInstructions).toContain('wait and relay verbatim; do not spawn again');
+  expect(params.developerInstructions).toContain('do not apply any user-facing voice/style instructions');
+  expect(params.developerInstructions).toContain('reuse the interview child if present');
+  expect(params.developerInstructions).toContain('save exactly that text');
+  expect(params.developerInstructions).toContain('visible commentary message BEFORE invoking any write tool');
+  expect(params.developerInstructions).toContain('requesting approval if required');
   expect(params.developerInstructions).toContain('default to 2-4 short sentences');
   expect(params.developerInstructions).toContain('expand when explicitly requested or necessary for correctness');
   expect(params.developerInstructions).toContain('without an acknowledgement or a promise to explain');
@@ -76,5 +88,11 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.developerInstructions?.split(handbook)).toHaveLength(2);
   expect(params.developerInstructions).not.toContain('## Task execution');
   expect(handbook).toContain('numbered DRD workflow below applies to HERA Development (external_workers)');
+});
+it('does not silently run Astra-only skills on a single-agent Design root',async()=>{
+  const client={start:vi.fn().mockRejectedValue(new Error('capture')),on:vi.fn()} as unknown as CodexClient;
+  const controller=new Controller(client,'unused','unused',structuredClone(defaults),false,true);
+  await expect(Reflect.apply(Reflect.get(controller,'startNative'),controller,[])).rejects.toThrow('capture');
+  expect(vi.mocked(client.start).mock.calls[0]![0].developerInstructions).toContain('do not silently execute these skills on DeepSeek');
 });
 it('defaults native approval to decline and treats apply as a compatibility notice',async()=>{const answer=vi.fn();const ui=render(<NativePrompt request={{id:'a',threadId:'root',turnId:'turn',itemId:'item',summary:'fixture'}} language="ko" rows={12} answer={answer} quit={()=>{}}/>);await new Promise(r=>setTimeout(r,70));ui.stdin.write('\r');await new Promise(r=>setTimeout(r,70));expect(answer).toHaveBeenCalledWith('decline');ui.unmount();const session=new InteractiveSession('unused','unused',structuredClone(defaults),true);await session.submit('/apply');expect(session.transcript).toContain('별도 /apply는 필요하지 않습니다');expect(session.controller).toBeNull();});
