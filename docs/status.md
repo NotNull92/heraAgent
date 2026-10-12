@@ -2421,3 +2421,257 @@ the new routing instructions. NOT_RUN: macOS live/manual tests, physical termina
 acceptance, remote CI, cold-resume interview and temporary-directory handoff
 approval fixtures. The owner subsequently authorized committing and pushing the
 reviewed change on 2026-10-12. No npm or release publication was performed.
+
+
+## Hand-off F: merged-review refactoring batch (2026-10-12)
+
+Baseline: 9389a17 (Hand-off E, 135 tests in 23 files). The corrected review
+request was committed alone as c4903df; its line references were checked against
+that baseline. No implementation commit or push was made for this hand-off.
+
+Completed scope:
+
+- R1 DONE: exported FINGERPRINT_SOURCES, preserving the 21 existing entries and
+  adding styles, workspace-lock, prompts and version (25 modules). Coverage
+  checks every source file against the manifest or an individually explained
+  exclusion; it rejects stale/overlapping entries. Generated files may contain
+  only erased types and the existing fixed v2 namespace barrel. This is source
+  coverage, not a claim to hash user-installed voices or the entire dependency
+  graph. Existing schema, handbook, bundled-skill and dependency checks remain.
+- R4 DONE: moved base instructions, adaptive/development routing, skill routing,
+  developer instructions and the /plan prefix into session/prompts.ts without a
+  Controller import. The old nativeBaseInstructions export remains available.
+  Six captured pre-move outputs cover all three stored modes with workers on/off.
+  Builder/fixture equality passed, including whitespace and trailing newlines;
+  only the machine-specific JSON-quoted bundled-skill root is normalized to a
+  fixed fixture marker. Independent native-workflow literal assertions remain.
+- R5 DONE: one VERSION constant supplies CLI, initialization and both provider
+  headers, checked against package.json. One recursive settingsArgs supplies all
+  three callers. Equivalence passed against the old flat/recursive serializers
+  for current nativeSettings branches and captured mixed-provider overrides,
+  plus explicit dotted-key, nested-object, array, null and boolean cases.
+- R3 DONE: one private applyConfigChange helper handles /mode, /workers and
+  saveModelChoice. Validation still precedes shutdown; shutdown and persistence
+  precede in-memory assignment and the success notice. The failure regression
+  confirms an unconfirmed close cannot save or announce success. /style,
+  observe(), the command switch and Enter completion behavior are preserved.
+- R8 DONE: removed the PATH dead ternary and source-only separator-check space;
+  marked the legacy ApplyReview UI and approveApply method as unreachable from
+  Controller.open. The ponytail comment prefix remains unchanged.
+
+Deferred scope:
+
+- R2 DEFERRED: shared startup checks, approval ownership and legacy client/event
+  lifecycle make a facade split riskier than a pure move; avoid a large mutable
+  context object. Preserve legacy tests and live fixtures.
+- R6 DEFERRED: preserve snapshot publication before routing checks, interruption
+  with checkRouting=false, unmaterialized state and full inventory limits. No
+  hydration/routing decomposition or error-matching change in this batch.
+- R7 DEFERRED: JSX and mutable formatting state make this more than a pure move;
+  a reducer has no demonstrated test gain. A KEPT_LINES blanking boundary test
+  belongs to a separate hand-off and was not added here.
+
+Observed Windows local verification (Windows 10.0.26200 x64, PowerShell 7.6.6,
+Node v24.12.0, pinned project Codex 0.161.0):
+
+- npm.cmd run typecheck: PASS, exit 0.
+- npm.cmd test: PASS, 142 tests across 27 files, exit 0 (15.10 s). The first
+  attempt had 141 passes and one new coverage-test failure: generated/index.ts
+  also exports the fixed v2 namespace. The test was corrected to permit exactly
+  that existing barrel, then the full typecheck/test sequence passed.
+- npm.cmd run build: PASS, exit 0.
+- Clean temporary source copy: PASS, build and prepared-tarball inspection exit
+  0. No prior dist was copied and no stash was used. The copy shares the existing
+  pinned node_modules via a temporary junction; this is not a clean dependency
+  installation. All 781 source files emitted exactly 1,562 JS/declaration files.
+  Local and clean dist inventories and bytes matched; stale files: 0. The
+  tarball contains the same exact dist inventory; archive inspection checked
+  1,906 files / 2,491,984 bytes, including package allowlist and secret patterns.
+  Archive SHA-256: 2da867d0239fbfd99cabcf3344e331caf86b75d8207b0890c6a505f2437caffe.
+  Local detailed receipts: outputs/hand-off-f-KORRkY (ignored).
+
+Live Windows results (each command ran exactly once):
+
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive:
+  PASS, exit 0; all seven workflow checks. Recorded 2026-10-12T08:14:36.626Z.
+  Fingerprint: 7cccedc3c3af2b560dd9535957868de503edabffd4ea1ece1ef9c2795ac28574.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers:
+  PASS, exit 0; all seven workflow checks. Recorded 2026-10-12T08:18:14.007Z.
+  Fingerprint: 2e6ccc6cdaf5f8773de7b34197a5bfb628f5b0f900fb311b8a2e540b9b6a28a3.
+- node scripts/live-bundled-skills.mjs --live --mode=adaptive:
+  FAIL, exit 1 at scripts/live-bundled-skills.mjs:116. First round: 27,427 ms;
+  follow-up: 14,688 ms; grill-me: 19,120 ms; handoff: 68,928 ms. Interview
+  checks, same-child follow-ups, verbatim relays, full skill injection and root
+  HANDOFF.md writing passed before the final raw spawn-call count assertion.
+  The trace contains two spawn_agent attempts but one actual Astra child:
+  at 08:18:58.227Z the first request included both message and items and was
+  rejected with "Provide either message or items, but not both"; at
+  08:19:02.429Z the corrected items-only request created the child. Thus raw
+  calls=2 fails the existing expected count=1. The model retried its rejected
+  request; this hand-off did not rerun the suite or alter its assertion/prompts.
+  Root: 01a12f31-62b7-7591-a5c1-067655a6f3c1; child:
+  01a12f31-9aab-7491-8dcf-c3618ea15a72. Sanitized call-shape diagnostics are in
+  the ignored evidence directory. This is a remaining bundled-skill test
+  failure, not a full skills PASS; handling rejected spawn attempts in the
+  acceptance contract requires a separate decision.
+- node scripts/live-bundled-skills.mjs --live --mode=external_workers:
+  PASS, exit 0; grilling, follow-up, grill-me, handoff, full native injection
+  and GPT-root-only execution. First round: 13,074 ms; numbered question counts
+  were [1, 1, 1], within the allowed maximum of five per round. Root:
+  01a12f33-fdd4-7352-b85b-e704489bff95.
+
+Final read-only nativeCapability checks report both saved workflow records ready
+with the fingerprints above. Those seven-check workflow records do not certify
+that the separate adaptive bundled-skills suite passed.
+
+Windows/macOS CI, clean-install smoke, manual terminal and macOS live checks:
+NOT_RUN for this batch. Both OS workflows remain unchanged. No release or npm
+publication was performed. The owner must quit and restart Hera to load dist/.
+
+
+## Follow-up: distinguish rejected skill spawn attempts (2026-10-12)
+
+The owner asked to fix the adaptive bundled-skills check after investigating the
+Hand-off F failure. The final assertion now correlates spawn calls with their
+observed results instead of equating every attempted call with a created child.
+It requires exactly one successful creation matching the already observed Astra
+ID. It permits only one prior, explicitly confirmed rejection with the exact
+pinned message "Provide either message or items, but not both", verifies both
+arguments were present, and requires the rejection to precede the corrected call.
+Rejected attempts remain visible in the suite's spawnEvidence report.
+
+Unknown errors, missing/duplicate results, a different child, multiple successful
+creations, repeated invalid requests, late rejections, wrong roles/context and
+missing skill attachments remain failures. Existing announcement, same-child
+follow-up, worker-count, verbatim relay and root-write assertions are unchanged.
+No model prompt, product source, native fingerprint input or runtime was changed.
+This fixes evidence counting; it does not prevent a model from making an invalid
+first request.
+
+Observed checks:
+
+- npm.cmd run typecheck: PASS, exit 0.
+- Targeted tests/bundled-skill-evidence.test.ts: PASS, 14 cases, exit 0.
+- Offline recheck of the original real adaptive trace: PASS; attempts=2,
+  created=1, rejected=1, returned child matches the original Astra. Receipt:
+  outputs/hand-off-f-KORRkY/adaptive-spawn-recheck.json (ignored).
+- The original live suite's exit-1 receipt above is preserved. This follow-up did
+  not rerun live inference or claim a fresh full-suite live pass. Full offline
+  suite, build/package, CI, macOS/manual and live re-qualification: NOT_RUN for
+  this script-only follow-up; prior Hand-off F results remain separately stated.
+- No additional commit or push. Existing uncommitted Hand-off F work is preserved.
+
+## Live recheck of the adaptive bundled-skills suite (2026-10-12)
+
+Claude re-ran `node scripts/live-bundled-skills.mjs --live --mode=adaptive`
+once (root 01a12f4c-9976…, Astra child 01a12f4c-d561…). Interview, follow-up,
+grill-me, verbatim relay and the root-written HANDOFF.md all completed; the
+suite failed only at the final evidence check: "Spawn must attach grilling".
+Trace: the root's first spawn_agent again sent both `message` and `items`
+(items held only the text item) and was rejected with the pinned message at
+08:48:42.513Z; the corrected items-only spawn at 08:48:46.921Z attached the
+grilling skill and created the child, which received the full skill text.
+`assertSingleSkillSpawn` checks the grilling attachment before it reaches the
+rejection branch, so the rejected attempt trips it. The product behavior was
+correct; the helper's assertion order is the defect. This is now two of two
+observed adaptive runs where the first spawn included `message`, costing about
+4 s each; the routing text already says items only.
+NOT_RUN: external_workers (unchanged), re-run after a helper fix.
+
+## Hand-off G: skill spawn assertion order and explicit items-only guidance (2026-10-12)
+
+Moved the grilling-attachment assertion in assertSingleSkillSpawn after the
+confirmed pre-creation rejection branch, alongside the successful items-only
+assertion. A rejected text-only items request with a string message is now
+accepted as evidence of one failed attempt when its observed rejection precedes
+the one successful retry. The existing exact-error, non-empty items, string
+message, single-rejection and ordering checks remain intact. Successful creation
+still requires grilling and no message field. Regression cases cover the reported
+text-only rejection followed by success, successful creation without grilling,
+and successful creation that incorrectly includes message.
+
+Added exactly one sentence immediately after "Use native spawn_agent items, not
+message:" in adaptive skillRouting: "Do not include a message field in spawn_agent
+or send_input; put all text in a text item." Every other byte of prompts.ts is
+unchanged. The new independent literal fixture is
+tests/fixtures/native-prompts-hand-off-g-20261012.json, derived from the preserved
+9389a17 fixture with only that approved insertion and new baseline label. The old
+fixture is byte-identical; literal builder assertions remain. No controller,
+skills.ts, runtime or other prompt changes were made in this hand-off.
+
+Observed Windows local checks (Windows 10.0.26200 x64, PowerShell 7.6.6,
+Node v24.12.0, pinned project Codex 0.161.0):
+
+- npm.cmd run typecheck: PASS, exit 0.
+- npm.cmd test -- tests/bundled-skill-evidence.test.ts tests/prompts.test.ts
+  tests/fingerprint-coverage.test.ts: PASS, 18 tests across three files, exit 0.
+- npm.cmd run build: PASS, exit 0.
+- Exact prompt-insertion, fixture-delta, old-fixture preservation and unrelated
+  file hash checks: PASS. git diff --check: PASS, exit 0.
+
+Live Windows checks ran once each, sequentially, after rebuilding:
+
+| Command | Result | Evidence |
+| --- | --- | --- |
+| node scripts/live-native-workflow.mjs --live --record --mode=adaptive | PASS, exit 0 | All seven checks; recorded 2026-10-12T09:00:49.690Z |
+| node scripts/live-native-workflow.mjs --live --record --mode=external_workers | PASS, exit 0 | All seven checks; recorded 2026-10-12T09:03:28.200Z |
+| node scripts/live-bundled-skills.mjs --live --mode=adaptive | PASS, exit 0 | spawnEvidence: attempts=1, created=1, rejected=0; first round 25,812 ms |
+| node scripts/live-bundled-skills.mjs --live --mode=external_workers | PASS, exit 0 | GPT-root-only; first round 13,534 ms; spawnEvidence not applicable (not emitted by this mode) |
+
+New native qualification fingerprints:
+
+- adaptive: 541fd8de4f8af7ce7135de926838d3ada24034c542f4e468487b6f4edc78b771.
+- external_workers: ae22fb784940482fef62d0270ef4ca446fce7192d7dca126365341da8cd93edf.
+
+Both saved records report ready=true in a final read-only nativeCapability check.
+Adaptive workflow root: 01a12f55-712f-7a32-83a8-f698f93b4c95; Development workflow
+root: 01a12f58-0c17-76e1-9d74-2f5d63b5848a. Adaptive skills root:
+01a12f5a-890c-7d91-ac6a-93b72d8e37fb; Astra child:
+01a12f5a-ae5c-7c23-a879-24da932953a7. Development skills root:
+01a12f5d-9721-7b92-9977-f6b90af4b72a.
+
+The adaptive first spawn was accepted on its first attempt. All interview,
+same-child follow-up, verbatim relay, full native skill injection and root-written
+HANDOFF.md checks passed. Numbered question counts were [1, 1, 2] for adaptive and
+[1, 1, 1] for Development. Adaptive follow-up/grill-me/handoff latencies were
+23,767 / 27,858 / 106,371 ms; Development latencies were 6,158 / 6,771 / 52,755 ms.
+This single run establishes observed first-attempt acceptance, not a guarantee
+that future model calls cannot include message. Historical failed receipts above
+remain unchanged. Local logs, exit codes and readiness receipts are in ignored
+outputs/hand-off-g-20261012/.
+
+Full offline suite, package/install smoke, Windows/macOS CI, manual terminal and
+macOS live checks: NOT_RUN for this hand-off. Both OS workflows remain unchanged.
+Existing uncommitted Hand-off F work is preserved. No commit, push, release or npm
+publication was performed. The owner must quit and restart Hera to load the new
+dist/ instructions.
+
+## Items-only sentence moved after the grill-me sentence (2026-10-12)
+
+Claude moved the Hand-off G sentence "Do not include a message field in
+spawn_agent or send_input; put all text in a text item." from directly after
+"Use native spawn_agent items, not message:" to directly after "For grill-me
+also attach the packaged grilling skill." so the routing text reads as full
+sentences. No other byte of prompts.ts changed; the hand-off-g fixture was
+updated with the same move. Typecheck, 158 offline tests and build pass.
+
+Live (owner asked for the wording fix, which implies re-qualification):
+- adaptive workflow: PASS, all seven checks, recorded 2026-10-12T09:17:58.373Z,
+  fingerprint f3e5dc671fbf8612dcd2a35488249007cafe13dd5cc566478fb6a745e7276662.
+- external_workers workflow: PASS, all seven checks, recorded
+  2026-10-12T09:20:21.400Z, fingerprint
+  07128986522158e730bf25696928714130ffc08e04be338c0cec9cfc675b33df.
+- adaptive bundled-skills suite, first run (root 01a12f69-d74b…, child
+  01a12f69-ffdb…): the first spawn was accepted at once (items only, grilling
+  attached), three interview turns and the root-written HANDOFF.md completed,
+  but the script exited non-zero at a final assertion whose message Claude
+  truncated from the captured output. A second run with full output follows
+  below.
+- adaptive bundled-skills suite, second run (root 01a12f6c-d3ec…, Astra child
+  01a12f6c-fe05…): PASS, exit 0. spawnEvidence attempts=1, created=1,
+  rejected=0; first round 28,660 ms; follow-up 24,001 ms; grill-me 30,711 ms;
+  handoff 74,663 ms; round question counts [1, 1, 2]; all six checks passed.
+  The first run's failing assertion remains unidentified because its output was
+  truncated; two consecutive runs now accepted the first spawn at once.
+NOT_RUN: external_workers skills suite (adaptive-only text changed; its
+workflow record is fresh), macOS/CI.

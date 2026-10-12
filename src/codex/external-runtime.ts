@@ -1,3 +1,4 @@
+import {VERSION} from '../version.js';
 import {createHash,randomUUID} from 'node:crypto';
 import {createReadStream} from 'node:fs';
 import {mkdir,readFile,readdir,copyFile,cp,chmod,realpath,writeFile,unlink} from 'node:fs/promises';
@@ -10,7 +11,7 @@ import {designEffort,type Config} from '../config.js';
 import {HeraError} from '../errors.js';
 import {atomicJson,existsJson,rejectRepositoryHome} from '../paths.js';
 import {childEnvironment,CODEX_VERSION} from './launcher.js';
-import {nativeSettings} from './config-compiler.js';
+import {nativeSettings,settingsArgs} from './config-compiler.js';
 import {resolveGoCredential} from '../providers/go-credentials.js';
 import {GO_URL,GO_MODEL} from '../providers/opencode-go.js';
 import {startupCheck} from './startup.js';
@@ -76,9 +77,8 @@ export async function launchExternal(home:string,cwd:string,config:Config,mode:'
   const settings={...nativeSettings({...config,workers:{...config.workers,gptModel:null,reasoningEffort:null}},mode,workers,searchUrl,nativeFlow),model_catalog_json:catalogPath,
     ...(config.mode==='adaptive'?{model_provider:GO_PROVIDER,model_reasoning_effort:designEffort(config)}:{}),
     'features.multi_agent_v2':false,'agents.max_depth':1,
-    [`model_providers.${GO_PROVIDER}`]:{name:'Hera OpenCode Go',base_url:GO_URL,env_key:'HERA_OPENCODE_GO_API_KEY',wire_api:'responses',requires_openai_auth:false,request_max_retries:0,stream_max_retries:0,stream_idle_timeout_ms:20000,supports_websockets:false,http_headers:{'User-Agent':'hera/0.1.0-alpha.1','x-opencode-session':randomUUID()}}};
-  function args(values:Record<string,unknown>,prefix=''):string[]{return Object.entries(values).flatMap(([k,v])=>v&&typeof v==='object'&&!Array.isArray(v)?args(v as Record<string,unknown>,prefix+k+'.'):['-c',`${prefix+k}=${JSON.stringify(v)}`]);}
-  const child=spawn(runtime.binary,['--profile',profile,'--strict-config',...args(settings)],{cwd:await realpath(cwd),env:{...childEnvironment(home,cwd),...(key?{HERA_OPENCODE_GO_API_KEY:key}:{})},shell:false,windowsHide:true,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe']});
+    [`model_providers.${GO_PROVIDER}`]:{name:'Hera OpenCode Go',base_url:GO_URL,env_key:'HERA_OPENCODE_GO_API_KEY',wire_api:'responses',requires_openai_auth:false,request_max_retries:0,stream_max_retries:0,stream_idle_timeout_ms:20000,supports_websockets:false,http_headers:{'User-Agent':`hera/${VERSION}`,'x-opencode-session':randomUUID()}}};
+  const child=spawn(runtime.binary,['--profile',profile,'--strict-config',...settingsArgs(settings)],{cwd:await realpath(cwd),env:{...childEnvironment(home,cwd),...(key?{HERA_OPENCODE_GO_API_KEY:key}:{})},shell:false,windowsHide:true,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe']});
   const cleanup=async()=>{for(const [path,contents] of owned){if(await readFile(path,'utf8')!==contents)throw new HeraError('RUNTIME_PROFILE_CHANGED','Owned runtime profile changed externally; preserved for review.',4);await unlink(path);}};
   return {child,settings,cleanup};
 }

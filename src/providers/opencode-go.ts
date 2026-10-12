@@ -1,3 +1,4 @@
+import {VERSION} from '../version.js';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {HeraError} from '../errors.js';
@@ -8,7 +9,7 @@ export async function probeGo(key:string|undefined,request:typeof fetch=fetch){
   if(!key)throw new HeraError('BLOCKED_NO_CREDENTIALS','Set HERA_OPENCODE_GO_API_KEY locally; never paste it into logs or chat.',3);
   const session=randomUUID();const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
   try{
-    const response=await request(`${GO_URL}/chat/completions`,{method:'POST',redirect:'error',signal:controller.signal,headers:{authorization:`Bearer ${key}`,'content-type':'application/json','user-agent':'hera/0.1.0-alpha.1','x-opencode-session':session},body:JSON.stringify({model:GO_MODEL,messages:[{role:'user',content:'Coding compatibility probe: return only a JavaScript expression that adds 1 and 1. Do not call tools.'}],max_tokens:64,stream:false})});
+    const response=await request(`${GO_URL}/chat/completions`,{method:'POST',redirect:'error',signal:controller.signal,headers:{authorization:`Bearer ${key}`,'content-type':'application/json','user-agent':`hera/${VERSION}`,'x-opencode-session':session},body:JSON.stringify({model:GO_MODEL,messages:[{role:'user',content:'Coding compatibility probe: return only a JavaScript expression that adds 1 and 1. Do not call tools.'}],max_tokens:64,stream:false})});
     if(!response.ok){await response.body?.cancel();return {state:'blocked',reason:classifyStatus(response.status),httpStatus:response.status,retryAfter:response.headers.get('retry-after'),externalMode:'blocked'};}
     const reader=response.body?.getReader();if(!reader)throw new HeraError('EMPTY_PROVIDER_RESPONSE','Provider returned no body.',5,false);let size=0;const chunks:Uint8Array[]=[];while(true){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>65536){await reader.cancel();throw new HeraError('OVERSIZE_PROVIDER_RESPONSE','Probe response exceeds 64 KiB.',5,false);}chunks.push(part.value);}
     const value:unknown=JSON.parse(Buffer.concat(chunks).toString('utf8'));

@@ -8,6 +8,20 @@ import {InteractiveSession} from '../src/session/interactive.js';
 import {defaults,loadConfig} from '../src/config.js';
 import {requireMode} from '../src/codex/config-compiler.js';
 import {atomicJson} from '../src/paths.js';
+it('does not save settings or announce success until the previous session closes safely',async()=>{
+  const home=await mkdtemp(join(tmpdir(),'hera-settings-close-'));const config=structuredClone(defaults);
+  await atomicJson(join(home,'config.json'),config);const before=await readFile(join(home,'config.json'),'utf8');
+  const session=new InteractiveSession(home,home,config,true);const close=vi.fn().mockResolvedValue(false);
+  Reflect.set(session,'controller',{close});
+  await session.submit('/workers 2');
+  expect(close).toHaveBeenCalledOnce();expect(session.status).toBe('INTERRUPTED_UNCONFIRMED');
+  expect(await readFile(join(home,'config.json'),'utf8')).toBe(before);expect(config.workers.maxConcurrent).toBe(defaults.workers.maxConcurrent);
+  expect(session.transcript).not.toContain('워커 상한:');
+  close.mockResolvedValue(true);await session.submit('/workers 2');
+  expect(session.controller).toBeNull();expect(config.workers.maxConcurrent).toBe(2);
+  expect(JSON.parse(await readFile(join(home,'config.json'),'utf8')).workers.maxConcurrent).toBe(2);
+  expect(session.transcript.match(/워커 상한: 2/g)).toHaveLength(1);await session.close();
+});
 it('offers only Design and Development, preserving retired settings without executing them',async()=>{
   const home=await mkdtemp(join(tmpdir(),'hera-retired-mode-'));
   const legacy={...structuredClone(defaults),mode:'gpt_only' as const};

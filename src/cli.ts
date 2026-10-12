@@ -16,7 +16,8 @@ import {providerStatus,loginOpenAI} from './providers/accounts.js';
 import {readSecret} from './secret-input.js';
 import {installExternalRuntime} from './codex/external-runtime.js';
 import {installBrowser} from './research/browser.js';
-export const VERSION='0.1.0-alpha.1';
+import {VERSION} from './version.js';
+export {VERSION} from './version.js';
 export async function main(argv=process.argv) {
   const program=new Command().name('hera').description('Hera local coding agent').version(`${VERSION} (api v${CODEX_VERSION})`).option('--cwd <path>','workspace',process.cwd()).option('--single-agent','explicit single-agent operation with native workspace permissions').exitOverride();
   const context=async()=>{const home=await heraHome();const cwd=await realpath(program.opts<{cwd:string}>().cwd);return {home,cwd,...await loadConfig(home,cwd)};};

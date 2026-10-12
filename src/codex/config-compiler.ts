@@ -35,7 +35,8 @@ export function nativeSettings(config:Config,mode:'read-only'|'workspace-write'=
     'analytics.enabled':false,check_for_update_on_startup:false
   };
 }
-export function startupArgs(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false){return Object.entries(nativeSettings(config,mode,workers)).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]);}
+export function settingsArgs(values:Record<string,unknown>,prefix=''):string[]{return Object.entries(values).flatMap(([k,v])=>v&&typeof v==='object'&&!Array.isArray(v)?settingsArgs(v as Record<string,unknown>,prefix+k+'.'):['-c',`${prefix+k}=${JSON.stringify(v)}`]);}
+export function startupArgs(config:Config,mode:'read-only'|'workspace-write'='read-only',workers=false){return settingsArgs(nativeSettings(config,mode,workers));}
 export function requireMode(config:Config,singleAgent:boolean,workersVerified=false){
   requireActiveMode(config.mode);
   if(config.mode==='external_workers'&&(singleAgent||!workersVerified))throw new HeraError('EXTERNAL_MODE_BLOCKED','Mixed runtime and native routing/safety verification are required; no fallback. Use HERA 설계 (adaptive) for single-agent operation.',4);

@@ -1,3 +1,4 @@
+import {VERSION} from '../version.js';
 import {z} from 'zod';
 import {EventEmitter} from 'node:events';
 import type {ChildProcessWithoutNullStreams} from 'node:child_process';
@@ -15,7 +16,7 @@ import type {ThreadLoadedListParams} from './generated/v2/ThreadLoadedListParams
 import {setTimeout as delay} from 'node:timers/promises';
 import {requireActiveMode,type Config} from '../config.js';
 import type {JsonValue} from './generated/serde_json/JsonValue.js';
-import {nativeSettings} from './config-compiler.js';
+import {nativeSettings,settingsArgs} from './config-compiler.js';
 import {launchExternal} from './external-runtime.js';
 import {startResearch} from '../research/server.js';
 import {bundledSkillsRoot} from './skills.js';
@@ -34,12 +35,12 @@ export class CodexClient extends EventEmitter {
     if(nativeFlow)requireActiveMode(config.mode);
     const research=nativeFlow||mode==='read-only'?await startResearch(home,config.mode==='external_workers'):undefined;let client:CodexClient|undefined;
     try{
-      if(config.mode==='gpt_only'){const settings=nativeSettings(config,mode,workers,research?.url,nativeFlow);client=await this.connect(home,cwd,Object.entries(settings).flatMap(([key,value])=>['-c',`${key}=${JSON.stringify(value)}`]));client.sessionSettings=settings;}
+      if(config.mode==='gpt_only'){const settings=nativeSettings(config,mode,workers,research?.url,nativeFlow);client=await this.connect(home,cwd,settingsArgs(settings));client.sessionSettings=settings;}
       else{await verifyContract();const started=await launchExternal(home,cwd,config,mode,workers,research?.url,nativeFlow);client=new CodexClient(started.child);client.cleanup=started.cleanup;client.sessionSettings=started.settings;await client.initialize();}
       client.research=research;return client;
     }catch(e){await research?.close();await client?.close();throw e;}
   }
-  async initialize(){const params:InitializeParams={clientInfo:{name:'hera',title:'Hera',version:'0.1.0-alpha.1'},capabilities:{experimentalApi:true,requestAttestation:false}};const result=z.object({userAgent:z.string(),codexHome:z.string(),platformOs:z.string()}).parse(await this.rpc.request('initialize',params,20000));if(!result.userAgent.includes(`/${CODEX_VERSION} `))throw new HeraError('UNSUPPORTED_RUNTIME','Native runtime version mismatch.',4);this.rpc.notify('initialized');await this.rpc.request('skills/extraRoots/set',{extraRoots:[bundledSkillsRoot]} satisfies SkillsExtraRootsSetParams);return result;}
+  async initialize(){const params:InitializeParams={clientInfo:{name:'hera',title:'Hera',version:VERSION},capabilities:{experimentalApi:true,requestAttestation:false}};const result=z.object({userAgent:z.string(),codexHome:z.string(),platformOs:z.string()}).parse(await this.rpc.request('initialize',params,20000));if(!result.userAgent.includes(`/${CODEX_VERSION} `))throw new HeraError('UNSUPPORTED_RUNTIME','Native runtime version mismatch.',4);this.rpc.notify('initialized');await this.rpc.request('skills/extraRoots/set',{extraRoots:[bundledSkillsRoot]} satisfies SkillsExtraRootsSetParams);return result;}
   async account(){const result=z.object({account:z.object({type:z.string()}).passthrough().nullable(),requiresOpenaiAuth:z.boolean()}).parse(await this.rpc.request('account/read',{refreshToken:false}));return {ready:result.account!==null,category:result.account?.type??'none'};}
   async models(){const models:ModelView[]=[];let cursor:string|null=null;const seen=new Set<string>();do{const page=z.object({data:z.array(modelSchema),nextCursor:z.string().nullable()}).parse(await this.rpc.request('model/list',{cursor}));models.push(...page.data);cursor=page.nextCursor;if(cursor){if(seen.has(cursor)||models.length>2000)throw new HeraError('INVALID_PAGINATION','Model catalog pagination did not terminate.',4);seen.add(cursor);}}while(cursor);return models;}
   async start(params:ThreadStartParams){return sessionSchema.parse(await this.rpc.request('thread/start',params));}

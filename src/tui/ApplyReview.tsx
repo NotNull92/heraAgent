@@ -4,6 +4,7 @@ import type {ApplyReview as Review} from '../session/apply-review.js';
 import {safeText} from '../errors.js';
 import {Frame,Text,useTheme} from './theme.js';
 
+// Legacy phased UI; unreachable from Controller.open native sessions.
 export function ApplyReview({review,rows,columns,language,approve,cancel}:{review:Review;rows:number;columns:number;language:'ko'|'en';approve:()=>void;cancel:()=>void}){
   const {c}=useTheme();const ko=language==='ko';const width=Math.max(10,Math.floor((columns-6)/2));
   // Conservative wrapping keeps wide Korean characters visible without terminal-width dependencies.

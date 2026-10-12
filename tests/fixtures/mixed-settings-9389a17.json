@@ -1,0 +1,50 @@
+[
+  {
+    "mode": "adaptive",
+    "overrides": {
+      "model_catalog_json": "fixture/catalog.json",
+      "model_provider": "hera_opencode_go",
+      "model_reasoning_effort": "max",
+      "features.multi_agent_v2": false,
+      "agents.max_depth": 1,
+      "model_providers.hera_opencode_go": {
+        "name": "Hera OpenCode Go",
+        "base_url": "https://opencode.ai/zen/go/v1",
+        "env_key": "HERA_OPENCODE_GO_API_KEY",
+        "wire_api": "responses",
+        "requires_openai_auth": false,
+        "request_max_retries": 0,
+        "stream_max_retries": 0,
+        "stream_idle_timeout_ms": 20000,
+        "supports_websockets": false,
+        "http_headers": {
+          "User-Agent": "hera/0.1.0-alpha.1",
+          "x-opencode-session": "fixture-session"
+        }
+      }
+    }
+  },
+  {
+    "mode": "external_workers",
+    "overrides": {
+      "model_catalog_json": "fixture/catalog.json",
+      "features.multi_agent_v2": false,
+      "agents.max_depth": 1,
+      "model_providers.hera_opencode_go": {
+        "name": "Hera OpenCode Go",
+        "base_url": "https://opencode.ai/zen/go/v1",
+        "env_key": "HERA_OPENCODE_GO_API_KEY",
+        "wire_api": "responses",
+        "requires_openai_auth": false,
+        "request_max_retries": 0,
+        "stream_max_retries": 0,
+        "stream_idle_timeout_ms": 20000,
+        "supports_websockets": false,
+        "http_headers": {
+          "User-Agent": "hera/0.1.0-alpha.1",
+          "x-opencode-session": "fixture-session"
+        }
+      }
+    }
+  }
+]

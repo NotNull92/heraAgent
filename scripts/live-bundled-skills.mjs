@@ -9,6 +9,7 @@ import {heraHome} from '../dist/paths.js';
 import {loadConfig} from '../dist/config.js';
 import {bundledSkillsRoot} from '../dist/codex/skills.js';
 import {ASTRA_ROLE} from '../dist/codex/external-runtime.js';
+import {assertSingleSkillSpawn} from './bundled-skill-evidence.mjs';
 
 if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: three interview turns and one handoff in a disposable workspace.');
 const mode=process.argv.find(arg=>arg.startsWith('--mode='))?.slice(7)??'adaptive';
@@ -17,7 +18,7 @@ const home=await heraHome();const {config}=await loadConfig(home);config.mode=mo
 const cwd=await mkdtemp(join(tmpdir(),'hera-skills-live-'));
 const projectRules='Handoff convention: save the requested handoff to HANDOFF.md in this workspace, in English. Preserve other files.\n';
 await writeFile(join(cwd,'AGENTS.md'),projectRules);
-let controller;let timer;let astraId;let firstRoundMs;const events=[];const roundCounts=[];
+let controller;let timer;let astraId;let firstRoundMs;let spawnEvidence;const events=[];const roundCounts=[];
 async function run(stage,prompt){
   events.length=0;const started=performance.now();
   console.log(JSON.stringify({stage,mode}));
@@ -112,10 +113,7 @@ try{
     assert(selected.some(text=>text.includes('<skill>')&&text.includes(content)),`Full packaged ${name} must reach native model context`);
   }
   if(mode==='adaptive'){
-    const calls=trace.filter(row=>row.type==='response_item'&&row.payload.type==='function_call'&&/spawn_agent$/.test(row.payload.name));
-    assert.equal(calls.length,1);const args=JSON.parse(calls[0].payload.arguments);
-    assert.equal(args.agent_type,ASTRA_ROLE);assert.equal(args.fork_context,false);
-    assert(args.items.some(item=>item.type==='skill'&&item.name==='grilling'));
+    spawnEvidence=assertSingleSkillSpawn(trace,astraId,ASTRA_ROLE);
   }
-  console.log(JSON.stringify({bundledSkills:'pass',mode,platform:process.platform,arch:process.arch,threadId:thread.id,astraId,firstRoundMs,roundCounts,cwd,checks:['grilling','followup','grill-me','handoff','fullNativeInjection',mode==='adaptive'?'astraReuseAndRootHandoffWrite':'gptRootOnly']}));
+  console.log(JSON.stringify({bundledSkills:'pass',mode,platform:process.platform,arch:process.arch,threadId:thread.id,astraId,spawnEvidence,firstRoundMs,roundCounts,cwd,checks:['grilling','followup','grill-me','handoff','fullNativeInjection',mode==='adaptive'?'astraReuseAndRootHandoffWrite':'gptRootOnly']}));
 }finally{clearTimeout(timer);if(controller&&!await controller.close())process.exitCode=5;}
