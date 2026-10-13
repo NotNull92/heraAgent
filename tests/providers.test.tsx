@@ -1,4 +1,5 @@
 import React from 'react';
+import {EventEmitter} from 'node:events';
 import {it,expect,vi} from 'vitest';
 import {render} from 'ink-testing-library';
 import {InteractiveSession} from '../src/session/interactive.js';
@@ -10,6 +11,21 @@ import {HeraError} from '../src/errors.js';
 import * as accounts from '../src/providers/accounts.js';
 import * as credentials from '../src/providers/go-credentials.js';
 const tick=()=>new Promise(resolve=>setTimeout(resolve,80));
+it('prints the other-session notice once before Ready in either language, only when others exist',async()=>{
+  vi.spyOn(accounts,'providerStatus').mockResolvedValue({openai:{ready:true,category:'chatgpt'},go:{credentialReady:true,credentialStored:true,credentialSource:'keyring'}});
+  try{
+    for(const language of ['ko','en'] as const)for(const others of [[],[123,456]]){
+      const controller=Object.assign(new EventEmitter(),{otherSessionPids:others});
+      vi.spyOn(Controller,'open').mockResolvedValue(controller as Controller);
+      const session=new InteractiveSession('fixture','fixture',{...structuredClone(defaults),language},true);
+      const notice=language==='ko'?'이 폴더에서 다른 Hera 세션이 실행 중입니다. 같은 파일을 동시에 고치지 않도록 주의하세요.':'Another Hera session is running in this folder. Avoid editing the same files at once.';
+      const shownAt:string[]=[];session.on('change',()=>{if(session.transcript.includes(notice))shownAt.push(session.status);});
+      await session.initializeProviders();await session.connect();
+      expect(session.status).toBe('Ready');expect(session.transcript).toBe(others.length?`\n${notice}\n`:'');
+      if(others.length)expect(shownAt[0]).toBe(language==='ko'?'런타임 준비 중':'Starting runtime');
+    }
+  }finally{vi.restoreAllMocks();}
+});
 it('requires both configured providers at startup and supports manual slash setup without logging keys',async()=>{
   const status={openai:{ready:false,category:'none'},go:{credentialReady:false,credentialStored:false,credentialSource:'none'}};
   vi.spyOn(accounts,'providerStatus').mockImplementation(async()=>structuredClone(status));

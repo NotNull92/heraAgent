@@ -239,7 +239,9 @@ CI artifacts are not published releases.
 | Blocked workers | Inspect `doctor`; use HERA Design `--single-agent` when appropriate |
 | Windows sandbox not ready | Run `sandbox setup`, then `doctor --json` |
 | Existing `hera` command | Use the explicit local launcher or a separate install prefix |
-| Interrupted/uncertain write | Inspect Git changes and native history; do not blindly replay or delete locks |
+| Interrupted/uncertain write | Inspect Git changes and native history; do not blindly replay writes |
+| Another session in this folder | Several windows are allowed; avoid editing the same files simultaneously |
+| `SESSION_IN_USE` (exit 6) | Close the window using that saved session before resuming it; a different session can use the same folder |
 
 Settings and native sessions use the isolated Hera home (default `~/.hera`).
 Keep `HERA_HOME` outside your project. OpenAI uses its isolated native login;

@@ -60,7 +60,7 @@ requirements in Sections 1, 8-9, 12-15, 17-18, 21 and Appendix A.
   The headless client declines interactive permission requests; it never grants
   permissions silently. `/plan` overrides the native turn to read-only/never.
 - Native tools perform requested edits and checks in the normal conversation.
-  Preserve the workspace-instance lock, native histories, ownership checks,
+  Preserve workspace presence records, native histories, same-session resume checks,
   bounded requests, cancellation and unknown-outcome handling. Do not replay writes.
 - Native children inherit permissions. Assign disjoint ownership and wait before
   editing another worker's files. This is Codex coordination, not per-file OS
@@ -945,11 +945,13 @@ Workers may read overlapping files. In the analysis phase, none writes the origi
 
 ### 12.7 Multiple Hera instances
 
-Acquire an atomic lock directory derived from the canonical workspace path. Initially allow only one active work session per workspace. A second Hera may offer history inspection or report a lock conflict, not silently launch another writer.
+Owner decision (2026-10-13, superseding the initial exclusive workspace lock and Hand-off J): several Hera sessions may use the same canonical workspace, including Design and Development together. Native turns have no workspace baseline or exclusive workspace owner.
 
-Record owner PID, executable identity, start time and a random ownership nonce. Handle PID reuse, permission denial and stale metadata conservatively. Delete a stale lock only after ownership/liveness checks or an explicit recovery decision.
+Each process atomically writes `<Hera home>/locks/<workspace hash>/<pid>.json` with its PID, executable, process start time, acquisition time and workspace. Acquire removes records with a missing or confirmed-dead PID (`ESRCH`); other liveness results, including `EPERM`, count valid presence records as live. Malformed records and legacy `owner.json` never block startup and are ignored when their PID may still be alive. Each close removes only its own record and the directory if empty, including uncertain shutdowns; unknown-outcome metadata remains unchanged.
 
-This lock coordinates Hera instances only. It does not prevent an IDE or unrelated process from changing files. Recheck baseline hashes before apply. Never automatically stash, reset, clean or discard existing user changes.
+When other live PIDs are present at startup, show one localized interactive transcript notice before Ready warning against simultaneous edits to the same files. Headless runs add no notice. PID reuse can produce a stale notice. Presence is informational, not file-level edit locking. Each window retains its in-memory configuration; shared config saves are last-writer-wins.
+
+The saved Hera session ID is published in the presence record before native thread startup/resume. Refuse a matching live record with `SESSION_IN_USE` (exit 6) so two processes cannot drive the same saved native thread. Simultaneous claims may conservatively both refuse. Other sessions in the same workspace remain allowed. Never automatically stash, reset, clean or discard existing user changes.
 
 ### 12.8 Later worktree extension
 
@@ -1148,7 +1150,7 @@ These commands describe the new product. They are not claims that Hera is alread
 | 3 | Authentication/authorization required |
 | 4 | Unsupported runtime, capability or provider path |
 | 5 | Execution failed or safe completion cannot be established |
-| 6 | Workspace lock conflict |
+| 6 | Saved session is already open in another process (`SESSION_IN_USE`); workspace exclusivity retired |
 | 130 | User interruption |
 
 Machine-readable errors include `errorCode`, `retryable` and `outcomeKnown`. Keep diagnostics on stderr and machine-readable final results on stdout when running headless.
@@ -1285,8 +1287,8 @@ A mock suite does not certify live integration. Missing external credentials do 
 | T10 | Mid-stream truncation | Failed/unknown, not fabricated completion |
 | T11 | 401/403/429/5xx | Distinct cause; no silent provider fallback |
 | T12 | Process exits after submission but before result | No automatic replay on resume |
-| T13 | Two Hera instances in one workspace | Only one active workspace owner |
-| T14 | PID reuse, EPERM or stale lock | No blind ownership takeover |
+| T13 | Two Hera instances in one workspace | Both start; the later startup warns about live sessions, and each removes only its own presence |
+| T14 | Resume a saved session already open in another process | Refuse before native resume; dead presence permits resume, uncertain liveness refuses conservatively |
 | T15 | Analysis attempts writes through shell/files/MCP | Actually prevented or safety gate fails |
 | T16 | Permission escalation during analysis | Denied |
 | T17 | N+1 workers or recursive spawns | Real configured bound enforced or gate fails |

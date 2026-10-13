@@ -1,4 +1,4 @@
-import {mkdtemp,readFile,readdir,writeFile,realpath} from 'node:fs/promises';
+import {mkdtemp,readFile,readdir,writeFile,realpath,rm} from 'node:fs/promises';
 import {tmpdir,release} from 'node:os';
 import {join,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -32,3 +32,5 @@ if(process.platform==='win32'){
   const result=spawnSync(shell,['-NoProfile','-File',script],{cwd:root,env,encoding:'utf8',windowsHide:true});if(result.status!==0)throw new Error(`Windows launcher failed: ${result.stderr}`);
 }else{const result=spawnSync(launcher,['--version'],{cwd:root,env,encoding:'utf8'});if(result.status!==0)throw new Error(`macOS shebang failed: ${result.stderr}`);}
 console.log(JSON.stringify({platform:process.platform,arch:process.arch,os:release(),node:process.version,sha256:sha,install:'pass',nativeInitialize:'pass',reinstallPreservedSettings:'pass',osCredentialPersistence:'pass',launcher:'pass',live:'not_run'}));
+// A passed run leaves nothing behind (each install is ~480 MB); a failed run keeps the directory for inspection.
+await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200}).catch(error=>console.error('Temp cleanup failed: '+error.message));

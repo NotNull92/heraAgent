@@ -15,6 +15,17 @@ then input continues normally. Missing or unreadable files are ignored. There is
 watcher or automatic restart; code updates require quitting and starting Hera again.
 Saved settings still apply without restarting Hera.
 
+## Other workspace sessions notice
+
+Several Hera windows may use the same folder. When startup finds other live
+session PIDs, print one transcript line before Ready: "이 폴더에서 다른 Hera 세션이
+실행 중입니다. 같은 파일을 동시에 고치지 않도록 주의하세요." / "Another Hera session
+is running in this folder. Avoid editing the same files at once."
+Print nothing when no other session is present, or in headless runs. This notice
+does not serialize file edits. Windows keep their own in-memory mode/settings;
+saved settings are last-writer-wins. Resuming the same saved session while another
+process has it open is refused with `SESSION_IN_USE` (exit 6).
+
 ## Commands
 
 - A command starts with `/` on every platform. A leading backslash is ordinary text.

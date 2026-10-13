@@ -1,5 +1,134 @@
 # Implementation status
 
+## Hand-off L: concurrent workspace sessions (2026-10-13)
+
+The owner's decision supersedes the uncommitted Hand-off J behavior. Removed
+workspace exclusivity, nonce ownership checks, stale-directory rename takeover,
+`WORKSPACE_LOCKED`, `LOCK_OWNERSHIP_CHANGED` and the recovery notice. The existing
+`acquireWorkspace(home, cwd)` callers now create atomic per-PID presence files
+under the same canonical workspace hash. Live sessions only trigger the new
+Korean/English interactive warning; headless output gains no notice. Dead or
+missing-PID records are cleaned within the current workspace directory; malformed
+live records and legacy `owner.json` are ignored. Release removes only the caller's
+record, including uncertain/error shutdowns, and removes the directory if empty.
+Unknown-outcome metadata handling is unchanged. The 11 live script callers remain
+unchanged, and no file-level edit locking or launch-mode flag was added.
+
+Item 4 finding: neither CLI nor interactive resume had a separate duplicate-resume
+guard; both relied on the exclusive workspace lock through `Controller.open`.
+Before native startup/resume, the shared controller now publishes its new/saved
+`heraSessionId` in the presence file and checks other live records. A matching ID
+raises `SESSION_IN_USE` (exit 6) before native resume. This is a small presence
+check, not a new session-lock subsystem; simultaneous claims may both refuse.
+Dead records permit resume; unknown liveness conservatively refuses a matching ID.
+Per-session metadata filenames and per-window in-memory configuration were
+rechecked. Shared config saves remain last-writer-wins as accepted by the owner.
+
+Observed Windows local results (Windows 10.0.26200 x64, Node 24.12.0,
+PowerShell 7.6.6, project-pinned Codex 0.161.0):
+
+- Typecheck, build, full offline suite (172 tests / 28 files), source/history
+  pattern scan (1,232 tracked files) and diff whitespace checks: PASS, exit 0.
+  Focused safety/provider checks cover coexistence, independent release, dead
+  records, malformed/legacy records, `EPERM`, localized notice ordering,
+  duplicate/simultaneous resume and release on uncertain/failed close.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  PASS, exit 0; root `01a13352-d990-7e62-9c5b-f80c8c4699cd`.
+- `node scripts/live-native-workflow.mjs --live --record --mode=external_workers`:
+  PASS, exit 0; root `01a13355-f0f1-7500-98fa-b49128be1051`.
+  Both suites passed conversation, edit/test, cold resume, routing, approval,
+  cancellation and concurrency with fresh receipts.
+- Agent-operated native Windows PowerShell PTY check: PASS. Two actual CLI
+  processes (PIDs 31336 and 6760) shared a disposable workspace. A dead legacy
+  `owner.json` was removed; the first session printed no notice and the second
+  printed one warning before its startup Ready. Each completed a live greeting.
+  A third headless resume of the first saved session was refused with
+  `SESSION_IN_USE`, exit 6, empty stdout, and its own presence removed. Quitting
+  the second left only the first record; both exited 0 and the directory was gone.
+- Physical desktop-terminal check: NOT_RUN. A test PowerShell console launched
+  but exposed no targetable desktop window, so its verified test-owned process
+  tree was stopped. Its fixture presence was subsequently cleaned through normal
+  acquire/release. The PTY results above are not physical-window acceptance.
+
+New native fingerprints:
+
+- adaptive: `23258ed0528323dccef9442e3beca24720408e2df926871fad4a9953e1383813`
+- external_workers: `0b0baf400c04294c0c113dd150d3b769a7def2e7dba7e857b003a821830fd0d3`
+
+The owner must quit and restart all Hera windows to load the new behavior and
+publish session IDs; older running builds do not publish those IDs. The owner
+accepts simultaneous file-edit conflicts; the notice does not prevent them.
+PID reuse can produce a wrong notice or conservatively refuse a saved-session
+resume. Windows/macOS CI, macOS live/manual and package smoke: NOT_RUN here.
+Both CI targets and the three temp-cleanup files were preserved; their hashes
+match this hand-off's starting state. No other old lock directories were cleaned,
+and no commit, push, release or npm publication was performed.
+
+## Hand-off J: dead workspace-lock owner recovery (2026-10-13)
+
+Historical results below are superseded by Hand-off L above.
+
+Workspace acquisition now reads `owner.json` after an existing-directory conflict
+and takes over only when `process.kill(pid, 0)` returns `ESRCH`. Recovery renames
+the directory to a unique sibling, removes that sibling and attempts acquisition
+once; `ENOENT` during rename or `EEXIST` during reacquisition reports
+`WORKSPACE_LOCKED` (exit 6). Live, reused or unverifiable PIDs and missing,
+unreadable or invalid owner metadata remain locked. Conflict messages name the
+lock directory and known PID. The returned recovery metadata reaches one Korean
+or English interactive transcript notice before Ready; headless output stays
+unchanged. Shutdown release conditions are unchanged. Section 12.7 documents the
+rule; T14's "No blind ownership takeover" remains applicable.
+
+Windows local results (Windows 10.0.26200 x64, Node 24.12.0, PowerShell 7.6.6,
+project-pinned Codex 0.161.0):
+
+- `npm.cmd run typecheck`, `npm.cmd test` (174 tests / 28 files),
+  `npm.cmd run build`, `npm.cmd run source:check` (1,232 tracked files) and
+  `git diff --check`: PASS, exit 0. The final build and focused rerun of all
+  19 safety tests also passed, exit 0.
+- Lock tests cover an actual exited child PID, live owner, fresh nonce/recovery
+  metadata, old-owner release refusal, takeover release, incomplete/unreadable
+  metadata, non-`ESRCH` liveness errors, and rename/reacquisition race failures
+  without retry. The notice test covers Korean/English, no-recovery silence,
+  exactly one line and ordering before Ready.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  PASS, exit 0; conversation, edit/test, cold resume, routing, approval, cancel
+  and concurrency. Root `01a1331f-7073-70c3-880e-6aaf0ef95a55`.
+- `node scripts/live-native-workflow.mjs --live --record --mode=external_workers`:
+  first run FAILED, process exit 1 (`TURN_FAILED`, Hera exit code 5), after
+  conversation, edit/test, cold resume and routing passed. Reading the fixture
+  thread through the native API confirmed `serverOverloaded`: "Selected model is
+  at capacity. Please try a different model." The failed permission turn contained
+  only the user message and no tool execution. Root
+  `01a13322-2c6f-7ca1-a543-cb10e13dd54b`; no pass receipt was recorded for that
+  attempt. One fresh full-suite attempt with the same model/settings PASSED,
+  exit 0, including approval, cancellation and concurrency; root
+  `01a13326-18c0-73a0-b2a0-2ea1e7a4c94c`. No provider/model fallback or replay of
+  an uncertain writing turn was used.
+- Agent-operated native Windows PowerShell PTY check: PASS. Created a disposable
+  workspace with exited PID 35708 in its lock; launched `node bin/hera.mjs --cwd
+  <fixture>`, observed exactly one Korean recovery notice before Ready, verified
+  the replacement owner PID 41012 and a new nonce, submitted "안녕?", received a
+  normal live reply and returned to Ready. Ctrl+Q exited 0 and the fixture lock
+  directory was absent afterward. This is observed PTY evidence, not a physical
+  herdr/desktop-terminal acceptance claim.
+
+New native fingerprints:
+
+- adaptive: `9cb6327f9422a253425a583e41873c1fc5744ab46f30a3884b345d70ec734cb6`
+- external_workers: `0934c361c0e55d13f7b13892887187e52fbee5186f66c0d6a5d059f7c0160adc`
+
+Both recorded fingerprints were checked against the final build: `ready: true`.
+Concurrent temp-cleanup edits in `scripts/smoke-package.mjs`, `vitest.config.ts`
+and `tests/global-setup.ts` were preserved. Typecheck and all 174 offline tests
+passed again with the updated test setup; package smoke was NOT_RUN here.
+
+The owner must quit and restart Hera to load this build. A reused PID still looks
+alive and may require manual lock inspection/removal. No other old workspace
+locks were cleaned up. Windows CI, macOS CI, macOS live/manual and physical
+terminal checks: NOT_RUN for this change; both CI targets remain intact.
+No commit, push, release or npm publication was performed.
+
 ## Public readiness review (2026-10-08; clean repository public)
 
 Develop future changes for independent users on clean Windows and macOS machines,
@@ -2868,3 +2997,39 @@ The root ran the failing reproducer (item 4) before the sum.cjs fileChange
 message; the independent rerun passed. Single sample; runners that spawn child
 processes still hit the Windows sandbox limit recorded above.
 NOT_RUN: bundled-skills suite, macOS/CI.
+
+## Hand-off J review (2026-10-13)
+
+Superseded by Hand-off L: the exclusive lock and its takeover were removed, so the limits below no longer apply.
+
+Claude reviewed the dead-owner lock takeover. Typecheck, 174 tests across 28
+files, build and git diff --check pass on the final tree; both recorded
+fingerprints report ready against the rebuilt dist. Implementation matches the
+brief; no code change from review.
+
+Known limit, accepted: two Hera processes starting in the same workspace at the
+same moment after a crash can both read the dead owner; if the first completes
+its whole takeover before the second renames, the second renames the first's
+new live lock. The window is the few file operations between reading
+owner.json and rename. Closing it means checking the renamed directory's nonce
+against the one read and refusing on mismatch. A rename that fails with a code
+other than ENOENT (for example EPERM while another process holds the
+directory) surfaces as an unclassified error instead of WORKSPACE_LOCKED.
+
+## Hand-off L review (2026-10-13)
+
+Claude reviewed the presence-record change. Typecheck, 172 tests across 28
+files, build and git diff --check pass; both recorded fingerprints report ready
+against the rebuilt dist; no hera-test-run-* directory remained in %TEMP%.
+Implementation matches the brief; no code change from review. No reference to
+WORKSPACE_LOCKED, LOCK_OWNERSHIP_CHANGED or recoveredLock remains in src, tests,
+scripts, READMEs or the UX guide.
+
+Checked specifically: one process reuses one <pid>.json across successive
+sessions, which is safe because InteractiveSession.newSession() awaits the old
+controller's close (and its release) before opening the next. Accepted limits:
+a hard-killed session whose pid is later reused keeps its saved session
+refusing resume with SESSION_IN_USE until that record is removed by hand; a
+crash during an atomic write can leave a .tmp file that keeps the directory.
+NOT_RUN by Claude: live suites (Codex's results above stand), package smoke,
+macOS/CI.

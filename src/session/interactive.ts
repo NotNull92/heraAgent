@@ -117,6 +117,7 @@ export class InteractiveSession extends EventEmitter {
     // Controller.open checks live credentials, models and permissions; do not launch a second discovery runtime first.
     try{this.controller=await Controller.open(this.home,this.cwd,this.config,this.singleAgent,previous);}
     catch(error){if(errorView(error).errorCode==='PROVIDER_SETUP_REQUIRED'){this.providerSetupRequired=true;await this.openProviders().catch(()=>this.providerMenu(null,null));}throw error;}
+    if(this.controller.otherSessionPids.length)this.add(this.config.language==='ko'?'\n이 폴더에서 다른 Hera 세션이 실행 중입니다. 같은 파일을 동시에 고치지 않도록 주의하세요.\n':'\nAnother Hera session is running in this folder. Avoid editing the same files at once.\n');
     this.controller.on('event',event=>this.observe(event));
     this.controller.on('workers',()=>this.emit('change'));
     const shown=new Set<string|number>();this.controller.on('requests',()=>{const request=this.controller!.requests.values().next().value;if(request&&!shown.has(request.id)){shown.add(request.id);this.add(`\n${request.summary}\n`);}for(const id of shown)if(!this.controller!.requests.has(id))shown.delete(id);this.emit('change');});
