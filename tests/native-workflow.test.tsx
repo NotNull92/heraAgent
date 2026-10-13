@@ -32,8 +32,9 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     const initial=JSON.stringify(start.mock.calls[0]?.[0]);
     expect(initial).not.toContain('## Task execution');expect(initial).not.toContain('DRD-1');
     expect(nativeBaseInstructions('external_workers')).toContain('load_instructions');
-    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1850);
+    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(2050);
     expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Ask with request_user_input only when');
+    expect(start.mock.calls[0]?.[0].developerInstructions).toContain('On Windows, prefer test runners without child-process pipes (node --test --test-isolation=none, or Vitest --pool=threads); request escalation only if no supported in-process invocation exists.');
     expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Include the engineering discipline above in fresh worker assignments');
     expect(start.mock.calls[0]?.[0].developerInstructions).not.toContain('Bundled skill routing');
     expect(nativeBaseInstructions('external_workers').length).toBeLessThan(1500);start.mockRestore();
@@ -55,6 +56,7 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.developerInstructions).toContain('research questions');
   expect(params.baseInstructions).not.toContain('Engineering discipline');
   expect(params.developerInstructions).not.toContain('Engineering discipline');
+  expect(params.developerInstructions).not.toContain('--test-isolation=none');
   expect(params.baseInstructions).not.toMatch(/FIRST tool call|load_instructions|reload if missing/);
   expect(params.baseInstructions).toContain('own knowledge and the conversation directly when tools are unnecessary');
   expect(params.baseInstructions).toContain('never search config files or the workspace');

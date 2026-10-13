@@ -3222,3 +3222,148 @@ skills, package smoke, Windows CI, macOS CI and macOS manual/live checks.
 Restart Hera to load the rebuilt UI and new native settings/instructions;
 existing running sessions do not acquire them automatically. No skill edits,
 runtime patch, commit or push.
+
+## Hand-off N: Windows sandbox test-runner investigation (2026-10-13)
+
+Reproduced without model inference using the project-local pinned Codex 0.161.0
+launcher, nativeSettings(config, 'workspace-write', true, undefined, true),
+settingsArgs and childEnvironment, then `codex sandbox -- <command>`. The owner's
+isolated Codex configuration reports `windows.sandbox = "unelevated"`; it was
+not changed. Host: Windows 10.0.26200 x64, PowerShell 7.6.6, Node v24.12.0,
+Vitest 5.0.3. All workspaces used scripts/temp-fixture.mjs. Local Vitest was
+resolved through a fixture junction to the existing node_modules; npx used
+--no-install. No dependency installation, credentials or inference was needed
+for this matrix. The old Hand-off H trace contains the same node:test failure.
+
+Exit-code matrix before and after the instruction-only mitigation below:
+
+| Case | Before | After | Observed result |
+| --- | ---: | ---: | --- |
+| Node spawnSync(process.execPath, ['-v']), default pipes | 0* | 1* | EPERM, errno -4048; child status null |
+| Same spawnSync with stdio: 'inherit' | 0 | 0 | v24.12.0 |
+| Same spawnSync with stdio: 'ignore' | 0 | 0 | Child exits normally |
+| node --test tests/x.test.cjs | 1 | 1 | spawn EPERM, internal/test_runner/runner:398; no assertion runs |
+| node --test --test-isolation=none tests/x.test.cjs | 0 | 0 | One assertion runs and passes |
+| cmd /d /c node -v | 0 | 0 | v24.12.0 |
+| npm test (tiny package script: node --test tests/x.test.cjs) | 1 | 1 | npm starts its script; node:test then hits spawn EPERM |
+| npx --no-install vitest run tests/vitest.test.mjs | 1 | 1 | Failed to start forks worker; caused by spawn EPERM |
+| Direct local Vitest run --pool=threads --maxWorkers=1 | 0 | 0 | One test passes |
+| npx --no-install vitest run tests/vitest.test.mjs --pool=threads | NOT_RUN | 0 | One test passes without a process worker |
+| python -m pytest | NOT_RUN | NOT_RUN | Python 3.14.2 exists, but pytest is not installed |
+
+*spawnSync returns an error object rather than throwing: the initial diagnostic
+wrapper itself exited 0 while reporting child status null and EPERM. The later
+minimal node -e wrapper maps that returned error to exit 1. This is not a test
+pass or a behavior change. Both wrappers capture the returned error explicitly.
+Vitest's failing forks run also reports a worker-termination timeout and no tests.
+
+Every initial matrix case was repeated under four configurations, before and
+after rebuilding, with identical outcomes: (1) Hera defaults, (2) TEMP and TMP
+pointed to a new writable workspace/temp directory, (3) the same directory also
+explicitly added to writable_roots, and (4) shell_environment_policy.inherit=all
+within Hera's existing allowlisted childEnvironment. The last variant exposes
+no additional credentials. Core already retains PATH, SYSTEMROOT, TEMP and TMP.
+The normal exclude_tmpdir_env_var/exclude_slash_tmp settings remained true;
+network access remained false. No existing global TEMP directory was granted
+write access. Controls therefore rule out these TEMP settings and the core
+shell-environment filter as the cause of this fixture's failure.
+
+The demonstrated failure is **write access to a newly created Windows named
+pipe in the unelevated restricted-token sandbox**, rather than a blanket ban on
+child processes. A separate C# Win32 API probe, compiled outside the sandbox in
+the disposable workspace and run inside it, reproduces the failure without
+Node or CreateProcess: CreateNamedPipe succeeds; CreateFile with GENERIC_READ
+succeeds; GENERIC_WRITE, READ|WRITE, and READ|WRITE|WRITE_DAC each return Windows
+error 5 (Access Denied). The same probe outside the sandbox with the same
+allowlisted environment succeeds for all four access masks. No DACL was changed.
+
+Node v24.12.0's [libuv stdio implementation](https://github.com/nodejs/node/blob/v24.12.0/deps/uv/src/win/process-stdio.c#L213)
+creates pipe pairs, whose [client ends require write permissions](https://github.com/nodejs/node/blob/v24.12.0/deps/uv/src/win/pipe.c#L232).
+Its [spawn implementation](https://github.com/nodejs/node/blob/v24.12.0/deps/uv/src/win/process.c#L945)
+builds stdio before CreateProcessW, explaining why Node reports this pipe
+failure as spawn EPERM. Ordinary creation flags do not request job breakaway.
+The pinned local runtime source (979011409de0a60b52f179721948e65531d26144)
+uses restricted tokens in windows-sandbox-rs/src/spawn_prep.rs and token.rs;
+utils/pty/src/win/job.rs applies kill-on-close/breakaway flags, not an active
+process-count ceiling. Successful inherited-stdio children and the independent
+pipe probe rule out a general CreateProcess/job-object child prohibition here.
+The exact Windows access-check/ACE responsible was not instrumented, so no
+claim is made that changing a specific DACL or runtime flag would fix it.
+
+The other sandbox setup mode is NOT_RUN. Elevated setup provisions dedicated
+accounts and host sandbox state; an alternate CODEX_HOME alone does not make
+that a non-disturbing experiment. No automatic mode switch or doctor
+recommendation was added without evidence that elevated mode works.
+
+Selected the requested fallback (3c): one Development-only sentence in
+src/session/prompts.ts recommends `node --test --test-isolation=none` or Vitest
+`--pool=threads` on Windows, with escalation only when no supported in-process
+invocation exists. These preserve the native workspace boundary. This is model
+guidance, not a runtime repair: default pipe-spawning runners still fail, and
+projects that themselves spawn piped children may still need an explicit
+permission decision. No production approval policy, writable root, network permission,
+sandbox mode, runtime binary or runtime source was changed. Design text remains
+byte-identical. Start a fresh Hera session after restarting the rebuilt app to
+use the new instructions; existing history is preserved.
+
+Added native-prompts-hand-off-n-20261013.json by inserting only that sentence
+into the frozen M fixture's Development cases; older fixtures remain unchanged.
+Development developer text grows by 193 characters (no-worker fixture: 1,789 to
+1,982); the literal and <2,050 length assertions were updated. Separately,
+native-prompt.test.tsx now waits for the current selection, question, typed text
+or answer call, bounded by 40 x 70 ms, instead of asserting after one tick.
+Both Korean and English selection/free-text/cancellation cases remain covered.
+
+Added scripts/live-native-test-runner.mjs with the original Hand-off H node:test
+fixture and an unambiguous bug-fix request that does not tell the model which
+runner flag to use. It asserts a real assertion failure before the source edit,
+a passing rerun afterwards, no approval requests, no questions/workers, unchanged
+test source, a final stated assumption and independent passing checks. The
+existing in-process live-engineering-discipline.mjs is unchanged.
+
+Observed offline verification:
+
+- npm.cmd run typecheck: PASS, exit 0.
+- Focused prompt/native-workflow/NativePrompt tests: PASS, 10 tests in 3 files.
+- npm.cmd test: PASS, 176 tests in 29 files, exit 0.
+- npm.cmd run build: PASS, exit 0.
+- node --check scripts/live-native-test-runner.mjs: PASS, exit 0.
+- Before/after matrix comparison and expected exit/error assertions: PASS.
+  Both matrix workspaces were confirmed removed on successful script exit.
+- Local evidence and diagnostic sources: outputs/hand-off-n-20261013/ (ignored),
+  including initial-matrix.json, after-matrix.json and the Win32 pipe probe.
+
+Owner-authorized Windows live qualification after the rebuild:
+
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive:
+  PASS, exit 0; conversation, edit/test, resume, routing, approval, cancellation
+  and concurrency gates passed. Root: 01a13446-430c-7841-b714-3a29ff54fff9.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers:
+  PASS, exit 0; all seven gates passed, including complete model-visible coding
+  handbook loading before edits. Root: 01a13449-203c-76e0-a74c-abc5d6b568c5.
+
+New recorded Windows fingerprints (supersede the M receipts):
+
+- Design/adaptive: `3dbbc36f978fe05f02718e2121fccfc9b7c66c7595020f12e39032f4dac69454`.
+- Development/external_workers: `ef5239b9de339631613047a6ea9f877699f8a9f258b5502b49354111f585fbcb`.
+
+Original node:test live probe:
+
+- node scripts/live-native-test-runner.mjs --live: PASS, exit 0, one run.
+  The model chose `node --test --test-isolation=none tests/sum.test.cjs` without
+  the user probe specifying flags. A real assertion failure (exit 1, item 5)
+  preceded the source edit (item 7); the same test passed (exit 0, item 8).
+  The original node:test file was unchanged. Approvals: 0; questions: 0;
+  workers: 0. Final assumption and independent ordinary node --test plus
+  additional arithmetic checks passed. First text: 23,237 ms; total: 61,162 ms.
+  Root: 01a1344e-b458-7430-8572-d277f3bc8ee1. Its successful disposable workspace
+  was removed. Receipt: outputs/hand-off-n-20261013/live-node-test.log (ignored).
+- Fresh nativeCapability checks report both modes ready with the fingerprints
+  above. git diff --check: PASS.
+
+NOT_RUN: elevated-mode setup, pytest (module absent), macOS automated/manual/live
+checks, Windows CI, package checks and other live suites including a repeat of
+the preserved in-process engineering-discipline probe. No macOS sandbox settings
+or CI definitions changed; Windows-only guidance is semantically inactive there,
+but this is not macOS verification. Existing TEMP entries and Hera locks were
+not cleaned. No runtime patch, commit or push.

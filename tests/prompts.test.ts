@@ -4,10 +4,10 @@ import {configSchema,type Config} from '../src/config.js';
 import {nativeBaseInstructions,adaptiveRouting,developmentRouting,skillRouting,nativeDeveloperInstructions,PLAN_PREFIX} from '../src/session/prompts.js';
 import {bundledSkillsRoot} from '../src/codex/skills.js';
 
-// Hand-off M replaces only the Development ask sentence in the preserved H outputs; never regenerate from the builders.
-const fixture=JSON.parse(readFileSync(new URL('./fixtures/native-prompts-hand-off-m-20261013.json',import.meta.url),'utf8')) as {researchHandbook:string;planPrefix:string;cases:{config:Config;workers:boolean;base:string;routing:string;skillRouting:string;developerInstructions:string}[]};
+// Hand-off N adds only Windows runner guidance to the preserved M outputs; never regenerate from the builders.
+const fixture=JSON.parse(readFileSync(new URL('./fixtures/native-prompts-hand-off-n-20261013.json',import.meta.url),'utf8')) as {researchHandbook:string;planPrefix:string;cases:{config:Config;workers:boolean;base:string;routing:string;skillRouting:string;developerInstructions:string}[]};
 const portable=(text:string)=>text.replaceAll(JSON.stringify(bundledSkillsRoot),JSON.stringify('<bundled-skills-root>'));
-it('preserves every prompt builder byte-for-byte against the Hand-off M baseline, including whitespace',()=>{
+it('preserves every prompt builder byte-for-byte against the Hand-off N baseline, including whitespace',()=>{
   expect(PLAN_PREFIX).toBe(fixture.planPrefix);
   for(const row of fixture.cases){
     const config=configSchema.parse(row.config);
