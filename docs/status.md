@@ -3130,3 +3130,16 @@ These two live runs also exercised the Hand-off K helper: %TEMP%/hera* entries
 were 213 before and 213 after. The fingerprints in the Hand-off L section are
 superseded. NOT_RUN: other live scripts, package smoke, macOS/CI. The owner
 must restart Hera.
+
+## Timing-sensitive TUI test stabilized (2026-10-13)
+
+tests/tui.test.tsx "shows submitted Korean input while the runtime is still
+connecting and keeps it if connection fails" sampled ui.lastFrame() one 70 ms
+tick after Enter and after the connection failure. The echo is added
+synchronously in InteractiveSession.submit, but the frame is rendered
+asynchronously, so under load the sampled frame could predate it (5 failures
+in 8 full-suite runs earlier today, 3/3 passes alone). The test now waits for
+the text to appear in any frame, up to 40 ticks, the same pattern
+tests/build-notice.test.tsx uses. Test-only change; no product code touched.
+Result: typecheck PASS; six consecutive full-suite runs 172/172.
+NOT_RUN: macOS/CI.

@@ -8,6 +8,8 @@ import {parseLimits,mergeLimits,windowsFor} from '../src/session/limits.js';
 import {InteractiveSession} from '../src/session/interactive.js';
 import {defaults} from '../src/config.js';
 const tick=()=>new Promise(resolve=>setTimeout(resolve,70));
+// Rendering after an input is asynchronous; under load one tick is not always enough, so wait for the text instead of sampling one frame.
+const shown=async(ui:{frames:string[]},text:string)=>{for(let i=0;i<40&&!ui.frames.some(frame=>frame.includes(text));i++)await tick();return ui.frames.some(frame=>frame.includes(text));};
 it('shows submitted Korean input while the runtime is still connecting and keeps it if connection fails',async()=>{
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
   let fail!:(error:Error)=>void;const pending=new Promise<void>((_,reject)=>{fail=reject;});
@@ -16,9 +18,9 @@ it('shows submitted Korean input while the runtime is still connecting and keeps
   try{
     await tick();ui.stdin.write('안녕하세요');await tick();expect(ui.lastFrame()).toContain('> 안녕하세요');
     ui.stdin.write('\r');await tick();
-    expect(connect).toHaveBeenCalledTimes(1);expect(session.busy).toBe(true);expect(ui.lastFrame()).toContain('You: 안녕하세요');expect(session.transcript).not.toContain('Hera:');
+    expect(connect).toHaveBeenCalledTimes(1);expect(session.busy).toBe(true);expect(await shown(ui,'You: 안녕하세요')).toBe(true);expect(session.transcript).not.toContain('Hera:');
     fail(new Error('Connection fixture failed'));await tick();
-    expect(session.busy).toBe(false);expect(ui.lastFrame()).toContain('Connection fixture failed');expect(session.transcript.match(/You: 안녕하세요/g)).toHaveLength(1);
+    expect(session.busy).toBe(false);expect(await shown(ui,'Connection fixture failed')).toBe(true);expect(session.transcript.match(/You: 안녕하세요/g)).toHaveLength(1);
   }finally{fail(new Error('Fixture cleanup'));await tick();connect.mockRestore();ui.unmount();await session.close();}
 });
 it('Ctrl+C interrupts busy work, then exits only after idle session cleanup; paste never exits',async()=>{
