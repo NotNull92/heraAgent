@@ -32,8 +32,8 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     const initial=JSON.stringify(start.mock.calls[0]?.[0]);
     expect(initial).not.toContain('## Task execution');expect(initial).not.toContain('DRD-1');
     expect(nativeBaseInstructions('external_workers')).toContain('load_instructions');
-    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1750);
-    expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Ask the user only when');
+    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1850);
+    expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Ask with request_user_input only when');
     expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Include the engineering discipline above in fresh worker assignments');
     expect(start.mock.calls[0]?.[0].developerInstructions).not.toContain('Bundled skill routing');
     expect(nativeBaseInstructions('external_workers').length).toBeLessThan(1500);start.mockRestore();
@@ -44,7 +44,7 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     }finally{await controller.close();}
   }
 });
-it('compiles explicit native sandbox settings and leaves legacy qualification unchanged',()=>{const settings=nativeSettings(defaults,'workspace-write',true,'http://127.0.0.1:1234/mcp',true);expect(settings.approval_policy).toBe('on-request');expect(settings['agents.enabled']).toBe(true);expect(settings['mcp_servers.hera_web.enabled']).toBe(true);expect(settings['sandbox_workspace_write.network_access']).toBe(false);expect(()=>nativeSettings(defaults,'workspace-write',true)).toThrow();});
+it('compiles explicit native sandbox settings and leaves legacy qualification unchanged',()=>{const settings=nativeSettings(defaults,'workspace-write',true,'http://127.0.0.1:1234/mcp',true);expect(settings.approval_policy).toBe('on-request');expect(settings['features.default_mode_request_user_input']).toBe(true);expect(settings['agents.enabled']).toBe(true);expect(settings['mcp_servers.hera_web.enabled']).toBe(true);expect(settings['sandbox_workspace_write.network_access']).toBe(false);expect(()=>nativeSettings(defaults,'workspace-write',true)).toThrow();});
 it('starts Design and its fresh worker instructions without a coding workflow',async()=>{
   const client={start:vi.fn().mockRejectedValue(new Error('capture')),on:vi.fn()} as unknown as CodexClient;
   const controller=new Controller(client,'unused','unused',structuredClone(defaults),true,true);

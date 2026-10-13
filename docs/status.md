@@ -3143,3 +3143,82 @@ the text to appear in any frame, up to 40 ticks, the same pattern
 tests/build-notice.test.tsx uses. Test-only change; no product code touched.
 Result: typecheck PASS; six consecutive full-suite runs 172/172.
 NOT_RUN: macOS/CI.
+
+## Hand-off M: native model questions (2026-10-13)
+
+Enabled `features.default_mode_request_user_input` in native settings. Rechecked
+the pinned Codex 0.161.0 source at
+`979011409de0a60b52f179721948e65531d26144`: tools/src/tool_config.rs adds Default
+to the available modes when this feature is enabled; features/src/lib.rs marks
+it UnderDevelopment and disabled by default. The packaged config schema contains
+the key. Both the official project-local runtime and the installed mixed runtime
+returned `true` from config/read with the new settings. A real Development turn
+then produced `item/tool/requestUserInput` in Default mode; the native trace and
+`isBlocking: false` were checked. No runtime patch or Plan collaboration mode
+was introduced.
+
+Only the Development engineering-discipline ask sentence changed: use
+request_user_input when interpretations materially change the work, presenting
+them as options. The following assumption-and-proceed sentence is preserved.
+Added the M prompt fixture by replacing that sentence in the frozen H fixture;
+older fixtures, both Design cases and all other prompt-builder output remain
+unchanged. Updated the native-workflow literal assertion and config expectation.
+
+Worker finding (pinned-source inspection): children inherit the feature and the
+tool registry exposes request_user_input to them, but the handler rejects every
+non-root thread with "request_user_input can only be used by the root thread"
+before emitting an App Server request. Such a call cannot open a Hera question
+prompt. Root requests enter Controller's pending-request queue and NativePrompt.
+The role feature override allowlist does not include this flag, so setting it
+false in a child role would not disable it. Added one sentence to the shared
+worker instructions forbidding user questions/request_user_input and directing
+ambiguity back to Hera. This is guidance in addition to the native root-only
+guard. The guard was inspected, not deliberately exercised by a live child.
+Grilling/grill-me skill files and their numbered-text workflow are unchanged.
+
+Checked the native schema: one to three questions, two to three suggested
+options, and an automatically enabled free-text Other choice. Existing option
+selection and multi-question accumulation worked. Fixed Escape in free-text
+answers to cancel the entire request with `{}`, disabled command completion in
+answers, preserved pasted slash-prefixed answers literally, and suppressed the
+question picker's extra key guide. Other settings pickers retain their existing
+behavior. Added Korean/English select, free-text, three-question and cancellation
+tests, plus the "Questions from the model" UX-guide entry. Headless handling is
+unchanged: no interactive listener means the wire response is `{answers:{}}`.
+
+Observed Windows x64 verification (Node v24.12.0, PowerShell 7.6.6):
+
+- New NativePrompt regression tests: reproduced four failures before the fix;
+  all four pass after it. Full `npm.cmd test`: PASS, 176 tests across 29 files.
+  The final literal-paste refinement also passed all 32 NativePrompt/TUI tests.
+- `npm.cmd run typecheck`, `npm.cmd run build`, node --check for both changed/new
+  live probes, and `git diff --check`: PASS, exit 0.
+- `node scripts/live-native-workflow.mjs --live --record --mode=adaptive`:
+  PASS, exit 0; conversation, editing/tests, resume, routing, approvals,
+  cancellation and concurrency. Root: `01a133f0-23dc-7293-8d47-6da0acf94c67`.
+- The same command with `--mode=external_workers`: PASS, exit 0, all seven
+  checks. Root: `01a133f3-fc65-7b21-b9c7-6cd3179b9410`.
+- `node scripts/live-native-questions.mjs --live`: PASS, exit 0. Uses
+  temp-fixture.mjs and three bounded turns. The ambiguous request offered
+  interpretations through the native tool; choosing absolute magnitude wrote
+  `-12`, matching the answer. The headless Controller path used by CLI run/resume
+  returned empty answers in both a fresh and a resumed thread; each asked once,
+  stated an assumption and completed with `7`, without stalling or re-questioning.
+  All three turns were Default mode. Roots: `01a133f9-a097-7f93-8481-69734bccf71a`
+  (selected) and `01a133fa-6b40-7403-b0e7-f1a692a1563d` (headless, same-thread resume).
+- `node scripts/live-engineering-discipline.mjs --live`: PASS, exit 0, one run;
+  questions: 0. Failing reproducer item 4 preceded source change item 6 and
+  passing test item 7; final assumption and independent rerun passed. First
+  text: 3,207 ms; total: 28,016 ms. Root: `01a133fd-0f89-7e01-8736-2c8e39bfe9f9`.
+
+New recorded Windows fingerprints (supersede earlier receipts):
+
+- Design/adaptive: `877411d428eaf29881b5e86b78ccdff5ce370ccc1166b97959fc913caf0fa30a`.
+- Development/external_workers: `92a33e0c26cb0583572fb1b6f952391777ca1c12147f49252c39521d15d054d1`.
+
+Local sanitized live receipts: `outputs/hand-off-m-20261013/` (ignored).
+NOT_RUN: physical terminal/IME inspection, other live suites including bundled
+skills, package smoke, Windows CI, macOS CI and macOS manual/live checks.
+Restart Hera to load the rebuilt UI and new native settings/instructions;
+existing running sessions do not acquire them automatically. No skill edits,
+runtime patch, commit or push.

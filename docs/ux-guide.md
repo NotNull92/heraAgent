@@ -82,6 +82,19 @@ verbatim. For handoff, Astra composes the document and Hera saves it under norma
 native write permissions. Development's GPT root performs the same skill workflow
 directly. Design requires workers to be enabled for these Astra assignments.
 
+## Questions from the model
+
+Development asks through native question choices when different interpretations
+would materially change the work. Up/Down selects an option; Enter confirms it.
+Choose `직접 입력` / `Type an answer` for a different answer, then type and press
+Enter. Slash-prefixed answers are literal text, not commands. Up to three
+questions appear one at a time; answers are sent together after the last one.
+Escape or `취소` / `Cancel` cancels the whole request and sends empty answers,
+including from the free-text input. No additional key guide is shown. Headless
+run/resume sends empty answers so the model can state an assumption and proceed.
+Workers report ambiguity to Hera instead of questioning the user. Bundled
+grilling/grill-me interviews keep their numbered text rounds.
+
 ## Voices (`/style`)
 
 `/style` picks the voice Hera answers in. A voice only changes how answers are worded

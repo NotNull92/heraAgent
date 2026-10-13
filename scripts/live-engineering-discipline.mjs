@@ -19,7 +19,7 @@ await writeFile(join(cwd,'sum.cjs'),'module.exports=(a,b)=>a-b;\n');
 await writeFile(join(cwd,'tests','sum.test.cjs'),"const assert=require('node:assert/strict');\nconst sum=require('../sum.cjs');\nassert.equal(sum(2,3),5,'adds positive integers');\nconsole.log('adds positive integers: passed');\n");
 const runTests=()=>spawnSync(process.execPath,['tests/sum.test.cjs'],{cwd,encoding:'utf8',windowsHide:true});
 const baseline=runTests();assert.equal(baseline.status,1);assert.match(baseline.stderr,/adds positive integers/);assert.match(baseline.stderr,/ERR_ASSERTION/);
-let controller;let timer;let firstTextMs=null;
+let controller;let timer;let firstTextMs=null;let questions=0;
 try{
   const client=await CodexClient.session(home,cwd,config,'workspace-write',true,true);
   controller=new Controller(client,home,cwd,config,true,true);controller.lock=await acquireWorkspace(home,cwd);await controller.start();
@@ -27,7 +27,7 @@ try{
   controller.on('event',event=>{
     if(firstTextMs===null&&event.method==='item/agentMessage/delta'&&event.params.threadId===controller.metadata.codexThreadId&&event.params.delta)firstTextMs=Math.round(performance.now()-started);
   });
-  controller.on('requests',()=>{for(const request of controller.requests.values())controller.answerRequest(request.id,request.questions?{}:'decline');});
+  controller.on('requests',()=>{for(const request of controller.requests.values()){if(request.questions)questions++;controller.answerRequest(request.id,request.questions?{}:'decline');}});
   console.log(JSON.stringify({stage:'bug-fix',mode:config.mode,threadId:controller.metadata.codexThreadId}));
   const result=await Promise.race([
     controller.run('sum.cjs의 덧셈 버그를 고쳐줘. 양의 정수 2와 3을 더하면 5여야 하는데 -1이 나와. tests/ 폴더에 Node 테스트가 있어. 테스트는 node:test 없이 같은 프로세스에서 실행되는 일반 assert 스크립트이므로 `node tests/sum.test.cjs`로 실행해. 작은 작업이니 직접 처리하고 웹이나 다른 작업자는 쓰지 마.'),
@@ -36,7 +36,7 @@ try{
   await controller.workers.assertIdle(controller.client,true);
   const totalMs=Math.round(performance.now()-started);
   console.log(JSON.stringify({stage:'bug-fix-completed',firstTextMs,totalMs,threadId:result.threadId}));
-  assert.equal(result.status,'completed');assert.equal(controller.workers.count,0);
+  assert.equal(result.status,'completed');assert.equal(questions,0,'Unambiguous work must not ask questions');assert.equal(controller.workers.count,0);
   const thread=await controller.client.read(result.threadId);const items=thread.turns.at(-1).items;
   const sourceChangeIndex=items.findIndex(item=>item.type==='fileChange'&&item.status==='completed'&&item.changes.some(change=>resolve(cwd,change.path)===join(cwd,'sum.cjs')));
   assert(sourceChangeIndex>=0,'Root must make an observed source fileChange');
@@ -49,5 +49,5 @@ try{
   assert.equal(runTests().status,0,'Independent test rerun must pass');
   assert.equal(spawnSync(process.execPath,['-e',"const assert=require('node:assert/strict');const sum=require('./sum.cjs');assert.equal(sum(2,3),5);assert.equal(sum(-2,4),2);"],{cwd,windowsHide:true}).status,0);
   assert.notEqual(firstTextMs,null);
-  console.log(JSON.stringify({engineeringDiscipline:'pass',mode:config.mode,platform:process.platform,arch:process.arch,fingerprint:qualification.fingerprint,threadId:result.threadId,firstTextMs,totalMs,reproducingTestIndex,sourceChangeIndex,passingTestIndex,assumptionStated:true,cwd,checks:['rootFailingTestBeforeSourceChange','rootPassingTestAfterFix','finalAssumption','independentTests']}));
+  console.log(JSON.stringify({engineeringDiscipline:'pass',mode:config.mode,platform:process.platform,arch:process.arch,fingerprint:qualification.fingerprint,threadId:result.threadId,firstTextMs,totalMs,reproducingTestIndex,sourceChangeIndex,passingTestIndex,assumptionStated:true,questions,cwd,checks:['rootFailingTestBeforeSourceChange','rootPassingTestAfterFix','finalAssumption','independentTests']}));
 }finally{clearTimeout(timer);if(controller&&!await controller.close())process.exitCode=5;}
