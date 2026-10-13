@@ -32,7 +32,9 @@ it('executes native turns without a workspace baseline, and answers approvals wh
     const initial=JSON.stringify(start.mock.calls[0]?.[0]);
     expect(initial).not.toContain('## Task execution');expect(initial).not.toContain('DRD-1');
     expect(nativeBaseInstructions('external_workers')).toContain('load_instructions');
-    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1500);
+    expect((start.mock.calls[0]?.[0].developerInstructions??'').length).toBeLessThan(1750);
+    expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Ask the user only when');
+    expect(start.mock.calls[0]?.[0].developerInstructions).toContain('Include the engineering discipline above in fresh worker assignments');
     expect(start.mock.calls[0]?.[0].developerInstructions).not.toContain('Bundled skill routing');
     expect(nativeBaseInstructions('external_workers').length).toBeLessThan(1500);start.mockRestore();
       await client.initialize();await expect(controller.run('fixture')).resolves.toMatchObject({status:'completed'});expect(observed).toEqual({decision:decision==='headless'?'decline':decision});expect(turn.mock.calls[0]?.[0]).toMatchObject({approvalPolicy:'on-request',sandboxPolicy:{type:'workspaceWrite',networkAccess:false}});expect(()=>controller.answerRequest('native-approval','accept')).toThrow('no longer pending');
@@ -51,6 +53,8 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.baseInstructions).toContain('research handbook is already in the developer instructions');
   expect(JSON.stringify(params)).not.toMatch(/topic=\\"coding|routine coding|authorized edits|editing worker-owned|coding handbook/);
   expect(params.developerInstructions).toContain('research questions');
+  expect(params.baseInstructions).not.toContain('Engineering discipline');
+  expect(params.developerInstructions).not.toContain('Engineering discipline');
   expect(params.baseInstructions).not.toMatch(/FIRST tool call|load_instructions|reload if missing/);
   expect(params.baseInstructions).toContain('own knowledge and the conversation directly when tools are unnecessary');
   expect(params.baseInstructions).toContain('never search config files or the workspace');
@@ -66,6 +70,7 @@ it('starts Design and its fresh worker instructions without a coding workflow',a
   expect(params.baseInstructions).toContain('brief correctness check and start with the useful answer immediately');
   expect(params.developerInstructions).toContain("Match the assignment to the user's actual scope");
   expect(params.developerInstructions).toContain('normally within 250 words');
+  expect(params.developerInstructions).toContain('the assumptions made, and a simpler alternative if one exists');
   expect(params.developerInstructions).toContain('explicit requests for detail take precedence');
   expect(params.developerInstructions).toContain('without re-solving the design');
   expect(params.developerInstructions).toContain('Bundled skill routing overrides');

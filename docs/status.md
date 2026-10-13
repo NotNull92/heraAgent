@@ -2675,3 +2675,196 @@ Live (owner asked for the wording fix, which implies re-qualification):
   truncated; two consecutive runs now accepted the first spawn at once.
 NOT_RUN: external_workers skills suite (adaptive-only text changed; its
 workflow record is fresh), macOS/CI.
+
+
+## Hand-off H: default engineering discipline in developer instructions (2026-10-12)
+
+Added always-on Development harness guidance in src/session/prompts.ts, shared by
+external_workers and the legacy gpt_only prompt fallback. It does not activate
+retired gpt_only execution. The existing instruction to finish authorized edits
+and tests in the same task is unchanged. Reviewed the four principles in
+[the Karpathy-inspired source guidelines](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/CLAUDE.md)
+and paraphrased the missing guidance; no source sentence was copied verbatim, so
+THIRD_PARTY_NOTICES.md is unchanged. No skill was installed or bundled.
+
+The appended Development block is exactly:
+
+> Engineering discipline: In the final message, state the assumptions used. Ask with request_user_input only when plausible interpretations would materially change the work. Otherwise, state your assumption and proceed. Before implementation, point out any simpler approach that satisfies the request. Keep single-use logic inline and omit unrequested options, flexibility and defenses against impossible states. Limit edits to the requested outcome; remove imports, variables and functions your changes leave unused, but only report pre-existing dead code. When tests exist, reproduce a bug with a failing test before fixing it, then verify it passes. For refactoring, check relevant tests both before and after the change. Pair each step of a multi-step plan with a concrete verification.
+
+Fresh Development worker assignments additionally receive this sentence:
+
+> Include the engineering discipline above in fresh worker assignments and tell workers to follow it.
+
+Design changes only by extending its decision-brief request with
+"the assumptions made, and a simpler alternative if one exists". Design base instructions and the Design
+branch's own developer text have no Engineering discipline block. The coding
+handbook, controller, runtime, TUI and other prompt text are unchanged. README
+now describes these default Development rules in one sentence.
+
+Created tests/fixtures/native-prompts-hand-off-h-20261012.json from the G fixture
+plus precisely these insertions. Older fixtures are untouched. Retained literal
+native-workflow assertions and added checks for conditional request_user_input,
+worker guidance, the Design decision clause, and absence of Engineering discipline
+from Design base/developer instructions. The existing Development fixture is
+1,748 characters, so its upper bound changes minimally from <1500 to <1750; the
+base-instruction bound remains <1500.
+
+Developer-message size delta (character counts, not measured tokenizer counts):
+
+| Fixture mode | Workers | Before | After | Delta |
+| --- | --- | ---: | ---: | ---: |
+| adaptive | disabled | 1652 | 1652 | +0 |
+| adaptive | enabled | 5233 | 5296 | +63 |
+| external_workers | disabled | 859 | 1748 | +889 |
+| external_workers | enabled | 863 | 1752 | +889 |
+| gpt_only | disabled | 859 | 1748 | +889 |
+| gpt_only | enabled | 924 | 1813 | +889 |
+
+The Development block contributes 789 characters and
+its worker sentence 100; the Design clause contributes
+63. Counts use the same portable skill-root placeholder,
+research-handbook fixture and configuration before and after. Actual token delta
+was NOT_MEASURED; whole-turn token usage is not a developer-message token count.
+
+Observed Windows local checks (Windows 10.0.26200 x64, PowerShell 7.6.6,
+Node v24.12.0, project-local pinned Codex 0.161.0):
+
+- npm.cmd run typecheck: PASS, exit 0.
+- npm.cmd test -- tests/prompts.test.ts tests/native-workflow.test.tsx
+  tests/fingerprint-coverage.test.ts: PASS, seven tests across three files, exit 0.
+- npm.cmd run build: PASS, exit 0.
+- node --check scripts/live-engineering-discipline.mjs: PASS, exit 0.
+- Exact three-insertion source/fixture checks: PASS. Older fixtures and unrelated
+  files preserved; git diff --check: PASS, exit 0.
+
+Both requested workflow suites ran once after rebuilding and passed all seven
+checks, exit 0:
+
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive:
+  recorded 2026-10-12T09:46:22.589Z; root
+  01a12f7f-5d77-7ee2-b40d-a2538a02d46d; fingerprint
+  698979d336c85781c12ce43dcb97944f45b4d79a46f3c0cf37aa668591f2c362.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers:
+  recorded 2026-10-12T09:49:11.630Z; root
+  01a12f81-baf5-7f52-b621-1b0352e3454a; fingerprint
+  9f7bbb6fda8f57563c544b36f189e38cb50a46853a807899a099ed090792c82f.
+
+A final read-only nativeCapability check reports both saved fingerprints ready.
+These workflow receipts do not certify the separate discipline probe below.
+
+Added scripts/live-engineering-discipline.mjs: one bounded, opt-in Development
+turn in a disposable workspace with sum.cjs and tests/sum.test.cjs. Its assertions
+require an actual failing reproducer before the source fileChange, a passing
+root rerun after the fix, a final assumption statement and independent test
+verification. It declines interactive approvals and never changes permissions.
+
+Observed probe results:
+
+- Initial preflight: FAIL, exit 1 before any model call. The local Node test runner
+  emitted spec output while the self-check expected TAP. Changed the checks to
+  use the test name, assertion error and exit code instead of a reporter format.
+- node scripts/live-engineering-discipline.mjs --live: one actual live model turn,
+  root 01a12f84-c03a-79a2-88dd-821678fd7ba9. First text: 2,733 ms; total turn:
+  41,310 ms. Suite FAIL, exit 1; acceptance BLOCKED by native test execution.
+- Read-only saved-event inspection confirms the root attempted node --test at
+  item index 4 before the completed sum.cjs source fileChange at index 7. The
+  command exited 1 with spawn EPERM before executing the test assertion. The
+  headless fixture declined the requested escalation. This is attempted test
+  ordering, not a reproduced failing test or a successful test-first pass.
+- The root fixed the operator and explicitly stated numeric-input assumptions
+  in its Korean final message, while reporting tests as unverified because of
+  the permission restriction. No passing native test rerun was observed.
+- Corrected two probe-check details found during readback: expected nonzero
+  commands have native status failed, and Korean assumption wording can use
+  "전제" as well as "가정". Offline saved-event checks and final syntax check pass;
+  the corrected live probe was NOT_RUN again. The real EPERM failure remains
+  rejected; no evidence was promoted to pass and no model turn was replayed.
+
+Full offline suite, bundled-skills rerun, package/install smoke, Windows/macOS CI,
+manual terminal and macOS live checks: NOT_RUN for this hand-off. No sandbox,
+credential or runtime settings were changed. Both OS workflows remain intact.
+Local receipts are in ignored outputs/hand-off-h-20261012/. No commit, push,
+release or npm publication was performed. The owner must quit and restart Hera
+to load the rebuilt instructions. A future discipline probe still needs an
+executable test runner within the native sandbox; its live acceptance is open.
+
+## Hand-off H review: ask rule no longer names an unexposed tool (2026-10-13)
+
+Claude reviewed Hand-off H. Typecheck, 158 tests across 28 files, build and
+git diff --check pass; the H fixture equals the G fixture plus only the three
+recorded insertions (checked by stripping them and comparing every field).
+
+Defect found in the brief itself, not in Codex's implementation: the block said
+"Ask with request_user_input only when ...". In pinned Codex 0.161.0 that tool
+is offered only in Plan collaboration mode unless the under-development feature
+default_mode_request_user_input is enabled (tools/src/tool_config.rs,
+features/src/lib.rs: default_enabled false). Hera sets neither, so a Development
+turn has no such tool. Reworded to "Ask the user only when plausible
+interpretations would materially change the work." in src/session/prompts.ts,
+the H fixture (four Development cases) and the native-workflow assertion. The
+Development developer message is 15 characters shorter than recorded above
+(1,733 for the fixture case; bound <1750 unchanged). Enabling the feature so
+questions use the existing NativePrompt UI is a possible later change; not done.
+
+The fingerprints recorded in the section above are superseded:
+
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive: PASS,
+  seven checks, 2026-10-13T00:13:21.092Z, fingerprint
+  d2a8c477c9bb814837b0015d1f07debb00cf094f7e4fe37ccb29a705ee88dc38.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers:
+  PASS, seven checks, 2026-10-13T00:15:58.272Z, fingerprint
+  977b089dfa960bfa1cf769b67d6114f5d0f83c50cce1b41784db44f97e6039f7.
+
+Discipline probe readback (outputs/hand-off-h-20261012/probe-thread.json)
+confirms Codex's account: the root ran node --test before editing sum.cjs, and
+the runner failed with spawn EPERM because the Windows workspace sandbox denies
+the per-file child process, so no assertion ran. Consequence for users: on
+Windows the test-first rule leads to an approval request for runners that spawn
+children. scripts/live-engineering-discipline.mjs has never passed; its fixture
+needs a test that runs in-process (plain node tests/sum.test.cjs with assert).
+NOT_RUN: corrected discipline probe, bundled-skills suite, macOS/CI.
+
+## Hand-off I: in-process engineering-discipline fixture (2026-10-13)
+
+Changed only scripts/live-engineering-discipline.mjs and this status section.
+The disposable tests/sum.test.cjs now uses node:assert/strict directly, without
+node:test, and runs as node tests/sum.test.cjs. The Korean probe request adds one
+clause explaining that invocation and its in-process execution. The preflight
+checks stderr for the assertion failure, since a plain Node script reports an
+uncaught assertion there. The successful script prints the existing test-name
+marker so the passing-rerun check remains intact.
+
+The reproducer now requires a commandExecution referencing sum.test.cjs, a
+numeric nonzero exit code, and ERR_ASSERTION or AssertionError in its output,
+before the completed sum.cjs fileChange. It does not mistake spawn EPERM for a
+reproduced bug. Passing-rerun ordering, final-assumption and independent-test
+checks are unchanged. No product prompt, fingerprint input, runtime or sandbox
+setting changed; the Hand-off H review qualification remains applicable.
+
+Observed Windows offline verification:
+
+- Executed the exact generated plain-assert fixture locally: buggy source exited
+  1 with ERR_ASSERTION; corrected source exited 0 with the success marker.
+- Eight reproducer-predicate cases passed: both assertion forms/nonzero codes
+  accepted; success, missing/unknown exit, unrelated command/item and EPERM-only
+  output rejected.
+- node --check scripts/live-engineering-discipline.mjs: PASS, exit 0.
+- Source preservation and git diff --check: PASS. Other uncommitted work remains
+  unchanged. Local receipt: outputs/hand-off-i-20261013/offline-check.json (ignored).
+
+node scripts/live-engineering-discipline.mjs --live: NOT_RUN, pending the owner
+go-ahead explicitly required by Hand-off I. First-text latency: NOT_RUN; total
+latency: NOT_RUN. Local fixture execution is not native sandbox/live acceptance.
+No build, broad test suite, CI, macOS checks, commit or push was performed.
+
+## Hand-off I live probe (2026-10-13)
+
+Owner go-ahead given. node scripts/live-engineering-discipline.mjs --live: PASS,
+exit 0, one run, Windows x64, external_workers, fingerprint
+977b089dfa960bfa1cf769b67d6114f5d0f83c50cce1b41784db44f97e6039f7, root
+01a132eb-d385-7870-9b04-a710febfdeed. First text 3,210 ms; total 27,343 ms.
+The root ran the failing reproducer (item 4) before the sum.cjs fileChange
+(item 7), reran it successfully (item 8) and stated an assumption in the final
+message; the independent rerun passed. Single sample; runners that spawn child
+processes still hit the Windows sandbox limit recorded above.
+NOT_RUN: bundled-skills suite, macOS/CI.

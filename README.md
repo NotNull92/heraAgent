@@ -113,6 +113,8 @@ Headless execution declines interactive permission requests.
 | HERA Development (`external_workers`) | Your selected GPT model | OpenCode Go · DeepSeek V4.1 Flash |
 | HERA Design (`adaptive`, default) | OpenCode Go · DeepSeek V4.1 Flash | Selected GPT/Astra role for difficult reasoning, planning and design |
 
+HERA Development applies engineering rules by default: state assumptions, clarify consequential ambiguity, prefer simple focused edits, and verify the work with tests.
+
 Use `/mode` to choose. **Workers need local verification** matching runtime, relevant
 code, platform, models, providers, permissions and concurrency. Changing these invalidates the record.
 Both modes require a reviewed native runtime installed in
