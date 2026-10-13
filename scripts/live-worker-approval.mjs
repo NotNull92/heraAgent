@@ -1,7 +1,7 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
+import {writeFile,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 import {Controller} from '../dist/session/controller.js';
 import {NativeWorkers} from '../dist/session/workers.js';
@@ -13,7 +13,7 @@ import {nativeSettings} from '../dist/codex/config-compiler.js';
 import {GO_ROLE} from '../dist/codex/external-runtime.js';
 import {errorView} from '../dist/errors.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One main/worker turn, 120 seconds; a disposable on-request fixture exercises Hera denial. No request is approved.');process.exit(4);}
-const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');config.mode=external?'external_workers':'gpt_only';const cwd=await mkdtemp(join(tmpdir(),'hera-worker-approval-'));const marker=randomUUID();await writeFile(join(cwd,'sentinel.txt'),marker);
+const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');config.mode=external?'external_workers':'gpt_only';const cwd=await tempFixture('hera-worker-approval-');const marker=randomUUID();await writeFile(join(cwd,'sentinel.txt'),marker);
 // Deliberately allow native approval requests only in this fixture, so the real
 // Hera decline handler is exercised. Product sessions still require never.
 const client=external?await CodexClient.session(home,cwd,config,'read-only',true):await CodexClient.connect(home,cwd,Object.entries({...nativeSettings(config,'read-only',true),approval_policy:'on-request'}).flatMap(([k,v])=>['-c',`${k}=${JSON.stringify(v)}`]));

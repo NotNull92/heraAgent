@@ -1,6 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readdir} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {writeFile,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {Controller} from '../dist/session/controller.js';
 import {CodexClient} from '../dist/codex/client.js';
@@ -11,7 +11,7 @@ import {GO_PROVIDER} from '../dist/codex/external-runtime.js';
 
 if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: automatic DRD, 5 assignments, public Node.js documents, at most 3 concurrent workers, 300 seconds.');
 const home=await heraHome();const {config}=await loadConfig(home);config.mode='adaptive';
-const cwd=await mkdtemp(join(tmpdir(),'hera-native-research-'));
+const cwd=await tempFixture('hera-native-research-');
 const client=await CodexClient.session(home,cwd,config,'workspace-write',true,true);
 const controller=new Controller(client,home,cwd,config,true,true);
 let timer;let peak=0;let expired=false;

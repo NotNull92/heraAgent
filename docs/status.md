@@ -3033,3 +3033,100 @@ refusing resume with SESSION_IN_USE until that record is removed by hand; a
 crash during an atomic write can leave a .tmp file that keeps the directory.
 NOT_RUN by Claude: live suites (Codex's results above stand), package smoke,
 macOS/CI.
+
+## Hand-off K: script fixture cleanup (2026-10-13)
+
+Added `scripts/temp-fixture.mjs`: each created directory is registered for
+synchronous recursive removal on process exit code 0, with force and five
+retries. Failed or interrupted runs retain their fixtures. Removal errors print
+one escaped stderr line per directory and do not change the exit code.
+Replaced all 25 requested temporary-directory creation sites in 24 scripts,
+including the design-latency loop, live-apply's outside directory and both
+live-native-workflow directories. Assertions, script logic and printed JSON
+remain unchanged; printed fixture paths may no longer exist after success.
+
+`live-worker-boundaries.mjs` and `live-workers.mjs` remain unchanged, including
+their creation paths: later `--cwd` continuation/verification invocations need
+those directories. No final-invocation cleanup was added.
+
+`prepare-release.mjs` now removes only its own `release-staging/pack-*` directory
+after successful preparation; failures retain staging. Reviewed package:check,
+package:smoke, the Windows/macOS CI workflow and release documentation: subsequent
+steps read the archive/checksums/metadata in `.artifacts`, not pack staging.
+The existing Vitest global cleanup and package-smoke cleanup from 143040e were
+left unchanged.
+
+Observed Windows local verification (Windows 10.0.26200 x64, Intel i7-12700,
+PowerShell 7.6.6 Core, Node v24.12.0; project-local pinned runtime):
+
+- `node scripts/temp-fixture-check.mjs`: PASS, exit 0. Child processes verify
+  natural and explicit exit 0, nonzero exitCode and explicit exit, uncaught
+  failure, SIGTERM interruption, multiple nested fixtures and simulated removal
+  failures. Failed child fixtures exist when asserted, then the successful
+  self-check removes its own enclosing fixture. Zero new `%TEMP%/hera*` entries.
+- `node --check` on all 27 touched/new `.mjs` scripts: PASS, exit 0.
+- `npm.cmd run typecheck`: PASS, exit 0.
+- `npm.cmd test`: PASS, exit 0; 172 tests across 28 files. Zero new hera temp entries.
+- `npm.cmd run build`: PASS, exit 0.
+- `native-smoke`, `native-safety-smoke`, `credentials-smoke` and
+  `research-browser-check`: PASS, exit 0 each. Before/after `%TEMP%/hera*`
+  comparisons found zero new entries after each script. No model inference;
+  credentials-smoke used only a fresh fixture-scoped OS credential, and the
+  browser check used intercepted fixture pages, not live search.
+- `npm.cmd run release:prepare`: PASS, exit 0; zero new pack directories remain.
+- `npm.cmd run package:check`: PASS, exit 0; freshly prepared archive has 1,906
+  files and 2,493,444 bytes. SHA-256:
+  `99105e69398af8743deafb4a4ec6fee772fab8938628af133df9dfa8e43e6713`.
+- Source comparison confirms the 24 script bodies differ only in fixture calls
+  (apart from import changes); both resumable scripts and prior cleanup files
+  match HEAD. `git diff --check`: PASS.
+
+NOT_RUN: all live scripts (no owner go-ahead for this handoff), native-patch-smoke
+(requires an explicitly supplied experimental standalone executable), package
+smoke, Windows CI, macOS CI and macOS manual/live checks. CI targets are unchanged.
+No src changes, fingerprint-input changes, re-qualification, deletion of
+pre-existing temp entries or Hera locks, commit, push or publication.
+
+## Hand-off K review and presence-record race fix (2026-10-13)
+
+Claude reviewed Hand-off K. The 24 script diffs are import changes plus the
+fixture call; no script still uses an import that was removed (checked tmpdir,
+join and mkdtemp usage against imports per file). temp-fixture-check, node
+--check on every touched script, native-smoke and native-safety-smoke pass
+with no new %TEMP%/hera* entry. Hand-off K itself needed no change.
+
+Defect found while reviewing, in Hand-off L code already pushed at 143040e and
+missed in that review: tests/safety.test.ts "never admits both simultaneous
+claims of the same saved session" failed in four consecutive full-suite runs
+with EPERM on rename. On Windows a presence record cannot be replaced while
+another session is reading it, so setSessionId could fail session start-up
+with a raw EPERM when two sessions start together. Separately, a record that
+could not be read at that moment had no pid, was treated as dead and deleted,
+removing a live session's presence. Fixed in src/session/workspace-lock.ts:
+
+- write() retries ENOENT, EPERM, EBUSY and EACCES up to five attempts with
+  50 ms x attempt back-off;
+- an unreadable <pid>.json takes its pid from the file name, so a live
+  session's record is ignored instead of deleted.
+
+After the fix: typecheck and build pass; three full-suite runs gave 172/172,
+171/172, 172/172, with no presence failure. The one remaining failure is
+tests/tui.test.tsx "shows submitted Korean input while the runtime is still
+connecting ...": the frame after a 70 ms tick did not yet show the echoed
+input. It passes alone (3/3) and failed in 5 of 8 full-suite runs during this
+review while a disk scanner was running on the machine; treated as a
+timing-sensitive test, not changed here.
+
+workspace-lock.ts is a fingerprint input, so both modes were re-qualified:
+
+- node scripts/live-native-workflow.mjs --live --record --mode=adaptive: PASS,
+  seven checks, 2026-10-13T05:41:14.417Z, fingerprint
+  c30d23d6146ecd2864c8805d34ced3408346b03368fe413c994e67b265b86cfe.
+- node scripts/live-native-workflow.mjs --live --record --mode=external_workers:
+  PASS, seven checks, 2026-10-13T05:44:22.826Z, fingerprint
+  56a951db451c0fd258a0c017a79e8d3bfe3a63fceb7cbcb7dd8e87cf37ea4f93.
+
+These two live runs also exercised the Hand-off K helper: %TEMP%/hera* entries
+were 213 before and 213 after. The fingerprints in the Hand-off L section are
+superseded. NOT_RUN: other live scripts, package smoke, macOS/CI. The owner
+must restart Hera.

@@ -1,7 +1,7 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
+import {writeFile,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {heraHome} from '../dist/paths.js';
 import {loadConfig} from '../dist/config.js';
 import {errorView} from '../dist/errors.js';
@@ -9,7 +9,7 @@ import {acquireWorkspace} from '../dist/session/workspace-lock.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One disposable GPT-only fixture, at most five main turns, two Node tests, 240 seconds. --before uses the preserved pre-change build. No worker or credential changes.');process.exit(4);}
 const beforeMode=process.argv.includes('--before');const base=beforeMode?'../.artifacts/efficiency-before/dist/':'../dist/';
 const {Controller}=await import(base+'session/controller.js');const {CodexClient}=await import(base+'codex/client.js');
-const cwd=await mkdtemp(join(tmpdir(),'hera-efficiency-'));const home=await heraHome();const {config}=await loadConfig(home);config.mode='gpt_only';
+const cwd=await tempFixture('hera-efficiency-');const home=await heraHome();const {config}=await loadConfig(home);config.mode='gpt_only';
 const before='module.exports = (a,b) => a - b;\n'+Array.from({length:100},(_,i)=>`// Unchanged fixture documentation line ${i}: preserve this text.\n`).join('');const after=before.replace('a - b','a + b');
 const check="const assert = require('node:assert/strict'); assert.equal(require('./sum.cjs')(2,3),5);\n";
 await writeFile(join(cwd,'sum.cjs'),before);await writeFile(join(cwd,'check-one.cjs'),check);await writeFile(join(cwd,'check-two.cjs'),check);

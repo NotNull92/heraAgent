@@ -1,5 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {realpath,readFile,writeFile,mkdtemp,mkdir} from 'node:fs/promises';
+import {realpath,readFile,writeFile,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {dirname,basename,join} from 'node:path';
 import {randomUUID} from 'node:crypto';
@@ -29,7 +30,7 @@ try{
   const effective=(await client.rpc.request('config/read',{cwd,includeLayers:false})).config;
   assert.equal(effective.agents.enabled,false);assert.equal(effective.features.multi_agent,false);assert.equal(effective.features.multi_agent_v2,false);
   // Actual negative execution in a separate disposable sibling, never user files.
-  const outside=await mkdtemp(join(tmpdir(),'hera-apply-outside-'));const outsideFile=join(outside,'sentinel.txt');await writeFile(outsideFile,'unchanged');
+  const outside=await tempFixture('hera-apply-outside-');const outsideFile=join(outside,'sentinel.txt');await writeFile(outsideFile,'unchanged');
   let outsideDenied=false;
   try{const r=await client.rpc.request('command/exec',{command:[process.execPath,'-e',"require('node:fs').writeFileSync(process.argv[1],'changed')",outsideFile],cwd,timeoutMs:10000,sandboxPolicy:session.sandbox});outsideDenied=r.exitCode!==0&&/EPERM|EACCES|denied|not permitted/i.test(r.stderr);}
   catch(error){if(error.errorCode==='RPC_-32603'&&/sandbox denied exec error/.test(error.message))outsideDenied=true;else throw error;}

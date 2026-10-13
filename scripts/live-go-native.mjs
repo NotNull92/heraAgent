@@ -1,7 +1,7 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
+import {writeFile,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {CodexClient} from '../dist/codex/client.js';
@@ -14,7 +14,7 @@ import {resolveGoCredential} from '../dist/providers/go-credentials.js';
 import {GO_URL,GO_MODEL} from '../dist/providers/opencode-go.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One native Go read-only turn, 120 seconds, provider HTTP/stream retries disabled; no fallback.');process.exit(4);}
 const home=await heraHome();const {config}=await loadConfig(home);const {key}=await resolveGoCredential(home);if(!key){console.error('BLOCKED_NO_CREDENTIALS');process.exit(3);}
-const cwd=await mkdtemp(join(tmpdir(),'hera-go-native-'));const marker=randomUUID();await writeFile(join(cwd,'sentinel.txt'),marker);await verifyContract();
+const cwd=await tempFixture('hera-go-native-');const marker=randomUUID();await writeFile(join(cwd,'sentinel.txt'),marker);await verifyContract();
 const settings={...nativeSettings(config),model_provider:'hera_go_probe',model_reasoning_effort:'low','model_providers.hera_go_probe':{name:'Hera Go native fixture',base_url:GO_URL,env_key:'HERA_OPENCODE_GO_API_KEY',wire_api:'responses',requires_openai_auth:false,request_max_retries:0,stream_max_retries:0,stream_idle_timeout_ms:20000,supports_websockets:false,http_headers:{'User-Agent':'hera/0.1.0-alpha.1','x-opencode-session':randomUUID()}}};
 // A test-owned runtime receives the key in memory only. Its tool environment uses
 // the product core-only policy and excludes *KEY*; no credential file or CLI argument.

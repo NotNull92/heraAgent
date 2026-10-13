@@ -1,6 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,readFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
@@ -12,7 +12,7 @@ import {installExternalRuntime,externalRuntime} from '../dist/codex/external-run
 
 assert.ok(process.argv[2],'Provide the experimental standalone App Server executable');
 const binary=resolve(process.argv[2]);
-const home=await mkdtemp(join(tmpdir(),'hera-native-patch-smoke-'));
+const home=await tempFixture('hera-native-patch-smoke-');
 const receipt=await installExternalRuntime(home,binary,createHash('sha256').update(await readFile(binary)).digest('hex'));
 const installed=await externalRuntime(home);assert.ok(installed);
 async function initializeOfficial(){

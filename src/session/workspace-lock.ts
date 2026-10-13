@@ -10,14 +10,16 @@ export async function acquireWorkspace(home:string,cwd:string){
   const dir=join(home,'locks',createHash('sha256').update(identity).digest('hex'));
   const file=join(dir,`${process.pid}.json`);
   const record={pid:process.pid,executable:process.execPath,processStartedAt:new Date(Date.now()-process.uptime()*1000).toISOString(),acquiredAt:new Date().toISOString(),workspace:canonical};
-  async function write(value:unknown){try{await atomicJson(file,value);}catch(error){if(!error||typeof error!=='object'||!('code'in error)||error.code!=='ENOENT')throw error;await atomicJson(file,value);}}
+  // Windows refuses to replace a record while another session is reading it (EPERM/EBUSY/EACCES); ENOENT is a directory removed by a concurrent release.
+  async function write(value:unknown){for(let attempt=1;;attempt++){try{await atomicJson(file,value);return;}catch(error){if(attempt===5||!error||typeof error!=='object'||!('code'in error)||!['ENOENT','EPERM','EBUSY','EACCES'].includes(String(error.code)))throw error;await new Promise(resolve=>setTimeout(resolve,50*attempt));}}}
   async function liveRecords(){
     const live:z.infer<typeof presenceSchema>[]=[];
     for(const entry of await readdir(dir,{withFileTypes:true})){
       if(!entry.isFile()||entry.name.endsWith('.tmp')||join(dir,entry.name)===file)continue;
       const path=join(dir,entry.name);let value:unknown;
       try{value=JSON.parse(await readFile(path,'utf8'));}catch{}
-      const pid=value&&typeof value==='object'&&'pid'in value?value.pid:undefined;
+      // A record that cannot be read right now (being replaced) still names its pid; never delete a live session's record for that.
+      const pid=value&&typeof value==='object'&&'pid'in value?value.pid:Number(/^(\d+)\.json$/.exec(entry.name)?.[1]);
       let dead=typeof pid!=='number'||!Number.isSafeInteger(pid)||pid<=0;
       // shortcut: a reused pid only causes a wrong notice for new sessions; compare processStartedAt if this is reported.
       if(!dead)try{process.kill(pid as number,0);}catch(error){dead=!!error&&typeof error==='object'&&'code'in error&&error.code==='ESRCH';}

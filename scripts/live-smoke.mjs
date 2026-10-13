@@ -1,5 +1,5 @@
-import {mkdtemp,writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {tempFixture} from './temp-fixture.mjs';
+import {writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {Controller} from '../dist/session/controller.js';
 import {heraHome} from '../dist/paths.js';
@@ -11,7 +11,7 @@ if(!process.argv.includes('--live')){console.error('Opt-in required: npm run tes
 const home=await heraHome();const {config}=await loadConfig(home);config.mode='gpt_only';
 console.error(JSON.stringify({provider:'openai',requestedModel:config.main.model,scope:'temporary read-only fixture; initial turn and resume follow-up',deadlineSeconds:90,workerTests:'not_run; use live-native-workflow.mjs'}));
 const marker=randomUUID();
-const cwd=await mkdtemp(join(tmpdir(),'hera-live-fixture-'));await writeFile(join(cwd,'sum.ts'),`// fixture marker: ${marker}\nexport const sum = (a: number, b: number) => a - b;\n`);
+const cwd=await tempFixture('hera-live-fixture-');await writeFile(join(cwd,'sum.ts'),`// fixture marker: ${marker}\nexport const sum = (a: number, b: number) => a - b;\n`);
 async function verifyReply(controller,requireRead){
   const thread=await controller.client.read(controller.metadata.codexThreadId);
   const turn=thread.turns?.find(t=>t.id===controller.metadata.lastKnownTurnId);

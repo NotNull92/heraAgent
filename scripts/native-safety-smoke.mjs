@@ -1,6 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile,access} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {writeFile,readFile,access} from 'node:fs/promises';
 import {join} from 'node:path';
 import {CodexClient} from '../dist/codex/client.js';
 import {heraHome} from '../dist/paths.js';
@@ -10,7 +10,7 @@ import {errorView} from '../dist/errors.js';
 
 // Native sandbox checks, no model inference. All write targets are disposable fixtures.
 const home=await heraHome();const {config}=await loadConfig(home);
-const cwd=await mkdtemp(join(tmpdir(),'hera-native-safety-'));
+const cwd=await tempFixture('hera-native-safety-');
 const sentinel=join(cwd,'sentinel.txt');await writeFile(sentinel,'unchanged');
 const client=await CodexClient.connect(home,cwd,startupArgs(config));
 try{

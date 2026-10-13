@@ -1,7 +1,7 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
+import {writeFile,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {CodexClient} from '../dist/codex/client.js';
@@ -14,7 +14,7 @@ import {resolveGoCredential} from '../dist/providers/go-credentials.js';
 import {GO_URL,GO_MODEL} from '../dist/providers/opencode-go.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One GPT parent with one Go child and one follow-up, 180 seconds. No retry or provider fallback.');process.exit(4);}
 const home=await heraHome();const {config}=await loadConfig(home);const {key}=await resolveGoCredential(home);if(!key){console.error('BLOCKED_NO_CREDENTIALS');process.exit(3);}
-const cwd=await mkdtemp(join(tmpdir(),'hera-go-collaboration-'));const marker=randomUUID();await writeFile(join(cwd,'sentinel.txt'),marker);await verifyContract();
+const cwd=await tempFixture('hera-go-collaboration-');const marker=randomUUID();await writeFile(join(cwd,'sentinel.txt'),marker);await verifyContract();
 const rolePath=join(cwd,'go-role.toml');await writeFile(rolePath,`model = "${GO_MODEL}"\nmodel_provider = "hera_go_probe"\nmodel_reasoning_effort = "low"\nsandbox_mode = "read-only"\napproval_policy = "never"\n`);
 const settings={...nativeSettings(config,'read-only',true),'agents.max_concurrent_threads_per_session':1,'agents.go_probe':{description:'Read-only Go DeepSeek fixture worker. Use only for this explicitly authorized routing test.',config_file:rolePath},'model_providers.hera_go_probe':{name:'Hera Go collaboration fixture',base_url:GO_URL,env_key:'HERA_OPENCODE_GO_API_KEY',wire_api:'responses',requires_openai_auth:false,request_max_retries:0,stream_max_retries:0,stream_idle_timeout_ms:20000,supports_websockets:false,http_headers:{'User-Agent':'hera/0.1.0-alpha.1','x-opencode-session':randomUUID()}}};
 if(process.argv.includes('--v1'))settings['features.multi_agent_v2']=false;

@@ -1,4 +1,4 @@
-import {mkdir,readFile,writeFile,cp,mkdtemp,rename} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,cp,mkdtemp,rename,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {isDeepStrictEqual} from 'node:util';
@@ -24,3 +24,4 @@ await writeFile(join(target,'release-notes.md'),`# Hera ${manifest.version}\n\nP
 await writeFile(join(target,'compatibility.json'),JSON.stringify({version:manifest.version,codex:manifest.dependencies['@openai/codex'],sha256:sha,artifact:packed.filename,buildPlatform:process.platform,buildArch:process.arch,node:process.version,workflow:'native_workspace',research:'native_drd_guidance',externalMode:'requires_local_verification',live:'not_run_by_packaging',macosManual:'not_run',...inspection},null,2)+'\n');
 if(!(await readFile(join(root,'package-lock.json'))).equals(originalLock))throw new Error('Source lock changed during packaging');
 console.log(JSON.stringify({artifact,sha256:sha,...inspection}));
+await rm(stage,{recursive:true,force:true,maxRetries:5}).catch(error=>console.error('Temp cleanup failed: '+JSON.stringify(error.message)));

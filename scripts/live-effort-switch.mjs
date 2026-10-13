@@ -1,6 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {Controller} from '../dist/session/controller.js';
 import {loadConfig} from '../dist/config.js';
@@ -10,7 +10,7 @@ import {nativeCapability} from '../dist/codex/capabilities.js';
 if(!process.argv.includes('--live'))throw new Error('Explicit --live required: two bounded adaptive native-worker turns.');
 const home=await heraHome();const original=await readFile(join(home,'config.json'),'utf8');
 const {config}=await loadConfig(home);config.mode='adaptive';
-const cwd=await mkdtemp(join(tmpdir(),'hera-effort-switch-'));let fingerprint;
+const cwd=await tempFixture('hera-effort-switch-');let fingerprint;
 for(const effort of ['high','low']){
   config.workers.goReasoningEffort=effort;config.designReasoningEffort=effort;
   const capability=await nativeCapability(home,config);assert(capability.ready,'Qualify native adaptive workflow with --go-effort=high first; none has separate evidence');

@@ -1,7 +1,5 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
 import {CodexClient} from '../dist/codex/client.js';
 import {heraHome} from '../dist/paths.js';
 import {loadConfig} from '../dist/config.js';
@@ -9,7 +7,7 @@ import {GO_MODEL} from '../dist/providers/opencode-go.js';
 import {GO_PROVIDER,GO_EFFORT,ASTRA_ROLE} from '../dist/codex/external-runtime.js';
 if(!process.argv.includes('--live'))throw new Error('Opt-in: --live. One Go parent/Astra child, 180 seconds, read-only.');
 const home=await heraHome();const {config}=await loadConfig(home);config.mode='adaptive';
-const cwd=await mkdtemp(join(tmpdir(),'hera-adaptive-native-'));const client=await CodexClient.session(home,cwd,config,'read-only',true);
+const cwd=await tempFixture('hera-adaptive-native-');const client=await CodexClient.session(home,cwd,config,'read-only',true);
 let root,turn,timer;const children=new Set();
 try{
   client.on('request',r=>client.rpc.respond(r.id,{decision:'decline'}));

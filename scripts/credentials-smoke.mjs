@@ -1,11 +1,10 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {mkdtemp,readdir} from 'node:fs/promises';
-import {join} from 'node:path';
-import {tmpdir} from 'node:os';
+import {readdir} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {saveGoCredential,resolveGoCredential,deleteGoCredential,goCredentialStatus} from '../dist/providers/go-credentials.js';
-const home=await mkdtemp(join(tmpdir(),'hera-credential-fixture-'));const key='fixture-'+randomUUID();
+const home=await tempFixture('hera-credential-fixture-');const key='fixture-'+randomUUID();
 const original=process.env.HERA_OPENCODE_GO_API_KEY;delete process.env.HERA_OPENCODE_GO_API_KEY;
 const started=Date.now();
 try{

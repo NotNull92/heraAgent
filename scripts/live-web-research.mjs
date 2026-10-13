@@ -1,7 +1,5 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {Controller} from '../dist/session/controller.js';
 import {CodexClient} from '../dist/codex/client.js';
 import {heraHome} from '../dist/paths.js';
@@ -11,7 +9,7 @@ import {verifySearchConfig,SEARCH_SERVER,SEARCH_GUIDANCE} from '../dist/codex/we
 import {GO_ROLE} from '../dist/codex/external-runtime.js';
 import {errorView} from '../dist/errors.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live [--external]. Public browser document reads, one main turn and one worker, 180 seconds; no private query or source upload.');process.exit(4);}
-const cwd=await mkdtemp(join(tmpdir(),'hera-web-research-'));const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');config.mode=external?'external_workers':'gpt_only';
+const cwd=await tempFixture('hera-web-research-');const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');config.mode=external?'external_workers':'gpt_only';
 let controller;let client;let expired=false;
 const timeout=setTimeout(()=>{expired=true;void controller?.interrupt().catch(()=>{});},180000);
 try{

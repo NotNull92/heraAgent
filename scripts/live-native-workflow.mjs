@@ -1,6 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile,open,mkdir,copyFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {writeFile,readFile,open,mkdir,copyFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {Controller} from '../dist/session/controller.js';
 import {CodexClient} from '../dist/codex/client.js';
@@ -14,7 +14,7 @@ assert(['adaptive','external_workers'].includes(mode));
 const home=await heraHome();const {config}=await loadConfig(home);config.mode=mode;
 const goEffort=process.argv.find(a=>a.startsWith('--go-effort='))?.slice(12);
 if(goEffort){assert(['low','high','max'].includes(goEffort));config.workers.goReasoningEffort=goEffort;if(mode==='adaptive')config.designReasoningEffort=goEffort;}
-const cwd=await mkdtemp(join(tmpdir(),'hera-native-work-'));const outside=await mkdtemp(join(tmpdir(),'hera-native-permission-'));
+const cwd=await tempFixture('hera-native-work-');const outside=await tempFixture('hera-native-permission-');
 await writeFile(join(cwd,'sum.cjs'),'module.exports=(a,b)=>a-b;\n');await writeFile(join(cwd,'check.cjs'),"require('node:assert/strict').equal(require('./sum.cjs')(2,3),5); console.log('sum passed');\n");
 await mkdir(join(cwd,'.artifacts'));const large=await open(join(cwd,'.artifacts','baseline-regression.bin'),'wx');await large.truncate(129*1024*1024);await large.close();
 let controller;const checks={};const nativeThreadIds=[];let timer;const events=[];let approvals=0;let allowFixture=false;

@@ -1,7 +1,5 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {spawn} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 import {Controller} from '../dist/session/controller.js';
@@ -14,7 +12,7 @@ import {startupArgs} from '../dist/codex/config-compiler.js';
 import {acquireWorkspace} from '../dist/session/workspace-lock.js';
 import {errorView} from '../dist/errors.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: --live. One main/worker turn in a disposable workspace, 120 seconds.');process.exit(4);}
-const cwd=await mkdtemp(join(tmpdir(),'hera-worker-cancel-'));const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');if(external)config.mode='external_workers';else config.mode='gpt_only';
+const cwd=await tempFixture('hera-worker-cancel-');const home=await heraHome();const {config}=await loadConfig(home);const external=process.argv.includes('--external');if(external)config.mode='external_workers';else config.mode='gpt_only';
 const unrelated=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore',windowsHide:true});let controller;let running;
 try{
   const client=await CodexClient.session(home,cwd,config,'read-only',true);controller=new Controller(client,home,cwd,config,true);controller.lock=await acquireWorkspace(home,cwd);await controller.start();

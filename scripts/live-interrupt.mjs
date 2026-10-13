@@ -1,14 +1,12 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
 import {Controller} from '../dist/session/controller.js';
 import {heraHome} from '../dist/paths.js';
 import {loadConfig} from '../dist/config.js';
 import {errorView} from '../dist/errors.js';
 if(!process.argv.includes('--live')){console.error('Opt-in required: node scripts/live-interrupt.mjs --live (one read-only turn, 90 second deadline).');process.exit(4);}
 const home=await heraHome();const {config}=await loadConfig(home);config.mode='gpt_only';
-const cwd=await mkdtemp(join(tmpdir(),'hera-interrupt-fixture-'));
+const cwd=await tempFixture('hera-interrupt-fixture-');
 let controller;let timer;let interruptTimer;let requested=false;let interrupt;
 const events=[];
 try{

@@ -1,6 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile,readdir} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {writeFile,readFile,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {CodexClient} from '../dist/codex/client.js';
 import {Controller} from '../dist/session/controller.js';
@@ -15,7 +15,7 @@ if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: thr
 const mode=process.argv.find(arg=>arg.startsWith('--mode='))?.slice(7)??'adaptive';
 assert(['adaptive','external_workers'].includes(mode));
 const home=await heraHome();const {config}=await loadConfig(home);config.mode=mode;
-const cwd=await mkdtemp(join(tmpdir(),'hera-skills-live-'));
+const cwd=await tempFixture('hera-skills-live-');
 const projectRules='Handoff convention: save the requested handoff to HANDOFF.md in this workspace, in English. Preserve other files.\n';
 await writeFile(join(cwd,'AGENTS.md'),projectRules);
 let controller;let timer;let astraId;let firstRoundMs;let spawnEvidence;const events=[];const roundCounts=[];

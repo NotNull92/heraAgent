@@ -1,7 +1,7 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
-import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {CodexClient} from '../dist/codex/client.js';
 import {Controller} from '../dist/session/controller.js';
@@ -13,7 +13,7 @@ import {nativeCapability} from '../dist/codex/capabilities.js';
 if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: one bounded Development bug-fix turn in a disposable workspace.');
 const home=await heraHome();const {config}=await loadConfig(home);config.mode='external_workers';
 const qualification=await nativeCapability(home,config);assert(qualification.ready,qualification.reason);
-const cwd=await mkdtemp(join(tmpdir(),'hera-discipline-live-'));
+const cwd=await tempFixture('hera-discipline-live-');
 await mkdir(join(cwd,'tests'));
 await writeFile(join(cwd,'sum.cjs'),'module.exports=(a,b)=>a-b;\n');
 await writeFile(join(cwd,'tests','sum.test.cjs'),"const assert=require('node:assert/strict');\nconst sum=require('../sum.cjs');\nassert.equal(sum(2,3),5,'adds positive integers');\nconsole.log('adds positive integers: passed');\n");

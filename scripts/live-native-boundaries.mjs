@@ -1,7 +1,6 @@
+import {tempFixture} from './temp-fixture.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {readFile} from 'node:fs/promises';
 import {Controller} from '../dist/session/controller.js';
 import {CodexClient} from '../dist/codex/client.js';
 import {acquireWorkspace} from '../dist/session/workspace-lock.js';
@@ -13,7 +12,7 @@ if(!process.argv.includes('--live'))throw new Error('Opt-in --live required: thr
 const mode=process.argv.find(a=>a.startsWith('--mode='))?.slice(7)??'adaptive';
 assert(['adaptive','external_workers'].includes(mode));
 const home=await heraHome();const {config}=await loadConfig(home);config.mode=mode;config.workers.maxConcurrent=3;
-const cwd=await mkdtemp(join(tmpdir(),'hera-native-boundaries-'));
+const cwd=await tempFixture('hera-native-boundaries-');
 const client=await CodexClient.session(home,cwd,config,'workspace-write',true,true);
 const controller=new Controller(client,home,cwd,config,true,true);
 let timer;let expired=false;let peak=0;

@@ -1,13 +1,11 @@
+import {tempFixture} from './temp-fixture.mjs';
 // Real Chromium and MCP, intercepted fixture pages only; no search site or model calls.
 import assert from 'node:assert/strict';
-import {mkdtemp} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
 import {setImmediate} from 'node:timers/promises';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {startResearch} from '../dist/research/server.js';
-const home=await mkdtemp(join(tmpdir(),'hera-browser-check-'));
+const home=await tempFixture('hera-browser-check-');
 const server=await startResearch(home);const client=new Client({name:'hera-fixture',version:'1'});
 const timer=setTimeout(()=>{console.error('Browser fixture timed out');process.exitCode=1;void server.close();},60000);
 try{
