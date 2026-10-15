@@ -1,8 +1,10 @@
 import React,{act} from 'react';
 import {it,expect,vi} from 'vitest';
 import {render} from 'ink-testing-library';
+import {render as renderInk} from 'ink';
+import {PassThrough,Writable} from 'node:stream';
 import {Composer,caret,editInput,graphemes} from '../src/tui/Composer.js';
-import {App,GREETINGS} from '../src/tui/App.js';
+import {App,GREETINGS,KEPT_LINES} from '../src/tui/App.js';
 import {palette} from '../src/tui/theme.js';
 import {parseLimits,mergeLimits,windowsFor} from '../src/session/limits.js';
 import {InteractiveSession} from '../src/session/interactive.js';
@@ -46,6 +48,23 @@ it('Ctrl+C interrupts busy work, then exits only after idle session cleanup; pas
     expect(session.listenerCount('change')).toBe(0);
   }finally{await act(async()=>ui?.unmount());vi.restoreAllMocks();vi.unstubAllGlobals();}
 });
+it('restores the original terminal screen after Ctrl+C exit and session cleanup',async()=>{
+  const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);session.add('Hera: stored conversation\n');
+  const frames:string[]=[];const stdout=new Writable({write(chunk,_encoding,done){frames.push(chunk.toString());done();}});
+  Object.assign(stdout,{isTTY:true,columns:100,rows:24});
+  const stdin=new PassThrough();Object.assign(stdin,{isTTY:true,setRawMode:()=>stdin});
+  let finishClose!:()=>void;const close=vi.spyOn(session,'close').mockImplementation(()=>new Promise<void>(resolve=>{finishClose=resolve;}));
+  const ui=renderInk(<App session={session}/>,{stdout,stdin,stderr:new PassThrough(),interactive:true,alternateScreen:true,exitOnCtrlC:false,patchConsole:false});
+  try{
+    await ui.waitUntilRenderFlush();expect(frames.join('')).toContain('\x1b[?1049h');expect(frames.join('')).toContain('stored conversation');
+    stdin.write('\x03');expect(await shown({frames},'See you later codingborn.')).toBe(true);
+    stdin.write('\x03');await vi.waitFor(()=>expect(close).toHaveBeenCalledTimes(1));
+    expect(frames.join('')).not.toContain('\x1b[?1049l');
+    finishClose();await ui.waitUntilExit();
+    const output=frames.join('');expect(output).toContain('\x1b[?1049l');expect(output.slice(output.indexOf('\x1b[?1049l'))).not.toContain('stored conversation');
+    expect(session.transcript).toContain('stored conversation');
+  }finally{finishClose?.();ui.unmount();close.mockRestore();stdin.destroy();stdout.destroy();}
+});
 it('deletes whole Korean/emoji graphemes and bounds paste',()=>{const value='가👨‍👩‍👧‍👦e\u0301';expect(graphemes(value)).toHaveLength(3);expect(editInput(value,2,'backspace')).toEqual({value:'가e\u0301',cursor:1});expect(editInput('a',1,'insert','x'.repeat(70000)).value).toBe('a');});
 it('bracketed multiline slash paste cannot submit or become a slash action',async()=>{const submitted:string[]=[];const ui=render(<Composer language="ko" busy={false} send={t=>submitted.push(t)} cancel={()=>{}}/>);await tick();ui.stdin.write('\x1b[200~/quit\n한글\x1b[201~');await tick();expect(submitted).toHaveLength(0);ui.stdin.write('\r');await tick();expect(submitted).toEqual([' /quit\n한글']);ui.unmount();});
 it('renders Korean readiness and bounded sanitized transcript',async()=>{const session=new InteractiveSession('unused','한글 workspace',structuredClone(defaults),true);session.add('\x1b]52;c;payload\x07안녕하세요');const ui=render(<App session={session}/>);await tick();expect(ui.lastFrame()).toContain('안녕하세요');expect(ui.lastFrame()).toContain('선택 필요');expect(ui.lastFrame()).not.toContain('payload');ui.unmount();});
@@ -58,22 +77,42 @@ it('keeps conversation scrollback and status without a workflow track at wide an
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
   session.add(Array.from({length:60},(_,i)=>`entry ${i} ${'가나다라 '.repeat(40)}`).join('\n')+'\nYou: 마지막 요청');
   const ui=render(<App session={session}/>);await tick();
-  expect(ui.lastFrame()).not.toMatch(/ANALYZE|QUIESCE|◆ 작업/);expect(ui.lastFrame()).toContain('Ready');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).toContain('entry 0 ');expect(ui.lastFrame()).toContain('entry 59 ');
+  expect(ui.lastFrame()).not.toMatch(/ANALYZE|QUIESCE|◆ 작업/);expect(ui.lastFrame()).toContain('Ready');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('entry 0 ');expect(ui.lastFrame()).toContain('entry 59 ');
   // A finished line is written once; later output appends below it instead of redrawing it.
-  session.add('\nHera: 이어지는 답변');await tick();expect(ui.lastFrame()!.split('You: 마지막 요청')).toHaveLength(2);expect(ui.lastFrame()!.split('entry 0 ')).toHaveLength(2);expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
+  session.add('\nHera: 이어지는 답변');await tick();expect(ui.lastFrame()!.split('You: 마지막 요청')).toHaveLength(2);expect(ui.lastFrame()).not.toContain('entry 0 ');expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   Object.defineProperty(ui.stdout,'columns',{get:()=>60});ui.stdout.emit('resize');await tick();
   expect(ui.lastFrame()).not.toMatch(/ANALYZE|QUIESCE|◆ 작업/);expect(ui.lastFrame()).toContain('Ready');expect(ui.lastFrame()).toContain('You: 마지막 요청');expect(ui.lastFrame()).not.toContain('승인');expect(ui.lastFrame()).not.toContain('Ctrl+');
   await act(async()=>{session.approval='fixture/requestApproval: denied';session.emit('change');await tick();});expect(ui.lastFrame()).toContain('◆ fixture/requestApproval: denied');expect(ui.lastFrame()).toContain('Hera: 이어지는 답변');
   ui.unmount();
 });
-it('clears the terminal on every resize and reprints the conversation',async()=>{
+it('repaints the viewport on resize without clearing terminal scrollback',async()=>{
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);session.add('You: 크기 변경 전\n');
-  const ui=render(<App session={session}/>);await tick();const before=ui.frames.length;
-  Object.assign(ui.stdout,{isTTY:true});Object.defineProperty(ui.stdout,'columns',{get:()=>50});ui.stdout.emit('resize');
-  // The wipe is written before Ink repaints for the same event, so no stale rows survive a drag.
-  expect(ui.frames[before]).toBe('\x1b[2J\x1b[3J\x1b[H');
-  await tick();expect(ui.frames.length).toBeGreaterThan(before+1);ui.stdout.emit('resize');await tick();await tick();expect(ui.frames.slice(before).filter(frame=>frame==='\x1b[2J\x1b[3J\x1b[H')).toHaveLength(2);
-  expect(ui.lastFrame()).toContain('You: 크기 변경 전');expect(ui.lastFrame()).toContain('I can do anything with you.');ui.unmount();
+  const ui=render(<App session={session}/>);
+  try{
+    expect(await shown(ui,'You: 크기 변경 전')).toBe(true);const before=ui.frames.length;
+    Object.assign(ui.stdout,{isTTY:true});Object.defineProperty(ui.stdout,'columns',{get:()=>50});ui.stdout.emit('resize');
+    await vi.waitFor(()=>{expect(ui.lastFrame()).toContain('You: 크기 변경 전');expect(ui.lastFrame()!.split('\n').every(row=>row.length<=50)).toBe(true);});
+    expect(ui.frames.slice(before)).not.toContain('\x1b[2J\x1b[3J\x1b[H');
+  }finally{ui.unmount();}
+});
+it.each(['at the limit','over by three','with a trimmed fence opener'])('keeps the KEPT_LINES trimming boundary on resize (%s)',async scenario=>{
+  const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
+  const marker=(n:number)=>'line-'+String(n).padStart(4,'0');
+  const fenced=scenario==='with a trimmed fence opener';const overflow=scenario==='over by three';
+  const count=KEPT_LINES+(overflow?3:0);
+  session.add((fenced?'\x60\x60\x60\n':'')+Array.from({length:count},(_,i)=>marker(i+1)).join('\n')+'\n'+(fenced?'**kept**\n\x60\x60\x60\n**bold**\n':'')+'partial-tail');
+  const ui=render(<App session={session}/>);
+  try{
+    Object.defineProperty(ui.stdout,'rows',{value:KEPT_LINES+40});ui.stdout.emit('resize');
+    await vi.waitFor(()=>{expect(ui.lastFrame()).toContain(marker(count));expect(ui.lastFrame()).toContain('partial-tail');});
+    Object.defineProperty(ui.stdout,'columns',{get:()=>50});ui.stdout.emit('resize');
+    await vi.waitFor(()=>{
+      const frame=ui.lastFrame();expect(frame).toContain('partial-tail');expect(frame).toContain(marker(count));
+      if(overflow){for(let n=1;n<=3;n++)expect(frame).not.toContain(marker(n));expect(frame).toContain(marker(4));}
+      else if(fenced){expect(frame).toContain('**kept**');expect(frame).toContain('\nbold\n');expect(frame).not.toContain('**bold**');expect(frame!.split('\x60\x60\x60')).toHaveLength(2);}
+      else expect(frame).toContain(marker(1));
+    },{timeout:3000});
+  }finally{ui.unmount();}
 });
 it('names the configured worker model and effort for each mode',async()=>{
   const config=structuredClone(defaults);config.workers.gptModel='fixture-worker';config.workers.reasoningEffort='max';config.designReasoningEffort='low';

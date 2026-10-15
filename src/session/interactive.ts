@@ -120,7 +120,7 @@ export class InteractiveSession extends EventEmitter {
     if(this.controller.otherSessionPids.length)this.add(this.config.language==='ko'?'\n이 폴더에서 다른 Hera 세션이 실행 중입니다. 같은 파일을 동시에 고치지 않도록 주의하세요.\n':'\nAnother Hera session is running in this folder. Avoid editing the same files at once.\n');
     this.controller.on('event',event=>this.observe(event));
     this.controller.on('workers',()=>this.emit('change'));
-    const shown=new Set<string|number>();this.controller.on('requests',()=>{const request=this.controller!.requests.values().next().value;if(request&&!shown.has(request.id)){shown.add(request.id);this.add(`\n${request.summary}\n`);}for(const id of shown)if(!this.controller!.requests.has(id))shown.delete(id);this.emit('change');});
+    const shown=new Set<string|number>();this.controller.on('requests',()=>{const request=this.controller!.requests.values().next().value;if(request&&!shown.has(request.id)){shown.add(request.id);if(!request.questions)this.add(`\n${request.summary}\n`);}for(const id of shown)if(!this.controller!.requests.has(id))shown.delete(id);this.emit('change');});
     this.controller.on('approval',request=>{this.approval=`${request.method}: denied; no permission expansion`;this.add(`\n${this.approval}\n`);});this.controller.on('notice',text=>this.add(`\n${text}\n`));this.controller.on('fault',e=>this.add(`\n${errorView(e).message}\n`));
   }
   setActivity(text:string){if(text===this.activity)return;this.activity=text;this.activitySince=Date.now();this.emit('change');}
@@ -141,7 +141,7 @@ export class InteractiveSession extends EventEmitter {
         this.setActivity(item.tool==='wait'?(ko?`${who} 답 기다리는 중`:`waiting for ${who}`):['spawnAgent','sendInput','resumeAgent'].includes(String(item.tool))?(ko?`${who}에게 맡기는 중`:`handing off to ${who}`):(ko?'워커 정리 중':'managing workers'));
       }
     }
-    else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution')this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);if(own&&this.busy)this.setActivity(ko?'응답 기다리는 중':'waiting for the model');}
+    else if(event.method==='item/completed'){const p=z.object({item:z.object({type:z.string(),exitCode:z.number().nullable().optional()})}).safeParse(event.params);if(p.success&&p.data.item.type==='commandExecution'&&p.data.item.exitCode!==0)this.add(`\nTool exit: ${p.data.item.exitCode??'unknown'}\n`);if(own&&this.busy)this.setActivity(ko?'응답 기다리는 중':'waiting for the model');}
     else if(event.method==='account/rateLimits/updated'&&this.limits){this.limits=mergeLimits(this.limits,event.params);this.emit('change');}
   }
   async submit(text:string){if(this.busy)throw new HeraError('TURN_ACTIVE','Wait or cancel the active turn.',5);this.checkBuild();this.busy=true;this.status='Working';this.emit('change');try{if(text.startsWith('/')){

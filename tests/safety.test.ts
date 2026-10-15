@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 import {acquireWorkspace} from '../src/session/workspace-lock.js';
+import * as processIdentity from '../src/session/process-identity.js';
 import {PhasePolicy,baseline,validateProposalPath} from '../src/session/phase-policy.js';
 import {Controller} from '../src/session/controller.js';
 import type {CodexClient} from '../src/codex/client.js';
@@ -39,6 +40,33 @@ it('removes records for an exited child, including legacy owner.json, without re
   await writeFile(join(first.directory,pid+'.json'),JSON.stringify(record));await writeFile(join(first.directory,'owner.json'),JSON.stringify(record));
   await first.release();const next=await acquireWorkspace(home,home);expect(next.others).toEqual([]);
   expect(await readdir(next.directory)).toEqual([process.pid+'.json']);await expect(next.setSessionId(id)).resolves.toBeUndefined();await next.release();
+});
+it.each(process.platform==='win32'?['start time','executable']:['start time'])('ignores a reused live PID with a different %s and permits saved-session resume',async difference=>{
+  const home=await mkdtemp(join(tmpdir(),'hera-presence-'));const first=await acquireWorkspace(home,home);const id=randomUUID();
+  await withOtherProcess(async pid=>{
+    const actual=await processIdentity.readProcessIdentity(pid);expect(actual).not.toBeNull();
+    const record={...JSON.parse(await readFile(join(first.directory,process.pid+'.json'),'utf8')),pid,heraSessionId:id,
+      processStartedAt:difference==='start time'?'2000-01-01T00:00:00.000Z':actual!.startedAt,
+      executable:difference==='executable'?join(home,'old-node.exe'):process.execPath};
+    await writeFile(join(first.directory,pid+'.json'),JSON.stringify(record));await first.release();
+    const next=await acquireWorkspace(home,home);
+    try{
+      expect(next.others).toEqual([]);await expect(next.setSessionId(id)).resolves.toBeUndefined();
+      await expect(stat(join(next.directory,pid+'.json'))).rejects.toMatchObject({code:'ENOENT'});
+      expect(()=>process.kill(pid,0)).not.toThrow();
+    }finally{await next.release();}
+  });
+  await first.release();
+});
+it('preserves a live record and blocks duplicate resume when identity cannot be read',async()=>{
+  const home=await mkdtemp(join(tmpdir(),'hera-presence-'));const first=await acquireWorkspace(home,home);const id=randomUUID();await first.setSessionId(id);
+  const lookup=vi.spyOn(processIdentity,'readProcessIdentity').mockResolvedValue(null);
+  try{await withOtherProcess(async pid=>{
+    const second=await acquireAs(pid,home);
+    try{expect(second.others).toEqual([process.pid]);await expect(second.setSessionId(id)).rejects.toMatchObject({errorCode:'SESSION_IN_USE'});}
+    finally{await second.release();}
+    expect(await readdir(first.directory)).toEqual([process.pid+'.json']);
+  });}finally{lookup.mockRestore();await first.release();}
 });
 it('counts EPERM as live while ignoring malformed live records and legacy owners',async()=>{
   const home=await mkdtemp(join(tmpdir(),'hera-presence-'));const first=await acquireWorkspace(home,home);

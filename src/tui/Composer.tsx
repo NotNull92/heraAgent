@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef} from 'react';
+import {useEffect,useState,useRef} from 'react';
 import {Box,useBoxMetrics,useCursor,useInput,usePaste} from 'ink';
 import type {DOMElement} from 'ink';
 import {safeText} from '../errors.js';
@@ -104,15 +104,18 @@ export function Composer({busy,send,cancel,quit,language,rows=6,answerOnly=false
     if(input)insert(input);
   });
   const {c}=useTheme();
+  const options=matches();const visible=Math.max(1,Math.min(6,rows));const start=Math.max(0,Math.min(menu.index-Math.floor(visible/2),options.length-visible));
+  const inputRows=Math.max(1,rows-(options.length?Math.min(options.length,visible)+1:0));
   // A terminal IME draws the syllable being composed at the real cursor, so the cursor must sit
   // at the caret; otherwise Korean text only appears after each syllable is committed.
-  // The composer is a direct child of the root column, so its top is the output row.
   const row=useRef<DOMElement>(null);const {top,width,hasMeasured}=useBoxMetrics(row);const {setCursorPosition}=useCursor();
-  const at=caret(state.value,state.cursor,width||80);setCursorPosition(hasMeasured?{x:at.x,y:top+1+at.y}:undefined);
+  let absoluteTop=top;for(let parent=row.current?.parentNode;parent;parent=parent.parentNode)absoluteTop+=parent.yogaNode?.getComputedTop()??0;
+  const at=caret(state.value,state.cursor,width||80);const offset=Math.max(0,at.y-inputRows+1);
+  const value=state.value||(armed?'See you later codingborn.':'I can do anything with you.');const textRows=caret(value,graphemes(value).length,width||80).y+1;
+  setCursorPosition(hasMeasured?{x:at.x,y:absoluteTop+1+at.y-offset}:undefined);
   useEffect(()=>()=>setCursorPosition(undefined),[setCursorPosition]);
-  const options=matches();const visible=Math.max(1,Math.min(6,rows));const start=Math.max(0,Math.min(menu.index-Math.floor(visible/2),options.length-visible));
   return <>
-    <Box ref={row} borderStyle="single" borderLeft={false} borderRight={false} {...(c.gold?{borderColor:c.gold}:{})}><Text wrap="hard"><Text bold color={c.gold}>&gt; </Text>{state.value||(armed?<Text color={c.blood}>See you later codingborn.</Text>:<Text color={c.iron}>I can do anything with you.</Text>)}</Text></Box>
+    <Box ref={row} height={Math.min(textRows,inputRows)+2} overflow="hidden" contentOffsetY={offset} borderStyle="single" borderLeft={false} borderRight={false} {...(c.gold?{borderColor:c.gold}:{})}><Text wrap="hard"><Text bold color={c.gold}>&gt; </Text>{state.value||(armed?<Text color={c.blood}>See you later codingborn.</Text>:<Text color={c.iron}>I can do anything with you.</Text>)}</Text></Box>
     {options.length>0&&<Box flexDirection="column">
       {options.slice(start,start+visible).map(([name,ko,en],i)=><Text key={name} wrap="truncate-end" bold={start+i===menu.index} color={start+i===menu.index?c.gold:undefined}>{start+i===menu.index?'› ':'  '}{state.value[0]}{name.padEnd(11)}<Text color={start+i===menu.index?c.gold:c.iron}>{language==='ko'?ko:en}</Text></Text>)}
       <Text color={c.iron} wrap="truncate-end">{menu.index+1}/{options.length} · {language==='ko'?'↑↓ 이동 · Tab 완성 · Enter 선택 · Esc 닫기':'↑↓ move · Tab complete · Enter select · Esc close'}</Text>

@@ -1,10 +1,10 @@
-import React,{useRef,useState} from 'react';
+import {useRef,useState} from 'react';
 import {useInput,usePaste} from 'ink';
 import type {SelectionMenu} from '../session/interactive.js';
 import {safeText} from '../errors.js';
 import {Frame,Text,useTheme} from './theme.js';
 
-export function SettingsPicker({menu,language,rows,choose,cancel,quit,showKeys=true}:{menu:SelectionMenu;language:'ko'|'en';rows:number;choose:(value:string)=>void;cancel:()=>void;quit:()=>void;showKeys?:boolean}){
+export function SettingsPicker({menu,language,rows,choose,cancel,quit}:{menu:SelectionMenu;language:'ko'|'en';rows:number;choose:(value:string)=>void;cancel:()=>void;quit:()=>void}){
   const {c}=useTheme();const [index,setIndex]=useState(Math.max(0,menu.options.findIndex(o=>o.value===menu.current)));const current=useRef(index);
   usePaste(()=>{});
   useInput((input,key)=>{
@@ -16,6 +16,6 @@ export function SettingsPicker({menu,language,rows,choose,cancel,quit,showKeys=t
   const visible=Math.max(1,rows-5);const start=Math.max(0,Math.min(index-Math.floor(visible/2),menu.options.length-visible));
   return <Frame title={safeText(menu.title)}>
     {menu.options.slice(start,start+visible).map((option,i)=><Text key={option.value} bold={start+i===index} color={start+i===index?c.gold:undefined}>{start+i===index?'› ':'  '}{safeText(option.label)}{option.value===menu.current?(language==='ko'?' [현재]':' [current]'):''}</Text>)}
-    <Text color={c.iron}>{index+1}/{menu.options.length}{showKeys&&(language==='ko'?' · ↑↓ 이동 · Enter 선택 · Esc 취소':' · ↑↓ move · Enter select · Esc cancel')}</Text>
+    <Text color={c.iron}>{index+1}/{menu.options.length}{language==='ko'?' · ↑↓ 이동 · Enter 선택 · Esc 취소':' · ↑↓ move · Enter select · Esc cancel'}</Text>
   </Frame>;
 }

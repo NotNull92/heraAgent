@@ -14,6 +14,8 @@ const EXCLUDED:Record<string,string>={
   'session/limits.ts':'Parses usage figures for display without changing model requests or capability gates.',
   'session/interactive.ts':'TUI command orchestration and presentation; the plan instruction is imported from hashed prompts.ts.',
   'tui/App.tsx':'Transcript, status and UI composition; native execution policy belongs to Controller.',
+  'tui/transcript.tsx':'Transcript formatting and wrapped presentation rows, without model instructions or runtime policy.',
+  'tui/transcript-input.ts':'Consumes terminal mouse/page reports for local viewport navigation only; no native tool or permission changes.',
   'tui/ApplyReview.tsx':'Legacy approval presentation, unreachable from Controller.open; phased checks remain hashed.',
   'tui/Composer.tsx':'Keyboard editing and completion; submitted requests pass through the hashed Controller.',
   'tui/NativePrompt.tsx':'Presents native approval/input choices; ownership, stale requests and grants are validated by Controller.',

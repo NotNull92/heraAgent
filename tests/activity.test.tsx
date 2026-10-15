@@ -7,6 +7,18 @@ import {defaults} from '../src/config.js';
 const tick=()=>new Promise(resolve=>setTimeout(resolve,70));
 // Ink repaints asynchronously; under full-suite load one tick is not always enough.
 const until=async(ready:()=>boolean)=>{for(let i=0;i<40&&!ready();i++)await tick();};
+it('hides successful command exits but keeps failed and unknown results for roots and workers',()=>{
+  for(const threadId of ['root','worker']){
+    const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
+    session.controller={metadata:{codexThreadId:'root'}} as never;session.busy=true;session.setActivity('명령 실행 중');
+    const completed=(exitCode:number|null|undefined)=>session.observe({method:'item/completed',params:{threadId,item:{type:'commandExecution',...(exitCode===undefined?{}:{exitCode})}}});
+    completed(0);completed(0);expect(session.transcript).toBe('');
+    expect(session.activity).toBe(threadId==='root'?'응답 기다리는 중':'명령 실행 중');
+    let expected='';
+    for(const exitCode of [1,130,null,undefined]){completed(exitCode);expected+=`\nTool exit: ${exitCode??'unknown'}\n`;expect(session.transcript).toBe(expected);}
+    completed(0);expect(session.transcript).toBe(expected);
+  }
+});
 it('names what the root thread is doing while nothing is printed, and clears it when text streams',async()=>{
   const session=new InteractiveSession('unused','fixture',structuredClone(defaults),true);
   const snapshot=new Map([['astra-child',{modelProvider:'openai'}],['go-child',{modelProvider:'hera_opencode_go'}]]);

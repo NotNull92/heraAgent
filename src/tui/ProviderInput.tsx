@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useInput,usePaste} from 'ink';
 import {safeText} from '../errors.js';
 import {Frame,Text,useTheme} from './theme.js';

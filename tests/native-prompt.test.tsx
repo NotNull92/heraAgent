@@ -18,9 +18,10 @@ for(const language of ['ko','en'] as const){
     const key=async(value:string,text:string)=>{ui.stdin.write(value);await shown(text);};
     try{
       await shown(language==='ko'?'직접 입력':'Type an answer');
-      expect(ui.lastFrame()).not.toMatch(/↑↓|Enter|Esc/);
+      expect(ui.lastFrame()).toContain(language==='ko'?'1/4 · ↑↓ 이동 · Enter 선택 · Esc 취소':'1/4 · ↑↓ move · Enter select · Esc cancel');
       await key('\x1b[B','› 모두');await key('\x1b[A','› 하나');await key('\x1b[B','› 모두');await key('\r','이름은 무엇인가요?');expect(answer).not.toHaveBeenCalled();
       await key('\x1b[B','› 대안');await key('\x1b[B',language==='ko'?'› 직접 입력':'› Type an answer');await key('\r','>');
+      expect(ui.lastFrame()).not.toMatch(/↑↓|Enter|Esc/);
       await key('/help','/help');expect(ui.lastFrame()).not.toMatch(/Tab|Show command help|명령어 도움말/);
       await key('\r','추가 설명은?');expect(answer).not.toHaveBeenCalled();
       await key('\x1b[200~/tmp/한글\x1b[201~','/tmp/한글');ui.stdin.write('\r');

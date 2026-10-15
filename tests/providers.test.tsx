@@ -6,11 +6,31 @@ import {InteractiveSession} from '../src/session/interactive.js';
 import {ProviderKeyInput} from '../src/tui/ProviderInput.js';
 import {Composer} from '../src/tui/Composer.js';
 import {defaults} from '../src/config.js';
-import {Controller} from '../src/session/controller.js';
+import {Controller,type NativeRequest} from '../src/session/controller.js';
 import {HeraError} from '../src/errors.js';
 import * as accounts from '../src/providers/accounts.js';
 import * as credentials from '../src/providers/go-credentials.js';
 const tick=()=>new Promise(resolve=>setTimeout(resolve,80));
+it('hides native question parameters, including secret questions, and prints approval details once',async()=>{
+  const controller=Object.assign(new EventEmitter(),{otherSessionPids:[] as number[],requests:new Map<string|number,NativeRequest>()});
+  vi.spyOn(Controller,'open').mockResolvedValue(controller as Controller);
+  const session=new InteractiveSession('fixture','fixture',structuredClone(defaults),true);
+  const owner={threadId:'root',turnId:'turn',itemId:'item'};
+  try{
+    await session.connect();
+    for(const isSecret of [false,true]){
+      const questions=[{id:'answer',header:'Answer',question:'Which format?',isSecret,options:[{label:'Markdown',description:'A Markdown file'}]}];
+      controller.requests.set('question',{id:'question',...owner,questions,summary:JSON.stringify({questions,isBlocking:true,autoResolutionMs:null},null,2)});
+      controller.emit('requests');controller.emit('requests');
+      expect(session.transcript).not.toContain('"questions"');expect(session.transcript).not.toContain('isBlocking');expect(session.transcript).toBe('');
+      controller.requests.clear();controller.emit('requests');
+    }
+    const summary=JSON.stringify({method:'item/commandExecution/requestApproval',request:{command:'echo fixture'}},null,2);
+    controller.requests.set('approval',{id:'approval',...owner,summary});
+    controller.emit('requests');controller.emit('requests');
+    expect(session.transcript).toBe(`\n${summary}\n`);
+  }finally{vi.restoreAllMocks();}
+});
 it('prints the other-session notice once before Ready in either language, only when others exist',async()=>{
   vi.spyOn(accounts,'providerStatus').mockResolvedValue({openai:{ready:true,category:'chatgpt'},go:{credentialReady:true,credentialStored:true,credentialSource:'keyring'}});
   try{
